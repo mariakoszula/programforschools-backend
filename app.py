@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_jwt import JWT, jwt_required
 from flask_restful import Api
@@ -13,21 +15,16 @@ config_file = path.join(getcwd(), "config.ini")
 config_parser.read_file(open(config_file, encoding='utf-8'))
 
 if not path.exists(config_parser.get('Common', 'gen_dir')):
-    mkdir(config_parser.get('Common', 'gen_dir'), )
+    mkdir(config_parser.get('Common', 'gen_dir'))
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = f"{config_parser.get('Database', 'type')}://" \
-                                        f"{config_parser.get('Database', 'url')}"
+database_name = f"{config_parser.get('Database', 'type')}://{config_parser.get('Database', 'url')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', database_name)
+
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
 
 api = Api(app)
-
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
 
 jwt = JWT(app, authenticate, identity)
 

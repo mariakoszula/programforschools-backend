@@ -4,3 +4,5 @@ services:
   web:
     volumes:
       - .:/app
+    environment:
+      PORT: 5000
