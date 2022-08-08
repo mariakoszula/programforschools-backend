@@ -1,7 +1,5 @@
 FROM python:3.9.13
 
-EXPOSE 5000
-
 RUN mkdir /app
 WORKDIR /app
 
