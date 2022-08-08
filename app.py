@@ -7,7 +7,6 @@ from security import authenticate, identity
 
 from configparser import ConfigParser, ExtendedInterpolation
 from os import path, getcwd, mkdir
-from db import db
 
 config_parser = ConfigParser(interpolation=ExtendedInterpolation())
 config_file = path.join(getcwd(), "config.ini")
@@ -27,7 +26,6 @@ api = Api(app)
 
 @app.before_first_request
 def create_tables():
-    db.init_app(app)
     db.create_all()
 
 
@@ -43,5 +41,6 @@ def home():
 
 
 if __name__ == '__main__':
+    from db import db
+    db.init_app(app)
     app.run(debug=bool(config_parser.get('Common', 'debug_on')), host="0.0.0.0")
-s
