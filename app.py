@@ -19,8 +19,11 @@ if not path.exists(config_parser.get('Common', 'gen_dir')):
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-database_name = f"{config_parser.get('Database', 'type')}://{config_parser.get('Database', 'url')}"
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', database_name)
+db_local_prefix = config_parser.get('Database', 'local_prefix')
+db_remote_prefix = config_parser.get('Database', 'remote_prefix')
+local_db_name = f"{db_local_prefix}{config_parser.get('Database', 'url')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', local_db_name)
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace(db_remote_prefix, db_local_prefix)
 
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
 
