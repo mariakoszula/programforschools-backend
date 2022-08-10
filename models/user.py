@@ -1,5 +1,27 @@
-from db import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from db import db
+from accesscontrol import AllowedRoles
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.Enum(AllowedRoles), unique=True)
+
+    def __init__(self, name):
+        self.name: AllowedRoles = name
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @classmethod
+    def find(cls, name):
+        return cls.query.filter_by(name=name).first()
+
+    def json(self):
+        return self.name.name
 
 
 class UserModel(db.Model):
@@ -10,7 +32,14 @@ class UserModel(db.Model):
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(80))
 
-    def __init__(self, username, password, email):
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    role = db.relationship('Role')
+
+    def __init__(self, username, password, email, role):
+        role = Role.find(role)
+        if not role:
+            raise ValueError(f"Role {role} does not exists in Role table")
+        self.role_id = role.id
         self.username = username
         self.password_hash = generate_password_hash(password)
         self.email = email
@@ -22,6 +51,10 @@ class UserModel(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
     @classmethod
     def find(cls, username):
         return cls.query.filter_by(username=username).first()
@@ -29,3 +62,11 @@ class UserModel(db.Model):
     @classmethod
     def find_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
+
+    def json(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'roles': self.role.json()
+        }
