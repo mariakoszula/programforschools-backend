@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 from models.user import UserModel, Role, AllowedRoles
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt
 from accesscontrol import roles_required, handle_exception_pretty
 import copy
 
@@ -75,3 +75,13 @@ class UserLogin(Resource):
                 'refresh_token': refresh_token
             }, 200
         return {'message': 'Invalid credentials'}, 401
+
+
+class UserLogout(Resource):
+    BLACKLIST = set()
+
+    @classmethod
+    @jwt_required()
+    def post(cls):
+        UserLogout.BLACKLIST.add(get_jwt()["jti"])
+        return {'message': 'User logged out successfully'}, 401

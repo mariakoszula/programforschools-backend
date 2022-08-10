@@ -7,7 +7,7 @@ from flask_restful import Api
 
 from accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
-from resources.user import UserResource, User, UserLogin
+from resources.user import UserResource, User, UserLogin, UserLogout
 
 config_parser = ConfigParser(interpolation=ExtendedInterpolation())
 config_file = path.join(getcwd(), "config.ini")
@@ -40,9 +40,15 @@ def add_role_claims_to_access_token(identity):
         return {'role': user.role.json()}
 
 
+@jwt.token_in_blocklist_loader
+def token_in_blocklist_callback(_, jwt_payload: dict):
+    return jwt_payload['jti'] in UserLogout.BLACKLIST
+
+
 api.add_resource(UserResource, '/register')
 api.add_resource(User, '/user/<int:user_id>')
 api.add_resource(UserLogin, '/login')
+api.add_resource(UserLogout, '/logout')
 
 
 @app.route("/")
