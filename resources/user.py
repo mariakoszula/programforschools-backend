@@ -1,14 +1,15 @@
 from flask_restful import Resource, reqparse
 from models.user import UserModel, Role, AllowedRoles
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, create_refresh_token, \
+                               jwt_required, get_jwt, get_jwt_identity
 from accesscontrol import roles_required, handle_exception_pretty
 import copy
 
 _user_parser = reqparse.RequestParser()
-_user_parser.add_argument('username',
+_user_parser.add_argument('email',
                           required=True,
                           type=str,
-                          help="Username cannot be blank")
+                          help="Email cannot be blank")
 _user_parser.add_argument('password',
                           required=True,
                           type=str,
@@ -17,10 +18,10 @@ _user_parser.add_argument('password',
 
 class UserResource(Resource):
     parser = copy.deepcopy(_user_parser)
-    parser.add_argument('email',
+    parser.add_argument('username',
                         required=True,
                         type=str,
-                        help="Email cannot be blank")
+                        help="Username cannot be blank")
     parser.add_argument('role',
                         required=False,
                         type=str,
@@ -29,7 +30,7 @@ class UserResource(Resource):
     @classmethod
     def post(cls):
         data = cls.parser.parse_args()
-        if UserModel.find(data['username']):
+        if UserModel.find_by_email(data['email']):
             return {'message': 'User already exists'}, 400
         try:
             role = Role.find(data['role'])
@@ -40,11 +41,12 @@ class UserResource(Resource):
             user.save_to_db()
         except Exception as e:
             return {'message': f'User not saved due to {e}'}, 500
-        return {'message': f'Added {user.username} to database'}, 201
+        return {'message': f'Added {user.email} to database'}, 201
 
 
 class User(Resource):
     @classmethod
+    @jwt_required()
     def get(cls, user_id):
         user: UserModel = UserModel.find_by_id(user_id)
         if not user:
@@ -66,22 +68,33 @@ class UserLogin(Resource):
     @classmethod
     def post(cls):
         data = _user_parser.parse_args()
-        user: UserModel = UserModel.find(data['username'])
+        user: UserModel = UserModel.find_by_email(data['email'])
         if user and user.validate_password(data['password']):
             access_token = create_access_token(identity=user.id, fresh=True)
             refresh_token = create_refresh_token(user.id)
             return {
-                'access_token': access_token,
-                'refresh_token': refresh_token
+               'id': user.id,
+               'access_token': access_token,
+               'refresh_token': refresh_token
             }, 200
         return {'message': 'Invalid credentials'}, 401
 
 
+class RefreshToken(Resource):
+    @jwt_required(refresh=True)
+    def post(self):
+        current_user_identity = get_jwt_identity()
+        new_token = create_access_token(identity=current_user_identity, fresh=False)
+        return {'access_token': new_token}, 200
+
+
 class UserLogout(Resource):
-    BLACKLIST = set()
+    BLACKLIST = set()   # TODO Change this to using redis database https://flask-jwt-extended.readthedocs.io/en/stable/blocklist_and_token_revoking/
 
     @classmethod
-    @jwt_required()
-    def post(cls):
-        UserLogout.BLACKLIST.add(get_jwt()["jti"])
-        return {'message': 'User logged out successfully'}, 401
+    @jwt_required(verify_type=False)
+    def delete(cls):
+        token = get_jwt()
+        token_type = token["type"]
+        UserLogout.BLACKLIST.add(token["jti"])
+        return {'message': f'User logged out, {token_type.capitalize()} token revoked'}, 401

@@ -28,9 +28,9 @@ class UserModel(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80))
+    username = db.Column(db.String(80),  unique=True)
     password_hash = db.Column(db.String(128))
-    email = db.Column(db.String(80))
+    email = db.Column(db.String(80), unique=True)
 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     role = db.relationship('Role')
@@ -60,6 +60,10 @@ class UserModel(db.Model):
         return cls.query.filter_by(username=username).first()
 
     @classmethod
+    def find_by_email(cls, email):
+        return cls.query.filter_by(email=email).first()
+
+    @classmethod
     def find_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
@@ -68,5 +72,5 @@ class UserModel(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'roles': self.role.json()
+            'role': self.role.json()
         }

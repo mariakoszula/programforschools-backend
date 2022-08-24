@@ -1,5 +1,7 @@
+import datetime
 from configparser import ConfigParser, ExtendedInterpolation
 from os import path, getcwd, mkdir, environ
+from flask_cors import CORS
 
 from flask import Flask
 from flask_jwt_extended import JWTManager
@@ -7,7 +9,7 @@ from flask_restful import Api
 
 from accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
-from resources.user import UserResource, User, UserLogin, UserLogout
+from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken
 
 config_parser = ConfigParser(interpolation=ExtendedInterpolation())
 config_file = path.join(getcwd(), "config.ini")
@@ -19,6 +21,7 @@ if not path.exists(config_parser.get('Common', 'gen_dir')):
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(minutes=5)
 
 db_local_prefix = config_parser.get('Database', 'local_prefix')
 db_remote_prefix = config_parser.get('Database', 'remote_prefix')
@@ -29,6 +32,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].re
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
 
 api = Api(app)
+CORS(app)
 
 jwt = JWTManager(app)
 
@@ -49,6 +53,7 @@ api.add_resource(UserResource, '/register')
 api.add_resource(User, '/user/<int:user_id>')
 api.add_resource(UserLogin, '/login')
 api.add_resource(UserLogout, '/logout')
+api.add_resource(RefreshToken, '/refresh')
 
 
 @app.route("/")
