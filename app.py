@@ -62,13 +62,13 @@ def home():
     return {'message': "You've entered home page"}, 200
 
 
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
-
 if __name__ == '__main__':
     from db import db
+
+
+    @app.before_first_request
+    def create_tables():
+        db.create_all()
 
     db.init_app(app)
     app.run(debug=bool(config_parser.get('Common', 'debug_on')), host="0.0.0.0")
