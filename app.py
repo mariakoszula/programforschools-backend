@@ -1,27 +1,21 @@
 import datetime
-from configparser import ConfigParser, ExtendedInterpolation
-from os import path, getcwd, mkdir, environ
+from os import environ
 from flask_cors import CORS
-
+from config_parser import config_parser
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
 
 from accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
-from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken
-
-config_parser = ConfigParser(interpolation=ExtendedInterpolation())
-config_file = path.join(getcwd(), "config.ini")
-config_parser.read_file(open(config_file, encoding='utf-8'))
-
-if not path.exists(config_parser.get('Common', 'gen_dir')):
-    mkdir(config_parser.get('Common', 'gen_dir'))
+from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
+from resources.register import RegisterResource
+from google_drive import setup_google_drive_service, google_service
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(minutes=5)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=5)
 
 db_local_prefix = config_parser.get('Database', 'local_prefix')
 db_remote_prefix = config_parser.get('Database', 'remote_prefix')
@@ -30,6 +24,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DATABASE_URL', local_db_nam
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace(db_remote_prefix, db_local_prefix)
 
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
+
+setup_google_drive_service()
 
 api = Api(app)
 CORS(app)
@@ -51,9 +47,13 @@ def token_in_blocklist_callback(_, jwt_payload: dict):
 
 api.add_resource(UserResource, '/register')
 api.add_resource(User, '/user/<int:user_id>')
+api.add_resource(Users, '/users')
 api.add_resource(UserLogin, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(RefreshToken, '/refresh')
+
+#create_register?program=1 TODO check if you can use this
+api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
 
 
 @app.route("/")
@@ -71,4 +71,4 @@ if __name__ == '__main__':
         db.create_all()
 
     db.init_app(app)
-    app.run(debug=bool(config_parser.get('Common', 'debug_on')), host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")

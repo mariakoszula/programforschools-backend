@@ -67,6 +67,10 @@ class UserModel(db.Model):
     def find_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
+    @classmethod
+    def users(cls):
+        return cls.query.all()
+
     def json(self):
         return {
             'id': self.id,

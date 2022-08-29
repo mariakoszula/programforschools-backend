@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.user import UserModel, Role, AllowedRoles
 from flask_jwt_extended import create_access_token, create_refresh_token, \
-                               jwt_required, get_jwt, get_jwt_identity
+    jwt_required, get_jwt, get_jwt_identity
 from accesscontrol import roles_required, handle_exception_pretty
 import copy
 
@@ -73,10 +73,10 @@ class UserLogin(Resource):
             access_token = create_access_token(identity=user.id, fresh=True)
             refresh_token = create_refresh_token(user.id)
             return {
-               'id': user.id,
-               'access_token': access_token,
-               'refresh_token': refresh_token
-            }, 200
+                       'id': user.id,
+                       'access_token': access_token,
+                       'refresh_token': refresh_token
+                   }, 200
         return {'message': 'Invalid credentials'}, 401
 
 
@@ -89,7 +89,7 @@ class RefreshToken(Resource):
 
 
 class UserLogout(Resource):
-    BLACKLIST = set()   # TODO Change this to using redis database https://flask-jwt-extended.readthedocs.io/en/stable/blocklist_and_token_revoking/
+    BLACKLIST = set()  # TODO Change this to using redis database https://flask-jwt-extended.readthedocs.io/en/stable/blocklist_and_token_revoking/
 
     @classmethod
     @jwt_required(verify_type=False)
@@ -98,3 +98,13 @@ class UserLogout(Resource):
         token_type = token["type"]
         UserLogout.BLACKLIST.add(token["jti"])
         return {'message': f'User logged out, {token_type.capitalize()} token revoked'}, 401
+
+
+class Users(Resource):
+    @classmethod
+    @roles_required([AllowedRoles.admin.name])
+    def get(cls):
+        users: UserModel = UserModel.users()
+        if not users:
+            return {'message': 'No users found'}, 200
+        return {'users': [user.id for user in users]}, 200

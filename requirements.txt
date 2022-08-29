@@ -4,4 +4,5 @@ Flask-JWT-extended==4.4.3
 Flask-SQLAlchemy==2.5.1
 psycopg2==2.9.3
 Flask-Cors==3.0.10
+docx-mailmerge==0.5.0
 uwsgi
