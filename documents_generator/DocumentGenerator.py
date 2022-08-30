@@ -1,4 +1,4 @@
-from logger import logger
+from logger import app_logger
 from mailmerge import MailMerge
 from abc import ABC, abstractmethod
 from shutil import copy
@@ -14,7 +14,7 @@ class DocumentGenerator(ABC):
 
     def __init__(self, template_document, output_directory, output_name):
         if not path.exists(template_document):
-            logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
+            app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
         self.generated_documents: List[str] = []
         self.output_directory = path.join(DocumentGenerator.DOCUMENT_DIR,
                                           output_directory)
@@ -39,7 +39,7 @@ class DocumentGenerator(ABC):
                 output = DocumentGenerator.generate_pdf(file, self.output_directory)
                 self.generated_documents.append(output)
         except ValueError as e:
-            logger.error("Problem occurred during generating document. [%s]", e)
+            app_logger.error("Problem occurred during generating document. [%s]", e)
 
     @staticmethod
     def copy_to_path(source, dest):
@@ -67,17 +67,17 @@ class DocumentGenerator(ABC):
                                      check=True)
             if not path.exists(output_file):
                 raise ValueError(f"Pdf not generated: {output_file} {results.stderr}")
-            logger.info(f"Success: Document {docx_to_convert} saved in {output_file}")
+            app_logger.info(f"Success: Document {docx_to_convert} saved in {output_file}")
             return output_file
         except Exception as e:
-            logger.error("[%s] Serious error when generating pdf from docx %s out_dir %s: err_msg: %s.",
+            app_logger.error("[%s] Serious error when generating pdf from docx %s out_dir %s: err_msg: %s.",
                          __class__.__name__, docx_to_convert, output_file, e)
 
     @staticmethod
     def create_directory(output_directory):
         if not path.exists(output_directory):
             makedirs(output_directory)
-            logger.info("[%s] Created new output directory: %s", __class__.__name__, output_directory)
+            app_logger.info("[%s] Created new output directory: %s", __class__.__name__, output_directory)
 
     def __start_doc_gen(self):
         DocumentGenerator.create_directory(self.output_directory)
@@ -88,7 +88,7 @@ class DocumentGenerator(ABC):
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
         self.generated_documents.append(generated_file)
-        logger.info("[%s] Created new output file: %s", __class__.__name__, generated_file, )
+        app_logger.info("[%s] Created new output file: %s", __class__.__name__, generated_file, )
 
     @abstractmethod
     def prepare_data(self):

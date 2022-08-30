@@ -5,12 +5,14 @@ from config_parser import config_parser
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
+from logger import app_logger
 
 from accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
-from google_drive import setup_google_drive_service, google_service
+from google_drive import GoogleDriveCommands
+from helpers import to_json
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -25,7 +27,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].re
 
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
 
-setup_google_drive_service()
 
 api = Api(app)
 CORS(app)
@@ -58,8 +59,15 @@ api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
 
 @app.route("/")
 @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-def home():
+def main_page():
     return {'message': "You've entered home page"}, 200
+
+
+@app.route("/remote_folders_list")
+@roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+def remote_folders_list():
+    res = to_json(GoogleDriveCommands.search())
+    return {'remote_folders': res}, 200
 
 
 if __name__ == '__main__':
