@@ -3,22 +3,25 @@ from typing import List
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 import json
 from os import getenv
 from config_parser import config_parser
 from logger import app_logger
-
+from os import path
 
 google_service = None
 SCOPES = ['https://www.googleapis.com/auth/drive']
+DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+PDF_MIME_TYPE = 'application/pdf'
+DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
 
-print(f"id of app logger {id(app_logger)}")
 
 def setup_google_drive_service(func):
     def wrapper(*args, **kwargs):
         global google_service
         if google_service:
-            func()
+            func(*args, **kwargs)
             return
         if not getenv('GOOGLE_DRIVE_AUTH'):
             app_logger.error(
@@ -31,7 +34,9 @@ def setup_google_drive_service(func):
         app_logger.info(
             f"Google Drive service setup for {SCOPES}")
         return func(*args, **kwargs)
+
     return wrapper
+
 
 # TODO save folder names with google drive ids --> maybe in database (dir_name, id, program_id)
 # Create basic folder structure and upload when creating new program and generate new contracts
@@ -73,7 +78,7 @@ class GoogleDriveCommands:
     @staticmethod
     @setup_google_drive_service
     def search(parent_id=config_parser.get('DocTemplates', 'google_drive_id'),
-               mime_type_query="='application/vnd.google-apps.folder'",
+               mime_type_query=f"={DIR_MIME_TYPE}",
                recursive_search=True) -> List[FileData]:
         found = []
         page_token = None
@@ -95,14 +100,21 @@ class GoogleDriveCommands:
 
     @staticmethod
     @setup_google_drive_service
-    def upload_file(parent_id='1Sc6UbsrzpAfTq2pq9Ieu7VSn1CGxmGrX', path_to_file=""):
+    def upload_file(path_to_file,
+                    mime_type='application/vnd.google-apps.folder',
+                    parent_id='1Sc6UbsrzpAfTq2pq9Ieu7VSn1CGxmGrX'):
         try:
+            app_logger.error(f"file path {path_to_file} file name {path.split(path_to_file)[1]}")
             file_metadata = {
-                'name': "gen/Program_1/Rejestr_29-08-2022.docx",
+                'name': path.split(path_to_file)[1],
                 'parents': [parent_id],
-                'mimeType': 'application/vnd.google-apps.folder'
+                'mimeType': mime_type
             }
-            file = google_service.files().create(body=file_metadata, fields="id").execute()
-            print(f"Uploaded or note {file.get('id')}")
+
+            media = MediaFileUpload(path_to_file)
+
+            file = google_service.files().create(body=file_metadata, fields="id", media_body=media).execute()
+            app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}")
+            return file.get('id')
         except HttpError as error:
             app_logger.error(f"Error during uploading file '{staticmethod}' in '{parent_id}': {error}")

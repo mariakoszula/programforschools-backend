@@ -6,6 +6,7 @@ from os import path, makedirs, remove, rename
 from config_parser import config_parser
 from typing import List
 import subprocess
+from google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE
 
 
 class DocumentGenerator(ABC):
@@ -71,13 +72,13 @@ class DocumentGenerator(ABC):
             return output_file
         except Exception as e:
             app_logger.error("[%s] Serious error when generating pdf from docx %s out_dir %s: err_msg: %s.",
-                         __class__.__name__, docx_to_convert, output_file, e)
+                             __class__.__name__, docx_to_convert, output_file, e)
 
     @staticmethod
     def create_directory(output_directory):
         if not path.exists(output_directory):
             makedirs(output_directory)
-            app_logger.info("[%s] Created new output directory: %s", __class__.__name__, output_directory)
+            app_logger.debug("[%s] Created new output directory: %s", __class__.__name__, output_directory)
 
     def __start_doc_gen(self):
         DocumentGenerator.create_directory(self.output_directory)
@@ -88,8 +89,23 @@ class DocumentGenerator(ABC):
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
         self.generated_documents.append(generated_file)
-        app_logger.info("[%s] Created new output file: %s", __class__.__name__, generated_file, )
+        app_logger.debug("[%s] Created new output file: %s", __class__.__name__, generated_file, )
 
     @abstractmethod
     def prepare_data(self):
         pass
+
+    def upload_files_to_remote_drive(self):
+        # TODO check if file uploaded if not retry
+        # Check if file exists if not upload
+        # use specified folder id stored in database
+        for file in self.generated_documents:
+            file_id = None
+            if 'pdf' in file:
+                file_id = GoogleDriveCommands.upload_file(path_to_file=file,
+                                                          mime_type=PDF_MIME_TYPE)
+            elif "docx" in file:
+                file_id = GoogleDriveCommands.upload_file(path_to_file=file,
+                                                          mime_type=DOCX_MIME_TYPE)
+            if file_id:
+                app_logger.info(f"File '{file}' successfully uploaded with id {file_id}")

@@ -12,9 +12,9 @@ class RegisterResource(Resource):
     def get(cls, program_id):
         register_generator: DocumentGenerator = RegisterGenerator(program_id)
         register_generator.generate()
-        args = request.args
-        print(f"Args: {args}")
-        if register_generator:
+
+        if register_generator and register_generator.generated_documents:
+            register_generator.upload_files_to_remote_drive()
             return {
                 'documents': register_generator.generated_documents
             }, 200

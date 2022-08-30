@@ -70,6 +70,20 @@ def remote_folders_list():
     return {'remote_folders': res}, 200
 
 
+@app.route("/show_logs")
+@roles_required([AllowedRoles.admin.name])
+def show_logs():
+    log_res = ""
+    with open("rykosystem.log", 'r+') as log_file:
+        log_res = log_file.read()
+        if log_res:
+            app_logger.info(f"{log_res}")
+            log_file.truncate(0)
+        else:
+            return {'message': 'Log file empty'}, 200
+    return {'message': f'Log file data: {log_res}'}, 200
+
+
 if __name__ == '__main__':
     from db import db
 
