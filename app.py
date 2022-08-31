@@ -15,6 +15,7 @@ from resources.user import UserResource, User, UserLogin, UserLogout, RefreshTok
 from resources.register import RegisterResource
 from google_drive import GoogleDriveCommands
 from helpers import to_json
+from resources.week import WeekResource, WeekRegister, WeeksResource
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -62,6 +63,11 @@ api.add_resource(CompaniesResource, '/company/all')
 api.add_resource(ProgramResource, '/program/<int:program_id>')
 api.add_resource(ProgramRegister, '/program')
 api.add_resource(ProgramsResource, '/program/all')
+
+api.add_resource(WeekResource, '/week/<int:week_id>')
+api.add_resource(WeekRegister, '/week')
+api.add_resource(WeeksResource, '/week/all')
+
 
 api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
 

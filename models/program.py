@@ -2,6 +2,7 @@ from db import db
 from models.base_database_query import BaseDatabaseQuery
 from helpers import DataConverter
 
+
 class ProgramModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'program'
 
@@ -49,4 +50,3 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
         DataConverter.replace_date_to_converted(data, "start_date")
         DataConverter.replace_date_to_converted(data, "end_date")
         return data
-

@@ -1,4 +1,12 @@
 from db import db
+from marshmallow import Schema, fields
+
+
+class ProgramQuerySchema(Schema):
+    program_id = fields.Int(required=True)
+
+
+program_schema = ProgramQuerySchema()
 
 
 class BaseDatabaseQuery:
@@ -27,3 +35,7 @@ class BaseDatabaseQuery:
     @classmethod
     def all(cls):
         return cls.query.all()
+
+    @classmethod
+    def all_filtered_by_program(cls, program_id):
+        return cls.query.filter_by(program_id=program_id)
