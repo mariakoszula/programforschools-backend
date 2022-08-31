@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse, request
-from accesscontrol import roles_required, AllowedRoles
+from auth.accesscontrol import roles_required, AllowedRoles
 from models.week import WeekModel
-from helpers import DataConverter
+from helpers.data_converter import DataConverter
 from models.base_database_query import program_schema
 
 
@@ -36,9 +36,9 @@ class WeekRegister(Resource):
             week = WeekModel(**data)
             week.save_to_db()
         except ValueError as e:
-            return {'message': f'{e}'}, 400
+            return {'error': f'{e}'}, 400
         except Exception as e:
-            return {'message': f'Week not saved due to {e}'}, 500
+            return {'error': f'Week not saved due to {e}'}, 500
         return {
                    'week': week.json(),
                    'message': f"Added' {week.week_no} for program {week.program_id} to database"

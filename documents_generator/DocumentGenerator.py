@@ -1,24 +1,22 @@
-from logger import app_logger
+from helpers.logger import app_logger
 from mailmerge import MailMerge
 from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
-from config_parser import config_parser
+from helpers.config_parser import config_parser
 from typing import List
 import subprocess
-from google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE
+from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE
 
 
 class DocumentGenerator(ABC):
     PDF_GENERATION_TRIES = 5
-    DOCUMENT_DIR = config_parser.get('DocTemplates', 'output_dir')
 
     def __init__(self, template_document, output_directory, output_name):
         if not path.exists(template_document):
             app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
         self.generated_documents: List[str] = []
-        self.output_directory = path.join(DocumentGenerator.DOCUMENT_DIR,
-                                          output_directory)
+        self.output_directory = output_directory
         self.output_doc_name = output_name
 
         self.template_document = template_document
@@ -26,10 +24,6 @@ class DocumentGenerator(ABC):
         self.__fields_to_merge = self._document.get_merge_fields()
 
         super(DocumentGenerator, self).__init__()
-
-    @staticmethod
-    def get_output_dir(additional_name_part: str):
-        return f"{config_parser.get('DocNames', 'main_dir')}{additional_name_part}"
 
     def generate(self, gen_pdf=True) -> None:
         self.prepare_data()
@@ -109,3 +103,4 @@ class DocumentGenerator(ABC):
                                                           mime_type=DOCX_MIME_TYPE)
             if file_id:
                 app_logger.info(f"File '{file}' successfully uploaded with id {file_id}")
+

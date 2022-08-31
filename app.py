@@ -1,20 +1,20 @@
 import datetime
 from os import environ
 from flask_cors import CORS
-from config_parser import config_parser
+from helpers.config_parser import config_parser
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
-from logger import app_logger
+from helpers.logger import app_logger
 
-from accesscontrol import roles_required, AllowedRoles
+from auth.accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
-from google_drive import GoogleDriveCommands
-from helpers import to_json
+from helpers.google_drive import GoogleDriveCommands
+from helpers.json_encoder import to_json
 from resources.week import WeekResource, WeekRegister, WeeksResource
 
 app = Flask(__name__)
@@ -78,10 +78,10 @@ def main_page():
     return {'message': "You've entered home page"}, 200
 
 
-@app.route("/remote_folders_list")
+@app.route("/remote_folders_list/<string:google_id>")
 @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-def remote_folders_list():
-    res = to_json(GoogleDriveCommands.search())
+def remote_folders_list(google_id: str):
+    res = to_json(GoogleDriveCommands.search(parent_id=google_id))
     return {'remote_folders': res}, 200
 
 
@@ -100,7 +100,7 @@ def show_logs():
 
 
 if __name__ == '__main__':
-    from db import db
+    from helpers.db import db
 
 
     @app.before_first_request

@@ -1,7 +1,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import db
+from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from accesscontrol import AllowedRoles
+from auth.accesscontrol import AllowedRoles
 
 
 class Role(db.Model):

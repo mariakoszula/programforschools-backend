@@ -1,9 +1,11 @@
 from flask_restful import Resource, reqparse
 
-from accesscontrol import roles_required, AllowedRoles
+from auth.accesscontrol import roles_required, AllowedRoles
 from models.program import ProgramModel
-from helpers import DataConverter
+from helpers.data_converter import DataConverter
+from helpers.file_folder_creator import DirectoryCreator
 import copy
+from models.directory_tree import DirectoryTreeModel
 
 _program_parser = reqparse.RequestParser()
 _program_parser.add_argument('fruitVeg_price',
@@ -62,25 +64,26 @@ class ProgramRegister(Resource):
         try:
             program = ProgramModel(**data)
             program.save_to_db()
+            main_directory = DirectoryCreator.create_main_directory_tree(program)
+            if not main_directory:
+                program.delete_from_db()
+                return {'error': f'Program not saved because main directory on google drive was not created'}, 500
+            main_directory.save_to_db()
+            for directory in DirectoryCreator.create_directory_tree(program, main_directory):
+                directory.save_to_db()
+        except ValueError as e:
+            return {'error': f"{e}"}, 500
         except Exception as e:
-            return {'message': f'Program not saved due to {e}'}, 500
+            return {'error': f'Program not saved due to {e}'}, 500
         return {
                    'program': program.json(),
-                   'message': f"Added' {program.school_year} for semester {program.semester_no} to database"
+                   'directory_tree': [directory.json() for directory in
+                                      DirectoryTreeModel.all_filtered_by_program(program_id=program.id)],
                }, 201
 
 
 class ProgramResource(Resource):
     parser = copy.deepcopy(_program_parser)
-    parser.add_argument('semester_no',
-                        required=False,
-                        type=int)
-    parser.add_argument('school_year',
-                        required=False,
-                        type=str)
-    parser.add_argument('company_id',
-                        required=False,
-                        type=int)
 
     @classmethod
     def get(cls, program_id):

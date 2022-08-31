@@ -1,5 +1,5 @@
 from app import app
-from db import db
+from helpers.db import db
 
 
 db.init_app(app)

@@ -6,8 +6,8 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 import json
 from os import getenv
-from config_parser import config_parser
-from logger import app_logger
+from helpers.config_parser import config_parser
+from helpers.logger import app_logger
 from os import path
 
 google_service = None
@@ -21,8 +21,7 @@ def setup_google_drive_service(func):
     def wrapper(*args, **kwargs):
         global google_service
         if google_service:
-            func(*args, **kwargs)
-            return
+            return func(*args, **kwargs)
         if not getenv('GOOGLE_DRIVE_AUTH'):
             app_logger.error(
                 f"Google Drive won't work properly, need to setup 'GOOGLE_DRIVE_AUTH' variable with service account info")
@@ -72,13 +71,13 @@ class GoogleDriveCommands:
             app_logger.debug(f"Directory has been created with ID: {folder.get('id')}")
         except HttpError as error:
             app_logger.error(f"Error during creation '{directory_name}' in '{parent_directory_id}': {error}")
-            return None
+            raise ValueError(f"'{directory_name}' failed to create")
         return folder.get("id")
 
     @staticmethod
     @setup_google_drive_service
-    def search(parent_id=config_parser.get('DocTemplates', 'google_drive_id'),
-               mime_type_query=f"={DIR_MIME_TYPE}",
+    def search(parent_id=config_parser.get('GoogleDriveConfig', 'google_drive_id'),
+               mime_type_query=f"='{DIR_MIME_TYPE}'",
                recursive_search=True) -> List[FileData]:
         found = []
         page_token = None

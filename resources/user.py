@@ -2,7 +2,7 @@ from flask_restful import Resource, reqparse
 from models.user import UserModel, Role, AllowedRoles
 from flask_jwt_extended import create_access_token, create_refresh_token, \
     jwt_required, get_jwt, get_jwt_identity
-from accesscontrol import roles_required, handle_exception_pretty
+from auth.accesscontrol import roles_required, handle_exception_pretty
 import copy
 
 _user_parser = reqparse.RequestParser()
@@ -40,7 +40,7 @@ class UserResource(Resource):
             user = UserModel(**data)
             user.save_to_db()
         except Exception as e:
-            return {'message': f'User not saved due to {e}'}, 500
+            return {'error': f'User not saved due to {e}'}, 500
         return {'message': f'Added {user.email} to database'}, 201
 
 

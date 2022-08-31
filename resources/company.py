@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 
-from accesscontrol import roles_required, AllowedRoles
+from auth.accesscontrol import roles_required, AllowedRoles
 from models.company import CompanyModel
 
 
@@ -40,7 +40,7 @@ class CompanyRegister(Resource):
             company = CompanyModel(**data)
             company.save_to_db()
         except Exception as e:
-            return {'message': f'Company not saved due to {e}'}, 500
+            return {'error': f'Company not saved due to {e}'}, 500
         return {
                    'id': company.id,
                    'message': f"Added' {company.name}' to database"

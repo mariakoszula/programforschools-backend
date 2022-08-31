@@ -1,4 +1,4 @@
-from db import db
+from helpers.db import db
 from marshmallow import Schema, fields
 
 
@@ -10,10 +10,12 @@ program_schema = ProgramQuerySchema()
 
 
 class BaseDatabaseQuery:
-
     @classmethod
     def find_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+        model = cls.query.filter_by(id=_id).first()
+        if not model:
+            raise ValueError(f"Data in table '{cls.__tablename__}' with id: '{_id}' does not exist.")
+        return model
 
     def save_to_db(self):
         db.session.add(self)
@@ -39,3 +41,4 @@ class BaseDatabaseQuery:
     @classmethod
     def all_filtered_by_program(cls, program_id):
         return cls.query.filter_by(program_id=program_id)
+

@@ -1,6 +1,6 @@
-from db import db
+from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from helpers import DataConverter
+from helpers.data_converter import DataConverter
 
 
 class WeekModel(db.Model, BaseDatabaseQuery):
