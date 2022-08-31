@@ -1,5 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import db
+from models.base_database_query import BaseDatabaseQuery
 from accesscontrol import AllowedRoles
 
 
@@ -24,11 +25,11 @@ class Role(db.Model):
         return self.name.name
 
 
-class UserModel(db.Model):
+class UserModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80),  unique=True)
+    username = db.Column(db.String(80), unique=True)
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(80), unique=True)
 
@@ -43,17 +44,10 @@ class UserModel(db.Model):
         self.username = username
         self.password_hash = generate_password_hash(password)
         self.email = email
+        super(BaseDatabaseQuery).__init__()
 
     def validate_password(self, password):
         return check_password_hash(self.password_hash, password)
-
-    def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete_from_db(self):
-        db.session.delete(self)
-        db.session.commit()
 
     @classmethod
     def find(cls, username):
@@ -63,18 +57,10 @@ class UserModel(db.Model):
     def find_by_email(cls, email):
         return cls.query.filter_by(email=email).first()
 
-    @classmethod
-    def find_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
-
-    @classmethod
-    def users(cls):
-        return cls.query.all()
-
     def json(self):
-        return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'role': self.role.json()
-        }
+        data: {} = super().json()
+        data["role"] = self.role.json()
+        del data["id"]
+        del data["password_hash"]
+        del data["role_id"]
+        return data

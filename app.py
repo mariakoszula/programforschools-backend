@@ -9,6 +9,8 @@ from logger import app_logger
 
 from accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
+from resources.company import CompanyResource, CompaniesResource, CompanyRegister
+from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
 from google_drive import GoogleDriveCommands
@@ -53,7 +55,14 @@ api.add_resource(UserLogin, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(RefreshToken, '/refresh')
 
-#create_register?program=1 TODO check if you can use this
+api.add_resource(CompanyResource, '/company/<int:company_id>')
+api.add_resource(CompanyRegister, '/company')
+api.add_resource(CompaniesResource, '/company/all')
+
+api.add_resource(ProgramResource, '/program/<int:program_id>')
+api.add_resource(ProgramRegister, '/program')
+api.add_resource(ProgramsResource, '/program/all')
+
 api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
 
 

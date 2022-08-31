@@ -104,7 +104,7 @@ class Users(Resource):
     @classmethod
     @roles_required([AllowedRoles.admin.name])
     def get(cls):
-        users: UserModel = UserModel.users()
+        users: UserModel = UserModel.all()
         if not users:
             return {'message': 'No users found'}, 200
         return {'users': [user.id for user in users]}, 200
