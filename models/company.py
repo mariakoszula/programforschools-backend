@@ -9,12 +9,14 @@ class CompanyModel(db.Model, BaseDatabaseQuery):
     name = db.Column(db.String(80), unique=True, nullable=False)
     nip = db.Column(db.String(80), unique=True, nullable=False)
     regon = db.Column(db.String(80), unique=True, nullable=False)
-    address = db.Column(db.String(120), unique=True, nullable=False)
-    address_for_documents = db.Column(db.String(120), unique=True, nullable=False)
+    street = db.Column(db.String(120), unique=True, nullable=False)
+    city = db.Column(db.String(120), unique=True, nullable=False)
+    code = db.Column(db.String(120), unique=True, nullable=False)
 
-    def __init__(self, name, nip, regon, address, address_for_documents):
-        self.address_for_documents = address_for_documents
-        self.address = address
+    def __init__(self, name, nip, regon, street, city, code):
+        self.code = code
+        self.city = city
+        self.street = street
         self.regon = regon
         self.nip = nip
         self.name = name

@@ -11,6 +11,7 @@ from auth.accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
+from resources.school import SchoolResource, SchoolRegister, SchoolsResource
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
 from helpers.google_drive import GoogleDriveCommands
@@ -68,6 +69,10 @@ api.add_resource(WeekResource, '/week/<int:week_id>')
 api.add_resource(WeekRegister, '/week')
 api.add_resource(WeeksResource, '/week/all')
 
+
+api.add_resource(SchoolResource, '/school/<int:school_id>')
+api.add_resource(SchoolRegister, '/school')
+api.add_resource(SchoolsResource, '/school/all')
 
 api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
 

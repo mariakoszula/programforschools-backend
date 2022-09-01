@@ -4,7 +4,7 @@ from helpers.data_converter import DataConverter
 
 
 class WeekModel(db.Model, BaseDatabaseQuery):
-    __tablename__ = 'weeks'
+    __tablename__ = 'week'
 
     id = db.Column(db.Integer, primary_key=True)
     week_no = db.Column(db.Integer, nullable=False)
