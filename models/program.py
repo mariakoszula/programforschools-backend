@@ -23,9 +23,9 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
 
     db.UniqueConstraint('school_year', 'semester_no')
 
-    def __init__(self, semester_no, school_year, company_id, fruitVeg_price=0, dairy_price=0,
-                 start_date=None, end_date=None, dairy_min_per_week=0, fruitVeg_min_per_week=0,
-                 dairy_amount=0, fruitVeg_amount=0):
+    def __init__(self, semester_no, school_year, company_id, fruitVeg_price=None, dairy_price=None,
+                 start_date=None, end_date=None, dairy_min_per_week=None, fruitVeg_min_per_week=None,
+                 dairy_amount=None, fruitVeg_amount=None):
         self.fruitVeg_amount = fruitVeg_amount
         self.dairy_amount = dairy_amount
         self.fruitVeg_min_per_week = fruitVeg_min_per_week

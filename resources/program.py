@@ -8,6 +8,10 @@ import copy
 from models.directory_tree import DirectoryTreeModel
 
 _program_parser = reqparse.RequestParser()
+_program_parser.add_argument('dairy_price',
+                             required=False,
+                             type=float,
+                             help="Dairy price should be in 0.0 format")
 _program_parser.add_argument('fruitVeg_price',
                              required=False,
                              type=float,
@@ -109,7 +113,7 @@ class ProgramResource(Resource):
         if not program:
             return {'message': f'Program {program_id} does not exists'}, 404
         program.update_db(**data)
-        return {'message': f'Program {program_id} updated'}, 200
+        return {'program': program.json()}, 200
 
 
 class ProgramsResource(Resource):

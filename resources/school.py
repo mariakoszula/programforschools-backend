@@ -23,7 +23,7 @@ _school_parser.add_argument('regon',
 _school_parser.add_argument('email',
                             required=False,
                             type=str)
-_school_parser.add_argument('email',
+_school_parser.add_argument('phone',
                             required=False,
                             type=str)
 _school_parser.add_argument('responsible_person',
@@ -73,7 +73,7 @@ class SchoolResource(Resource):
         if not school:
             return {'message': f'School {school_id} does not exists'}, 404
         school.update_db(**data)
-        return {'message': f'School {school_id} updated'}, 200
+        return {'school': school.json()}, 200
 
     @classmethod
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -101,4 +101,4 @@ class SchoolsResource(Resource):
         schools = SchoolModel.all()
         if not schools:
             return {'message': 'No schools found'}, 200
-        return {'programs': [school.json() for school in schools]}, 200
+        return {'schools': [school.json() for school in schools]}, 200
