@@ -21,9 +21,14 @@ CreateDirectoryResults = namedtuple("CreateDirectoryResults", "should_insert dir
 class DirectoryCreator:
     @staticmethod
     def get_main_dir(school_year: str, semester_no: int):
+        return f"{config_parser.get('Directories', 'main_dir_program_part')}_" \
+               f"{DirectoryCreator.get_part_with_year_and_sem(school_year, semester_no)}"
+
+    @staticmethod
+    def get_part_with_year_and_sem(school_year: str, semester_no: int):
         if "/" in school_year:
             school_year = school_year.replace("/", "_")
-        return f"{config_parser.get('Directories', 'main_dir_program_part')}_{school_year}_" \
+        return f"{school_year}_" \
                f"{config_parser.get('Directories', 'main_sem_dir_part')}_{semester_no}"
 
     @staticmethod

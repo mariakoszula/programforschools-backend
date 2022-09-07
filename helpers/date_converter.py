@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-class DataConverter:
+class DateConverter:
     COMMON_VIEW_DATE_PATTERN = '%d.%m.%Y'
 
     @staticmethod
@@ -16,4 +16,9 @@ class DataConverter:
     @staticmethod
     def replace_date_to_converted(data: dict, key):
         if data[key]:
-            data[key] = DataConverter.convert_date_to_string(data[key])
+            data[key] = DateConverter.convert_date_to_string(data[key])
+
+    @staticmethod
+    def get_year():
+        now = datetime.now()
+        return now.year

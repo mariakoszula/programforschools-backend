@@ -1,6 +1,6 @@
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from helpers.data_converter import DataConverter
+from helpers.date_converter import DateConverter
 
 
 class ProgramModel(db.Model, BaseDatabaseQuery):
@@ -47,6 +47,13 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
 
     def json(self):
         data: {} = super().json()
-        DataConverter.replace_date_to_converted(data, "start_date")
-        DataConverter.replace_date_to_converted(data, "end_date")
+        DateConverter.replace_date_to_converted(data, "start_date")
+        DateConverter.replace_date_to_converted(data, "end_date")
         return data
+
+    def get_current_semester(self):
+        if self.semester_no == 1:
+            return "I"
+        elif self.semester_no == 2:
+            return "II"
+        raise ValueError(f"Not supported semester number {self.semester_no}")

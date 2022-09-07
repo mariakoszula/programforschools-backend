@@ -3,7 +3,6 @@ from mailmerge import MailMerge
 from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
-from helpers.config_parser import config_parser
 from typing import List
 import subprocess
 from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE

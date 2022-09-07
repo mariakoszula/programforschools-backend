@@ -1,6 +1,6 @@
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from helpers.data_converter import DataConverter
+from helpers.date_converter import DateConverter
 
 
 class WeekModel(db.Model, BaseDatabaseQuery):
@@ -25,8 +25,8 @@ class WeekModel(db.Model, BaseDatabaseQuery):
 
     def json(self):
         data: {} = super().json()
-        DataConverter.replace_date_to_converted(data, "start_date")
-        DataConverter.replace_date_to_converted(data, "end_date")
+        DateConverter.replace_date_to_converted(data, "start_date")
+        DateConverter.replace_date_to_converted(data, "end_date")
         return data
 
     @classmethod
