@@ -136,7 +136,8 @@ class ContractsAllResource(Resource):
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls, program_id):
         all_contracts = ContractModel.all_filtered_by_program(program_id)
-        return {'contracts': [contract.json() for contract in all_contracts]}, 200
+        return {'contracts': [contract.json()
+                              for contract in all_contracts]}, 200
 
 
 class AnnexResource(Resource):
@@ -163,8 +164,8 @@ class AnnexResource(Resource):
 
     @staticmethod
     def validate_product(data):
-        if not data.get("dairy_products") and not data.get("fruitVeg_products"):
-            raise ValueError(f'One of two is required: dairy_products or fruitVeg_products')
+        if not (data.get("dairy_products") and data.get("fruitVeg_products")):
+            raise ValueError(f'dairy_products and fruitVeg_products are required')
 
     @staticmethod
     def get_contract(contract_id):

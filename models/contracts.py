@@ -4,6 +4,7 @@ from helpers.date_converter import DateConverter
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
 from models.program import ProgramModel
+from models.school import SchoolModel
 
 
 class ContractModel(db.Model, BaseDatabaseQuery):
@@ -37,6 +38,8 @@ class ContractModel(db.Model, BaseDatabaseQuery):
     def json(self):
         data: {} = super().json()
         DateConverter.replace_date_to_converted(data, "validity_date")
+        data['school'] = SchoolModel.find_by_id(self.school_id).json()
+        data['annex'] = [annex.json() for annex in self.annex]
         return data
 
     @classmethod
