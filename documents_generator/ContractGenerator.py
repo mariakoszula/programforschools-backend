@@ -9,26 +9,6 @@ from os import path
 class ContractGenerator(DocumentGenerator):
     FILL_WITH_EMPTY = "................................................................"
 
-    def __init__(self, contract: ContractModel, date, omit_representative=False, empty=False):
-        self.contract = contract
-        self.omit_representative = omit_representative
-        self.date = date
-        program_dir = DirectoryCreator.get_main_dir(school_year=self.contract.program.school_year,
-                                                    semester_no=self.contract.program.semester_no)
-        doc_template = config_parser.get('DocTemplates', 'contract') if not empty else config_parser.get('DocTemplates',
-                                                                                                         'contract_empty')
-        DocumentGenerator.__init__(self,
-                                   template_document=path.join(config_parser.get('DocTemplates', 'directory'),
-                                                               DirectoryCreator.get_part_with_year_and_sem(
-                                                                   school_year=self.contract.program.school_year,
-                                                                   semester_no=self.contract.program.semester_no),
-                                                               doc_template),
-                                   output_directory=path.join(program_dir,
-                                                              config_parser.get('Directories', 'contract')),
-                                   output_name="{0}_Umowa_{1}_{2}.docx".format(self.contract.school.nick.strip(),
-                                                                               self.contract.contract_no,
-                                                                               self.contract.contract_year))
-
     def prepare_data(self):
         self._document.merge(
             city=self.contract.school.city,
@@ -49,6 +29,27 @@ class ContractGenerator(DocumentGenerator):
             name_additional=self.contract.school.representative if self.contract.school.representative else "-",
             regon_additional=self.contract.school.representative_regon if self.contract.school.representative_regon else "-",
             giving_weeks=ContractGenerator._prepare_str_from_weeks(self.contract.program.weeks))
+
+    def __init__(self, contract: ContractModel, date, omit_representative=False, empty=False):
+        self.contract = contract
+        self.omit_representative = omit_representative
+        self.date = date
+        program_dir = DirectoryCreator.get_main_dir(school_year=self.contract.program.school_year,
+                                                    semester_no=self.contract.program.semester_no)
+        doc_template = config_parser.get('DocTemplates', 'contract') if not empty else config_parser.get('DocTemplates',
+                                                                                                         'contract_empty')
+        DocumentGenerator.__init__(self,
+                                   template_document=path.join(config_parser.get('DocTemplates', 'directory'),
+                                                               DirectoryCreator.get_part_with_year_and_sem(
+                                                                   school_year=self.contract.program.school_year,
+                                                                   semester_no=self.contract.program.semester_no),
+                                                               doc_template),
+                                   output_directory=path.join(program_dir,
+                                                              config_parser.get('Directories', 'contract')),
+                                   output_name=config_parser.get('DocNames', 'contract').format(
+                                       self.contract.school.nick.strip(),
+                                       self.contract.contract_no,
+                                       self.contract.contract_year))
 
     @staticmethod
     def _prepare_str_from_weeks(weeks):

@@ -21,7 +21,7 @@ class RegisterResource(Resource):
         if register_generator and register_generator.generated_documents:
             register_generator.upload_files_to_remote_drive()
             return {
-                'documents': register_generator.generated_documents
+                'documents': [str(document) for document in register_generator.generated_documents]
             }, 200
         return {'message': 'No files created'}, 204
 

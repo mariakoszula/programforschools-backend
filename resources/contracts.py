@@ -3,8 +3,10 @@ from typing import List
 from flask import request
 from flask_restful import Resource, reqparse
 from marshmallow import fields, Schema
+from sqlalchemy.exc import SQLAlchemyError
 
 from auth.accesscontrol import roles_required, handle_exception_pretty
+from documents_generator.AnnexGenerator import AnnexGenerator
 from documents_generator.ContractGenerator import ContractGenerator
 from models.base_database_query import ProgramQuerySchema
 from models.contracts import ContractModel, AnnexModel
@@ -48,20 +50,32 @@ def find_contract(school_id, program_id):
         app_logger.error(f"Contract not saved due to {e}")
 
 
-def update_contract_in_database(contract, **patch_to_update):
+def update_contract_in_database(school_id, program_id, **patch_to_update):
     try:
+        contract: ContractModel = find_contract(school_id, program_id)
         if not contract:
-            contract = ContractModel(contract.school.id, contract.program)
+            contract = ContractModel(school_id, ProgramModel.find_by_id(program_id))
             contract.save_to_db()
         else:
+            patch_to_update["validity_date"] = contract.program.start_date
             contract.update_db(**patch_to_update)
         return contract
-    except Exception as e:
+    except SQLAlchemyError as e:
         app_logger.error(f"Contract not saved due to {e}")
 
 
 def get_school_list(schools_input):
     return [int(school_id) for school_id in schools_input.split(",")]
+
+
+def generate_documents(gen, **kwargs):
+    try:
+        generator = gen(**kwargs, date=request.args["date"])
+        generator.generate()
+        generator.upload_files_to_remote_drive()
+        return [str(document) for document in generator.generated_documents]
+    except TypeError as e:
+        app_logger.error(f"{gen}: Problem occurred during document generation '{e}'")
 
 
 class ContractsCreateResource(Resource):
@@ -75,27 +89,17 @@ class ContractsCreateResource(Resource):
         program_id = request.args["program_id"]
         contracts: List[ContractModel] = []
         for school_id in get_school_list(request.args["schools_list"]):
-            contract: ContractModel = find_contract(school_id, program_id)
-            data_to_update = {}
+            contract = update_contract_in_database(school_id=school_id, program_id=program_id)
             if contract:
-                data_to_update["validity_date"]=contract.program.start_date
-            results = update_contract_in_database(contract, **data_to_update)
-            if results:
-                contracts.append(results)
+                contracts.append(contract)
 
-        documents_to_upload = []
-        try:
-            for contract in contracts:
-                contract_generator: ContractGenerator = ContractGenerator(contract=contract,
-                                                                          date=request.args["date"])
-                contract_generator.generate()
-                documents_to_upload.extend(contract_generator.generated_documents)
-        except TypeError as e:
-            return {"message": f"Problem occurred during contract generation {e}"}, 500
+        uploaded_documents = []
+        for contract in contracts:
+            uploaded_documents.extend(generate_documents(gen=ContractGenerator, contract=contract))
 
         # TODO put documents on google drive links to uploaded documnet return here
         return {'contracts': [contract.json() for contract in contracts],
-                'documents': []}, 200
+                'documents': uploaded_documents}, 200
 
 
 class ContractResource(Resource):
@@ -119,7 +123,7 @@ class ContractResource(Resource):
         parser.add_argument('dairy_products',
                             required=False,
                             type=int)
-        contract = update_contract_in_database(contract=find_contract(school_id, program_id),
+        contract = update_contract_in_database(school_id=school_id, program_id=program_id,
                                                **parser.parse_args())
         if not contract:
             return {'message': f'Contract not found for school: {school_id} and program: {program_id}'}, 400
@@ -151,8 +155,10 @@ class AnnexResource(Resource):
     def validate_dates(data, query_args):
         errors = date_query.validate(query_args)
         if errors:
-            raise ValueError(f"{errors}")
-        if data.get("validity_date") and query_args["date"] and data["validity_date"] < query_args["date"]:
+            raise ValueError(f"date: {errors['date']}")
+        if data.get("validity_date") and query_args["date"] \
+                and DateConverter.convert_to_date(data["validity_date"]) < DateConverter.convert_to_date(
+            query_args["date"]):
             raise ValueError(f'validity_date < sign_date')
 
     @staticmethod
@@ -188,16 +194,15 @@ class AnnexResource(Resource):
             annex = AnnexModel.find(validity_date=data["validity_date"], contract_id=contract.id)
             data = dict((filter((lambda elem: elem[1]), data.items())))
             if not annex:
-                AnnexResource.validate_product()
+                AnnexResource.validate_product(data)
                 annex = AnnexModel(contract=contract, **data)
                 annex.save_to_db()
             else:
                 annex.update_db(**data)
-            # TODO generate documents and upload; annex link
             return {'annex': annex.json(),
-                    'documents': ''}, 200
+                    'documents': generate_documents(gen=AnnexGenerator, annex=annex)}, 200
         except ValueError as e:
-            return {'message': e}, 400
+            return {'message': f"{e}"}, 400
         except Exception as e:
             app_logger.error(f"Annex not saved due to {e}")
             return {'message': f'Could not create annex error: {e}'}, 500

@@ -13,7 +13,6 @@ class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
 
     program = db.relationship('ProgramModel', backref=db.backref('directorytree', lazy=True))
-    program = db.relationship('DirectoryTreeModel')
     db.UniqueConstraint('name', 'program_id', 'parent_id')
 
     def __init__(self, name, google_id, program_id, parent_id=None):
@@ -21,6 +20,18 @@ class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
         self.google_id = google_id
         self.program_id = program_id
         self.parent_id = parent_id
+
+    @classmethod
+    def get_google_parent_directory(cls, path_to_file):
+        directories = path_to_file.split("/")
+        directories = directories[:-1]
+        parent_dir = cls.query.filter_by(name=directories[0]).one()
+        directories = directories[1:]
+        if directories:
+            while directories:
+                parent_dir = cls.query.filter_by(parent_id=parent_dir.id, name=directories[0]).one()
+                directories = directories[1:]
+        return parent_dir
 
     @classmethod
     def find_by_google_id(cls, google_id):

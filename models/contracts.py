@@ -48,21 +48,23 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'annex'
     id = db.Column(db.Integer, primary_key=True)
 
+    no = db.Column(db.Integer, nullable=False)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), nullable=False)
     contract = db.relationship('ContractModel',  backref=db.backref('annex', lazy=True, order_by='AnnexModel.validity_date.desc()'))
     validity_date = db.Column(db.DateTime, nullable=False)
     fruitVeg_products = db.Column(db.Integer, nullable=False)
     dairy_products = db.Column(db.Integer, nullable=False)
-    db.UniqueConstraint('validity_date', 'contract_id')
+    db.UniqueConstraint('validity_date', 'contract_id', 'no')
 
     def __init__(self, contract, validity_date, fruitVeg_products=None, dairy_products=None):
         self.contract_id = contract.id
         self.validity_date = validity_date
         self.fruitVeg_products = fruitVeg_products if fruitVeg_products else contract.fruitVeg_products
         self.dairy_products = dairy_products if dairy_products else contract.dairy_products
+        self.no = len(contract.annex) + 1
 
     def __str__(self):
-        return f"{self.contract.contract_no}_{self.contract.contract_year}: {self.validity_date}"
+        return f"{self.no}: {self.contract.contract_no}_{self.contract.contract_year} - {self.validity_date}"
 
     def __repr__(self):
         return str(self)
