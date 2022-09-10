@@ -57,7 +57,7 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     validity_date = db.Column(db.DateTime, nullable=False)
     fruitVeg_products = db.Column(db.Integer, nullable=False)
     dairy_products = db.Column(db.Integer, nullable=False)
-    db.UniqueConstraint('validity_date', 'contract_id', 'no')
+    db.UniqueConstraint('contract_id', 'no')
 
     def __init__(self, contract, validity_date, fruitVeg_products=None, dairy_products=None):
         self.contract_id = contract.id
