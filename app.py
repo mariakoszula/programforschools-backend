@@ -10,7 +10,10 @@ from helpers.logger import app_logger
 from auth.accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
+from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
+     AnnexResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
+from resources.school import SchoolResource, SchoolRegister, SchoolsResource
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
 from helpers.google_drive import GoogleDriveCommands
@@ -69,7 +72,16 @@ api.add_resource(WeekRegister, '/week')
 api.add_resource(WeeksResource, '/week/all')
 
 
+api.add_resource(SchoolResource, '/school/<int:school_id>')
+api.add_resource(SchoolRegister, '/school')
+api.add_resource(SchoolsResource, '/school/all')
+
 api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
+
+api.add_resource(ContractsCreateResource, '/create_contracts')
+api.add_resource(ContractResource, '/contract/<int:program_id>/<int:school_id>')
+api.add_resource(ContractsAllResource, '/contracts/<int:program_id>/all')
+api.add_resource(AnnexResource, '/annex/<int:contract_id>')
 
 
 @app.route("/")

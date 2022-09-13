@@ -1,6 +1,6 @@
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from helpers.data_converter import DataConverter
+from helpers.date_converter import DateConverter
 
 
 class ProgramModel(db.Model, BaseDatabaseQuery):
@@ -23,9 +23,9 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
 
     db.UniqueConstraint('school_year', 'semester_no')
 
-    def __init__(self, semester_no, school_year, company_id, fruitVeg_price=0, dairy_price=0,
-                 start_date=None, end_date=None, dairy_min_per_week=0, fruitVeg_min_per_week=0,
-                 dairy_amount=0, fruitVeg_amount=0):
+    def __init__(self, semester_no, school_year, company_id, fruitVeg_price=None, dairy_price=None,
+                 start_date=None, end_date=None, dairy_min_per_week=None, fruitVeg_min_per_week=None,
+                 dairy_amount=None, fruitVeg_amount=None):
         self.fruitVeg_amount = fruitVeg_amount
         self.dairy_amount = dairy_amount
         self.fruitVeg_min_per_week = fruitVeg_min_per_week
@@ -47,6 +47,13 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
 
     def json(self):
         data: {} = super().json()
-        DataConverter.replace_date_to_converted(data, "start_date")
-        DataConverter.replace_date_to_converted(data, "end_date")
+        DateConverter.replace_date_to_converted(data, "start_date")
+        DateConverter.replace_date_to_converted(data, "end_date")
         return data
+
+    def get_current_semester(self):
+        if self.semester_no == 1:
+            return "I"
+        elif self.semester_no == 2:
+            return "II"
+        raise ValueError(f"Not supported semester number {self.semester_no}")

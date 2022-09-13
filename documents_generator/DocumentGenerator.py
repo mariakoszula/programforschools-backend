@@ -3,10 +3,10 @@ from mailmerge import MailMerge
 from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
-from helpers.config_parser import config_parser
 from typing import List
 import subprocess
-from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE
+from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData
+from models.directory_tree import DirectoryTreeModel
 
 
 class DocumentGenerator(ABC):
@@ -15,7 +15,7 @@ class DocumentGenerator(ABC):
     def __init__(self, template_document, output_directory, output_name):
         if not path.exists(template_document):
             app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
-        self.generated_documents: List[str] = []
+        self.generated_documents: List[FileData] = []
         self.output_directory = output_directory
         self.output_doc_name = output_name
 
@@ -31,8 +31,7 @@ class DocumentGenerator(ABC):
         try:
             self.__end_doc_gen(file)
             if gen_pdf:
-                output = DocumentGenerator.generate_pdf(file, self.output_directory)
-                self.generated_documents.append(output)
+                self._generate_pdf(file)
         except ValueError as e:
             app_logger.error("Problem occurred during generating document. [%s]", e)
 
@@ -48,6 +47,10 @@ class DocumentGenerator(ABC):
                 remove(path.join(dest))
             copy(source, new_dst)
             rename(path.join(new_dst, old_file_name), path.join(new_dst, new_file_name))
+
+    def _generate_pdf(self, docx_to_convert):
+        output = DocumentGenerator.generate_pdf(docx_to_convert, self.output_directory)
+        self.generated_documents.append(FileData(_name=output, _mime_type=PDF_MIME_TYPE))
 
     @staticmethod
     def generate_pdf(docx_to_convert, output_dir) -> str:
@@ -82,7 +85,7 @@ class DocumentGenerator(ABC):
         self._document.write(generated_file)
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
-        self.generated_documents.append(generated_file)
+        self.generated_documents.append(FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE))
         app_logger.debug("[%s] Created new output file: %s", __class__.__name__, generated_file, )
 
     @abstractmethod
@@ -90,17 +93,18 @@ class DocumentGenerator(ABC):
         pass
 
     def upload_files_to_remote_drive(self):
-        # TODO check if file uploaded if not retry
-        # Check if file exists if not upload
-        # use specified folder id stored in database
-        for file in self.generated_documents:
-            file_id = None
-            if 'pdf' in file:
-                file_id = GoogleDriveCommands.upload_file(path_to_file=file,
-                                                          mime_type=PDF_MIME_TYPE)
-            elif "docx" in file:
-                file_id = GoogleDriveCommands.upload_file(path_to_file=file,
-                                                          mime_type=DOCX_MIME_TYPE)
-            if file_id:
-                app_logger.info(f"File '{file}' successfully uploaded with id {file_id}")
-
+        # TODO uploaded_file_id does not exists -> retry (3 times or sth)
+        # use specified folder id stored in database based on DirectoryTree model and path_to_file
+        for index, file_data in enumerate(self.generated_documents):
+            parent_dir = DirectoryTreeModel.get_google_parent_directory(file_data.name)
+            uploaded_file_id, web_link = GoogleDriveCommands.upload_file(path_to_file=file_data.name,
+                                                                         mime_type=file_data.mime_type,
+                                                                         parent_id=parent_dir.google_id)
+            if uploaded_file_id:
+                self.generated_documents[index].id = uploaded_file_id
+                self.generated_documents[index].web_view_link = web_link
+                app_logger.info(
+                    f"File '{file_data.name}' successfully uploaded with id {uploaded_file_id} to "
+                    f"{parent_dir}")
+            else:
+                app_logger.error(f"Failed to upload file '{file_data.name}' to {parent_dir}")

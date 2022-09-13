@@ -37,20 +37,19 @@ def setup_google_drive_service(func):
     return wrapper
 
 
-# TODO save folder names with google drive ids --> maybe in database (dir_name, id, program_id)
-# Create basic folder structure and upload when creating new program and generate new contracts
-
-
 class FileData:
-    def __init__(self, _name, _id, _mime_type):
+    def __init__(self, _name, _mime_type, _id=None):
         self.name = _name
-        self.id = _id
         self.mime_type = _mime_type
+        self.id = _id
+        self.web_view_link = None
         super().__init__()
 
     def __str__(self):
-        return f"{self.name} id: {self.id} mimeType: {self.mime_type}"
+        return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
 
+    def __repr__(self):
+        return f"{str(self)} mimeType:{self.mime_type} id:{self.id if self.id else '-'}"
 
 def file_found(name: str, file_list: List[FileData]):
     return name in [file.name for file in file_list]
@@ -87,7 +86,7 @@ class GoogleDriveCommands:
                                                        spaces="drive",
                                                        fields="nextPageToken,  files(id, name, mimeType)").execute()
                 for file in response.get('files', []):
-                    found.append(FileData(file.get("name"), file.get("id"), file.get("mimeType")))
+                    found.append(FileData(_name=file.get("name"), _id=file.get("id"), _mime_type=file.get("mimeType")))
                 if not recursive_search:
                     break
                 page_token = response.get('nextPageToken', None)
@@ -103,17 +102,16 @@ class GoogleDriveCommands:
                     mime_type='application/vnd.google-apps.folder',
                     parent_id='1Sc6UbsrzpAfTq2pq9Ieu7VSn1CGxmGrX'):
         try:
-            app_logger.error(f"file path {path_to_file} file name {path.split(path_to_file)[1]}")
             file_metadata = {
                 'name': path.split(path_to_file)[1],
                 'parents': [parent_id],
                 'mimeType': mime_type
             }
-
             media = MediaFileUpload(path_to_file)
-
-            file = google_service.files().create(body=file_metadata, fields="id", media_body=media).execute()
-            app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}")
-            return file.get('id')
+            file = google_service.files().create(body=file_metadata, fields="id,webViewLink",
+                                                 media_body=media).execute()
+            app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}"
+                             f" webViewLink:{file.get('webViewLink')}")
+            return file.get('id'), file.get('webViewLink')
         except HttpError as error:
             app_logger.error(f"Error during uploading file '{staticmethod}' in '{parent_id}': {error}")

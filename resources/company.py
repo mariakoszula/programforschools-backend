@@ -20,15 +20,19 @@ class CompanyRegister(Resource):
                         type=str,
                         help="Company regon cannot be blank")
 
-    parser.add_argument('address',
+    parser.add_argument('street',
                         required=True,
                         type=str,
-                        help="Company address cannot be blank")
+                        help="Company street cannot be blank")
+    parser.add_argument('city',
+                        required=True,
+                        type=str,
+                        help="Company city cannot be blank")
 
-    parser.add_argument('address_for_documents',
+    parser.add_argument('code',
                         required=True,
                         type=str,
-                        help="Company address_for_documents cannot be blank")
+                        help="Company code cannot be blank")
 
     @classmethod
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -57,9 +61,9 @@ class CompanyResource(Resource):
 
 
 class CompaniesResource(Resource):
-        @classmethod
-        def get(cls):
-            companies = CompanyModel.all()
-            if not companies:
-                return {'message': 'No companies found'}, 200
-            return {'companies': [company.json() for company in companies]}, 200
+    @classmethod
+    def get(cls):
+        companies = CompanyModel.all()
+        if not companies:
+            return {'message': 'No companies found'}, 200
+        return {'companies': [company.json() for company in companies]}, 200

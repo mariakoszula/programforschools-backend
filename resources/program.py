@@ -2,23 +2,27 @@ from flask_restful import Resource, reqparse
 
 from auth.accesscontrol import roles_required, AllowedRoles
 from models.program import ProgramModel
-from helpers.data_converter import DataConverter
+from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
 import copy
 from models.directory_tree import DirectoryTreeModel
 
 _program_parser = reqparse.RequestParser()
+_program_parser.add_argument('dairy_price',
+                             required=False,
+                             type=float,
+                             help="Dairy price should be in 0.0 format")
 _program_parser.add_argument('fruitVeg_price',
                              required=False,
                              type=float,
                              help="FruitVeg price should be in 0.0 format")
 _program_parser.add_argument('start_date',
                              required=False,
-                             type=lambda date: DataConverter.convert_to_date(date),
+                             type=lambda date: DateConverter.convert_to_date(date),
                              help="Start date should be in format DD.MM.YYYY")
 _program_parser.add_argument('end_date',
                              required=False,
-                             type=lambda date: DataConverter.convert_to_date(date),
+                             type=lambda date: DateConverter.convert_to_date(date),
                              help="End date should be in format DD.MM.YYYY")
 _program_parser.add_argument('dairy_min_per_week',
                              required=False,
@@ -109,7 +113,7 @@ class ProgramResource(Resource):
         if not program:
             return {'message': f'Program {program_id} does not exists'}, 404
         program.update_db(**data)
-        return {'message': f'Program {program_id} updated'}, 200
+        return {'program': program.json()}, 200
 
 
 class ProgramsResource(Resource):
