@@ -12,6 +12,8 @@ from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
      AnnexResource
+from resources.product import WeightTypeResource, WeightTypeAllResource, ProductTypeResource, ProductTypeAllResource, \
+    ProductResource, ProductStoreResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
@@ -82,6 +84,13 @@ api.add_resource(ContractsCreateResource, '/create_contracts')
 api.add_resource(ContractResource, '/contract/<int:program_id>/<int:school_id>')
 api.add_resource(ContractsAllResource, '/contracts/<int:program_id>/all')
 api.add_resource(AnnexResource, '/annex/<int:contract_id>')
+
+api.add_resource(WeightTypeResource, '/weight_type')
+api.add_resource(WeightTypeAllResource, '/weight_type/all')
+api.add_resource(ProductTypeResource, '/product_type')
+api.add_resource(ProductTypeAllResource, '/product_type/all')
+api.add_resource(ProductResource, '/product')
+api.add_resource(ProductStoreResource, '/product_store')
 
 
 @app.route("/")
