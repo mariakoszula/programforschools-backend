@@ -100,5 +100,6 @@ class SchoolsResource(Resource):
     def get(cls):
         schools = SchoolModel.all()
         if not schools:
-            return {'message': 'No schools found'}, 200
+            return {'schools': [],
+                    'message': 'No schools found'}, 200
         return {'schools': [school.json() for school in schools]}, 200

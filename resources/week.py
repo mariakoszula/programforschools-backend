@@ -94,7 +94,8 @@ class WeeksResource(Resource):
     def get(cls):
         errors = program_schema.validate(request.args)
         if errors:
-            return {"message": f"{errors}"}, 400
+            return {'weeks': [],
+                    "message": f"{errors}"}, 400
         program_id = request.args["program_id"]
         weeks = WeekModel.all_filtered_by_program(program_id)
         return {'weeks': [week.json() for week in weeks]}, 200
