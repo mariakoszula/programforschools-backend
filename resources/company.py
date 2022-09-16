@@ -65,5 +65,6 @@ class CompaniesResource(Resource):
     def get(cls):
         companies = CompanyModel.all()
         if not companies:
-            return {'message': 'No companies found'}, 200
+            return {'companies': [],
+                    'message': 'No companies found'}, 200
         return {'companies': [company.json() for company in companies]}, 200

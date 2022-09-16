@@ -121,5 +121,6 @@ class ProgramsResource(Resource):
     def get(cls):
         programs = ProgramModel.all()
         if not programs:
-            return {'message': 'No programs found'}, 200
+            return {'programs': [],
+                    'message': 'No programs found'}, 200
         return {'programs': [program.json() for program in programs]}, 200
