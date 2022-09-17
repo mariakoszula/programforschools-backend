@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse, request
+
 from auth.accesscontrol import roles_required, AllowedRoles
 from models.week import WeekModel
 from helpers.date_converter import DateConverter
@@ -50,7 +51,7 @@ class WeekResource(Resource):
     parser.add_argument('week_no',
                         required=False,
                         type=int,
-                        help="Week no cannot be blank format: int.")
+                        help="Week number cannot be blank format: int.")
     parser.add_argument('start_date',
                         required=False,
                         type=lambda date: DateConverter.convert_to_date(date),
@@ -85,7 +86,8 @@ class WeekResource(Resource):
             return {'message': f'Week {week_id} does not exists'}, 404
         if any([value for value in data.values()]):
             week.update_db(**data)
-            return {'message': f'Week {week_id} updated'}, 200
+            return {'week': week.json(),
+                    'message': f'Week {week_id} updated'}, 200
         return {'message': f'Week {week_id} not updated, nothing to update, validate the request'}, 400
 
 
@@ -97,5 +99,5 @@ class WeeksResource(Resource):
             return {'weeks': [],
                     "message": f"{errors}"}, 400
         program_id = request.args["program_id"]
-        weeks = WeekModel.all_filtered_by_program(program_id)
+        weeks = WeekModel.all_filtered_by_program(program_id).order_by(WeekModel.start_date)
         return {'weeks': [week.json() for week in weeks]}, 200

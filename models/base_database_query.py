@@ -42,3 +42,12 @@ class BaseDatabaseQuery:
     def all_filtered_by_program(cls, program_id):
         return cls.query.filter_by(program_id=program_id)
 
+    @classmethod
+    def find_by(cls, **kwargs):
+        return cls.query.filter_by(**kwargs).first()
+
+    @classmethod
+    def find_one_by_name(cls, name):
+        return cls.query.filter_by(name=name).one()
+
+
