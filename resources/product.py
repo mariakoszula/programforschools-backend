@@ -55,8 +55,6 @@ class WeightTypeResource(Resource):
     def post(cls):
         return simple_post(WeightTypeModel)
 
-
-class WeightTypeAllResource(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -71,8 +69,6 @@ class ProductTypeResource(Resource):
     def post(cls):
         return simple_post(ProductTypeModel)
 
-
-class ProductTypeAllResource(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -86,6 +82,12 @@ class ProductResource(Resource):
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
         return simple_post(ProductModel, validator=ProductQuerySchema())
+
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls):
+        return simple_get_all(ProductModel)
 
 
 class ProductStoreResource(Resource):

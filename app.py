@@ -11,8 +11,8 @@ from auth.accesscontrol import roles_required, AllowedRoles
 from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
-     AnnexResource
-from resources.product import WeightTypeResource, WeightTypeAllResource, ProductTypeResource, ProductTypeAllResource, \
+    AnnexResource
+from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
@@ -34,7 +34,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DATABASE_URL', local_db_nam
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace(db_remote_prefix, db_local_prefix)
 
 app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
-
 
 api = Api(app)
 CORS(app)
@@ -73,7 +72,6 @@ api.add_resource(WeekResource, '/week/<int:week_id>')
 api.add_resource(WeekRegister, '/week')
 api.add_resource(WeeksResource, '/week/all')
 
-
 api.add_resource(SchoolResource, '/school/<int:school_id>')
 api.add_resource(SchoolRegister, '/school')
 api.add_resource(SchoolsResource, '/school/all')
@@ -86,9 +84,7 @@ api.add_resource(ContractsAllResource, '/contracts/<int:program_id>/all')
 api.add_resource(AnnexResource, '/annex/<int:contract_id>')
 
 api.add_resource(WeightTypeResource, '/weight_type')
-api.add_resource(WeightTypeAllResource, '/weight_type/all')
 api.add_resource(ProductTypeResource, '/product_type')
-api.add_resource(ProductTypeAllResource, '/product_type/all')
 api.add_resource(ProductResource, '/product')
 api.add_resource(ProductStoreResource, '/product_store')
 
@@ -127,6 +123,7 @@ if __name__ == '__main__':
     @app.before_first_request
     def create_tables():
         db.create_all()
+
 
     db.init_app(app)
     app.run(debug=True, host="0.0.0.0")

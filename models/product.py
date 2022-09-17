@@ -44,7 +44,7 @@ class ProductModel(db.Model, BaseDatabaseQuery):
     def json(self):
         return {
             'name': self.name,
-            'weight': self.weight.json(),
+            'weight_type': self.weight.json(),
             'product_type': self.type.json()
         }
 
@@ -79,4 +79,3 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
         data: {} = super().json()
         data['product'] = self.product.json()
         return data
-    
