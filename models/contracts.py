@@ -19,8 +19,15 @@ class ContractModel(db.Model, BaseDatabaseQuery):
     school = db.relationship('SchoolModel',
                              backref=db.backref('contract', lazy=True, order_by='ContractModel.validity_date.desc()'))
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
-    program = db.relationship('ProgramModel', backref=db.backref('contract', lazy=True, order_by='ContractModel.contract_no.desc()'))
-    db.UniqueConstraint('program_id', 'school_id')
+    program = db.relationship('ProgramModel',
+                              backref=db.backref('contract', lazy=True, order_by='ContractModel.contract_no.desc()'))
+    __table_args__ = (db.UniqueConstraint('program_id', 'school_id'),)
+
+    def invalid_fruit_veg_contract(self):
+        return self.fruitVeg_products == 0
+
+    def invalid_dairy_contract(self):
+        return self.dairy_products == 0
 
     def __init__(self, school_id, program: ProgramModel):
         self.school_id = school_id
@@ -53,11 +60,12 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
 
     no = db.Column(db.Integer, nullable=False)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), nullable=False)
-    contract = db.relationship('ContractModel',  backref=db.backref('annex', lazy=True, order_by='AnnexModel.validity_date.desc()'))
+    contract = db.relationship('ContractModel',
+                               backref=db.backref('annex', lazy=True, order_by='AnnexModel.validity_date.desc()'))
     validity_date = db.Column(db.DateTime, nullable=False)
     fruitVeg_products = db.Column(db.Integer, nullable=False)
     dairy_products = db.Column(db.Integer, nullable=False)
-    db.UniqueConstraint('contract_id', 'no')
+    __table_args__ = (db.UniqueConstraint('contract_id', 'no'),)
 
     def __init__(self, contract, validity_date, fruitVeg_products=None, dairy_products=None):
         self.contract_id = contract.id

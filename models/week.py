@@ -13,7 +13,7 @@ class WeekModel(db.Model, BaseDatabaseQuery):
 
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
     program = db.relationship('ProgramModel', backref=db.backref('weeks', lazy=True))
-    db.UniqueConstraint('week_no', 'program_id')
+    __table_args__ = (db.UniqueConstraint('week_no', 'program_id'),)
 
     def __init__(self, week_no, start_date, end_date, program_id):
         if start_date >= end_date:
@@ -28,6 +28,10 @@ class WeekModel(db.Model, BaseDatabaseQuery):
         DateConverter.replace_date_to_converted(data, "start_date")
         DateConverter.replace_date_to_converted(data, "end_date")
         return data
+
+    @classmethod
+    def find_by_date(cls, date):
+        return cls.query.filter(WeekModel.start_date <= date).filter(date <= WeekModel.end_date).one()
 
     @classmethod
     def find(cls, week_no, program_id):

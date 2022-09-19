@@ -58,13 +58,17 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
                               backref=db.backref('product_store', lazy=True))
     weight = db.Column(db.Float, nullable=True)
     min_amount = db.Column(db.Integer, nullable=False)
-    db.UniqueConstraint('program_id', 'product_id')
+    __table_args__ = (db.UniqueConstraint('program_id', 'product_id'),)
 
     def __init__(self, program_id, name, min_amount, weight=0):
         self.program_id = program_id
         self.product_id = ProductModel.find_one_by_name(name).id
         self.min_amount = min_amount
         self.weight = weight
+
+    def is_min_amount_exceeded(self, nick):
+        return [record.contract.school.nick for record in self.records].count(nick) >= self.min_amount
+
 
     @classmethod
     def find_by(cls, program_id, name):

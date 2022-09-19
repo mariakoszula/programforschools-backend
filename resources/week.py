@@ -75,7 +75,7 @@ class WeekResource(Resource):
         if not program:
             return {'message': f'Week {week_id} does not exists'}, 404
         program.delete_from_db()
-        return {'message': f'Week {week_id} removed'}, 200
+        return {'deleted_week': week_id}, 200
 
     @classmethod
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])

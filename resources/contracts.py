@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from auth.accesscontrol import roles_required, handle_exception_pretty
 from documents_generator.AnnexGenerator import AnnexGenerator
 from documents_generator.ContractGenerator import ContractGenerator
-from models.base_database_query import ProgramQuerySchema
+from models.base_database_query import ProgramQuerySchema, DateQuerySchema
 from models.contracts import ContractModel, AnnexModel
 from models.program import ProgramModel
 from models.school import SchoolModel
@@ -26,10 +26,6 @@ class DelimitedListField(fields.List):
             raise exceptions.ValidationError(
                 f"{attr} is not a delimited list it has a non string value {value}."
             )
-
-
-class DateQuerySchema(Schema):
-    date = fields.DateTime(format=DateConverter.COMMON_VIEW_DATE_PATTERN, required=True)
 
 
 class ContractQuerySchema(ProgramQuerySchema, DateQuerySchema):
@@ -97,7 +93,6 @@ class ContractsCreateResource(Resource):
         for contract in contracts:
             uploaded_documents.extend(generate_documents(gen=ContractGenerator, contract=contract))
 
-        # TODO put documents on google drive links to uploaded documnet return here
         return {'contracts': [contract.json() for contract in contracts],
                 'documents': uploaded_documents}, 200
 

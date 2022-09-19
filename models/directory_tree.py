@@ -13,7 +13,7 @@ class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
 
     program = db.relationship('ProgramModel', backref=db.backref('directorytree', lazy=True))
-    db.UniqueConstraint('name', 'program_id', 'parent_id')
+    __table_args__ = (db.UniqueConstraint('name', 'program_id', 'parent_id'),)
 
     def __init__(self, name, google_id, program_id, parent_id=None):
         self.name = name
