@@ -1,13 +1,17 @@
 from flask import request
 from flask_restful import Resource
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, validate
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
 from models.base_database_query import ProgramQuerySchema
-from models.product import WeightTypeModel, ProductTypeModel, ProductModel, ProductStoreModel
+from models.product import WeightTypeModel, ProductTypeModel, ProductModel, ProductStoreModel, ProductBoxModel
 
 
 class NameQuerySchema(Schema):
     name = fields.Str(required=True)
+
+
+class AmountQuerySchema(NameQuerySchema):
+    amount = fields.Int(required=True, validate=validate.Range(1, 200))
 
 
 class ProductQuerySchema(NameQuerySchema):
@@ -108,3 +112,17 @@ class ProductStoreResource(Resource):
                    'products': [r.json() for r in ProductStoreModel.find(program_id=request.args["program_id"],
                                                                          product_type=request.args["product_type"])]
                }, 200
+
+
+class ProductBoxResource(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def post(cls):
+        return simple_post(ProductBoxModel, "amount", validator=AmountQuerySchema())
+
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls):
+        return simple_get_all(ProductBoxModel)

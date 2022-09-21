@@ -21,7 +21,7 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
 
     company = db.relationship('CompanyModel')
 
-    db.UniqueConstraint('school_year', 'semester_no')
+    __table_args__ = (db.UniqueConstraint('school_year', 'semester_no'),)
 
     def __init__(self, semester_no, school_year, company_id, fruitVeg_price=None, dairy_price=None,
                  start_date=None, end_date=None, dairy_min_per_week=None, fruitVeg_min_per_week=None,

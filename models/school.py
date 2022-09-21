@@ -21,3 +21,7 @@ class SchoolModel(db.Model, BaseDatabaseQuery):
 
     def __repr__(self):
         return f"School: {self.nick}"
+
+    @classmethod
+    def find_one_by_nick(cls, nick):
+        return cls.query.filter_by(nick=nick).one()

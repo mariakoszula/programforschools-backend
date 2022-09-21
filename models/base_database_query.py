@@ -1,9 +1,14 @@
+from helpers.date_converter import DateConverter
 from helpers.db import db
 from marshmallow import Schema, fields
 
 
 class ProgramQuerySchema(Schema):
     program_id = fields.Int(required=True)
+
+
+class DateQuerySchema(Schema):
+    date = fields.DateTime(format=DateConverter.COMMON_VIEW_DATE_PATTERN, required=True)
 
 
 program_schema = ProgramQuerySchema()
@@ -49,5 +54,3 @@ class BaseDatabaseQuery:
     @classmethod
     def find_one_by_name(cls, name):
         return cls.query.filter_by(name=name).one()
-
-
