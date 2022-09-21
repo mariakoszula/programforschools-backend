@@ -169,7 +169,9 @@ class RecordResource(Resource):
 
 
 class RecordDeliveryResource(Resource):
-    # create_delivery/<int: program_id>?delivery_date=<date>
+    # create_delivery/<int: program_id>?delivery_date=<date>&driver="Mariusz"
+    #create_delivery/<int: program_id>?delivery_date=<date>&driver="Mariusz"&comment="test"
+    # body with recrods ids and optional field products_per_box
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])

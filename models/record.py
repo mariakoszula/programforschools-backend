@@ -3,9 +3,7 @@ import enum
 from helpers.date_converter import DateConverter
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from models.contracts import ContractModel
-from models.product import ProductTypeModel, ProductModel
-from models.school import SchoolModel
+from models.product import ProductModel
 from models.week import WeekModel
 
 

@@ -13,7 +13,7 @@ from resources.company import CompanyResource, CompaniesResource, CompanyRegiste
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
 from resources.product import WeightTypeResource, ProductTypeResource, \
-    ProductResource, ProductStoreResource
+    ProductResource, ProductStoreResource, ProductBoxResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.record import RecordsAllResource, RecordResource, RecordDeliveryResource
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
@@ -88,6 +88,7 @@ api.add_resource(WeightTypeResource, '/weight_type')
 api.add_resource(ProductTypeResource, '/product_type')
 api.add_resource(ProductResource, '/product')
 api.add_resource(ProductStoreResource, '/product_store')
+api.add_resource(ProductBoxResource, '/product_box')
 
 api.add_resource(RecordsAllResource, '/records')
 api.add_resource(RecordResource, '/record/<int:record_id>')

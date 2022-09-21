@@ -49,6 +49,24 @@ class ProductModel(db.Model, BaseDatabaseQuery):
         }
 
 
+class ProductBoxModel(db.Model, BaseDatabaseQuery):
+    __tablename__ = 'box_with_product'
+    id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Integer, nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    product = db.relationship('ProductModel',
+                              backref=db.backref('box', lazy=True))
+
+    def __init__(self, name, amount):
+        product = ProductModel.find_one_by_name(name=name)
+        self.product_id = product.id
+        self.amount = amount
+
+    @classmethod
+    def find_by(cls, name, amount):
+        return cls.query.filter_by(amount=amount).join(cls.product).filter_by(name=name).first()
+
+
 class ProductStoreModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'product_store'
     id = db.Column(db.Integer, primary_key=True)
@@ -68,7 +86,6 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
 
     def is_min_amount_exceeded(self, nick):
         return [record.contract.school.nick for record in self.records].count(nick) >= self.min_amount
-
 
     @classmethod
     def find_by(cls, program_id, name):
