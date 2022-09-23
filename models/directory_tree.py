@@ -1,5 +1,9 @@
+from collections import namedtuple
+
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
+
+ParentDirectoryWithChildren = namedtuple("ParentDirectoryWithChildren", "parent children")
 
 
 class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
@@ -23,15 +27,19 @@ class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def get_google_parent_directory(cls, path_to_file):
-        directories = path_to_file.split("/")
-        directories = directories[:-1]
-        parent_dir = cls.query.filter_by(name=directories[0]).one()
-        directories = directories[1:]
-        if directories:
-            while directories:
-                parent_dir = cls.query.filter_by(parent_id=parent_dir.id, name=directories[0]).one()
-                directories = directories[1:]
-        return parent_dir
+        res = cls.get_children_and_parent(path_to_file, contains_file_name=True)
+        parent = res.parent
+        while res.children:
+            parent = cls.query.filter_by(parent_id=parent.id, name=res.children.pop()).one()
+        return parent
+
+    @classmethod
+    def get_children_and_parent(cls, path_to_file, contains_file_name=False):
+        directory_list = path_to_file.split("/")
+        if contains_file_name:
+            directory_list = directory_list[:-1]
+        parent_dir = cls.query.filter_by(name=directory_list[0]).one()
+        return ParentDirectoryWithChildren(parent_dir, directory_list[1:])
 
     @classmethod
     def find_by_google_id(cls, google_id):
