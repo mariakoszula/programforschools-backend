@@ -77,8 +77,8 @@ class DeliveryGenerator(DocumentGenerator):
         for product, records in self.__dict_from_list(records,
                                                       lambda record: record.product_store.product.name).items():
             sum_res = DeliveryGenerator.__sum_products(records)
-            output = f"{product} = {sum_res}"
-            output = f"{output}{self.__get_amount_by_boxes(product, sum_res)}"
+            output = f"{product}: {sum_res}"
+            output = f"{output} = {self.__get_amount_by_boxes(product, sum_res)}"
             results.append(output)
         return ", ".join(results)
 
@@ -99,7 +99,7 @@ class DeliveryGenerator(DocumentGenerator):
         try:
             product_box_info = next(filter(lambda b: b.product.name == product, self.boxes))
             (boxes, items) = divmod(amount, product_box_info.amount)
-            return f"{boxes} OP., {items} szt."
+            return f"{boxes} opk., {items} szt."
         except StopIteration:
             return ""
 
