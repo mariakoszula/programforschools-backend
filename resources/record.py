@@ -6,9 +6,12 @@ from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
 
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
+from documents_generator.DeliveryGenerator import DeliveryGenerator
+from documents_generator.RecordGenerator import RecordGenerator
+from helpers.common import generate_documents
 from models.base_database_query import program_schema, DateQuerySchema
 from models.contracts import ContractModel
-from models.product import ProductStoreModel
+from models.product import ProductStoreModel, ProductBoxModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
 
@@ -29,6 +32,16 @@ class SchoolNickSchema(Schema):
 
 class RecordsAllSchema(DateQuerySchema):
     records = fields.List(fields.Nested(SchoolNickSchema), validate=must_not_be_empty)
+
+
+class CreateRecordSchema(DateQuerySchema):
+    driver = fields.String(required=True)
+
+
+class CreateRecordBodySchema(Schema):
+    records = fields.List(fields.Int(required=True))
+    boxes = fields.List(fields.Int(required=False))
+    comments = fields.String(required=False)
 
 
 class RecordAdditionResult(enum.Enum):
@@ -61,15 +74,10 @@ class RecordResponse:
         return data
 
 
-# TODO future to get rid of this
-DAIRY_TYPE = "nabiał"
-FRUIT_VEG_TYPE = "owocowo-warzywny"
-
-
 def is_contract_valid(product_store: ProductStoreModel, contract: ContractModel):
-    if product_store.product.type.name == DAIRY_TYPE:
+    if product_store.product.type.is_dairy():
         return not contract.invalid_dairy_contract()
-    if product_store.product.type.name == FRUIT_VEG_TYPE:
+    if product_store.product.type.is_fruit_veg():
         return not contract.invalid_fruit_veg_contract()
 
 
@@ -168,12 +176,34 @@ class RecordResource(Resource):
                }, 200
 
 
+def validate_record(record: RecordModel, program_id):
+    if not record or record.contract.program_id != program_id:
+        return False
+    return True
+
+
 class RecordDeliveryResource(Resource):
-    # create_delivery/<int: program_id>?delivery_date=<date>&driver="Mariusz"
-    #create_delivery/<int: program_id>?delivery_date=<date>&driver="Mariusz"&comment="test"
-    # body with recrods ids and optional field products_per_box
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-    def put(cls, program_id):
-        pass
+    def put(cls):
+        errors = CreateRecordSchema().validate(request.args)
+        body_errors = CreateRecordBodySchema().validate(request.json)
+        if errors or body_errors:
+            return {"message": f"url: {errors} body: {body_errors}"}, 400
+        records = [RecordModel.find_by_id(_id) for _id in request.json["records"]]
+        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.json["boxes"]]
+        delivery_date = request.args["date"]
+        for record in records:
+            record.change_state(RecordState.GENERATED, date=delivery_date)
+        uploaded_documents = []
+        for record in records:
+            uploaded_documents.extend(generate_documents(gen=RecordGenerator, record=record))
+        uploaded_documents.extend(generate_documents(gen=DeliveryGenerator,
+                                                     records=records,
+                                                     **request.args,
+                                                     boxes=boxes,
+                                                     comments=request.json["comments"]))
+        return {
+                   'documents': uploaded_documents
+               }, 200

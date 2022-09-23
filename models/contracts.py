@@ -1,10 +1,18 @@
 import enum
 
-from helpers.date_converter import DateConverter
+from helpers.date_converter import DateConverter, is_date_in_range
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
+from models.product import ProductTypeModel
 from models.program import ProgramModel
 from models.school import SchoolModel
+
+
+def get_kids_no_by_type(contract_or_annex, product_type: ProductTypeModel):
+    if product_type.is_dairy():
+        return contract_or_annex.dairy_products
+    if product_type.is_fruit_veg():
+        return contract_or_annex.fruitVeg_products
 
 
 class ContractModel(db.Model, BaseDatabaseQuery):
@@ -49,6 +57,17 @@ class ContractModel(db.Model, BaseDatabaseQuery):
         data['annex'] = [annex.json() for annex in self.annex]
         return data
 
+    def get_kids_no(self, product_type: ProductTypeModel, date):
+        if not len(self.annex):
+            return get_kids_no_by_type(self, product_type)
+        else:
+            for annex in self.annex:
+                if is_date_in_range(date, annex.validity_date, self.program.end_date):
+                    return get_kids_no_by_type(annex, product_type)
+            if is_date_in_range(date, self.validity_date, self.program.end_date):
+                return get_kids_no_by_type(self, product_type)
+        raise ValueError(f"Failed to find kids no for {date}: {self}")
+
     @classmethod
     def find(cls, program_id, school_id):
         return cls.query.filter_by(program_id=program_id, school_id=school_id).first()
@@ -86,7 +105,11 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
         return data
 
     @classmethod
-    def find(cls, validity_date, contract_id):
+    def find(cls, no, contract_id):
+        return cls.query.filter_by(no=no, contract_id=contract_id).first()
+
+    @classmethod
+    def find_by_date(cls, validity_date, contract_id):
         return cls.query.filter_by(validity_date=validity_date, contract_id=contract_id).first()
 
 

@@ -4,9 +4,11 @@ from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
 from typing import List
-import subprocess
 from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData
 from models.directory_tree import DirectoryTreeModel
+
+DOCX_EXT = ".docx"
+PDF_EXT = ".pdf"
 
 
 class DocumentGenerator(ABC):
@@ -25,13 +27,11 @@ class DocumentGenerator(ABC):
 
         super(DocumentGenerator, self).__init__()
 
-    def generate(self, gen_pdf=True) -> None:
+    def generate(self) -> None:
         self.prepare_data()
         file = path.join(self.output_directory, self.output_doc_name)
         try:
             self.__end_doc_gen(file)
-            if gen_pdf:
-                self._generate_pdf(file)
         except ValueError as e:
             app_logger.error("Problem occurred during generating document. [%s]", e)
 
@@ -48,28 +48,6 @@ class DocumentGenerator(ABC):
             copy(source, new_dst)
             rename(path.join(new_dst, old_file_name), path.join(new_dst, new_file_name))
 
-    def _generate_pdf(self, docx_to_convert):
-        output = DocumentGenerator.generate_pdf(docx_to_convert, self.output_directory)
-        self.generated_documents.append(FileData(_name=output, _mime_type=PDF_MIME_TYPE))
-
-    @staticmethod
-    def generate_pdf(docx_to_convert, output_dir) -> str:
-        try:
-            docx_to_convert = path.normpath(docx_to_convert)
-
-            file_parts = path.split(docx_to_convert)
-            output_file = path.join(file_parts[0], file_parts[1].replace('.docx', '.pdf'))
-            args = ['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_dir,
-                    docx_to_convert]
-            results = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3000,
-                                     check=True)
-            if not path.exists(output_file):
-                raise ValueError(f"Pdf not generated: {output_file} {results.stderr}")
-            app_logger.info(f"Success: Document {docx_to_convert} saved in {output_file}")
-            return output_file
-        except Exception as e:
-            app_logger.error("[%s] Serious error when generating pdf from docx %s out_dir %s: err_msg: %s.",
-                             __class__.__name__, docx_to_convert, output_file, e)
 
     @staticmethod
     def create_directory(output_directory):
@@ -92,10 +70,11 @@ class DocumentGenerator(ABC):
     def prepare_data(self):
         pass
 
-    def upload_files_to_remote_drive(self):
+    def upload_files_to_remote_drive(self, file_type=DOCX_EXT):
         # TODO uploaded_file_id does not exists -> retry (3 times or sth)
         # use specified folder id stored in database based on DirectoryTree model and path_to_file
-        for index, file_data in enumerate(self.generated_documents):
+        files = list(filter(lambda file: file_type in file.name, self.generated_documents))
+        for index, file_data in enumerate(files):
             parent_dir = DirectoryTreeModel.get_google_parent_directory(file_data.name)
             uploaded_file_id, web_link = GoogleDriveCommands.upload_file(path_to_file=file_data.name,
                                                                          mime_type=file_data.mime_type,
@@ -108,3 +87,20 @@ class DocumentGenerator(ABC):
                     f"{parent_dir}")
             else:
                 app_logger.error(f"Failed to upload file '{file_data.name}' to {parent_dir}")
+
+    def export_files_to_pdf(self):
+        files = list(filter(lambda file: DOCX_EXT in file.name, self.generated_documents))
+        file_data: FileData
+        for file_data in files:
+            self.generated_documents.append(
+                FileData(_name=DocumentGenerator.export_to_pdf(file_data.name, file_data.id),
+                         _mime_type=PDF_MIME_TYPE))
+        self.upload_files_to_remote_drive(file_type=PDF_EXT)
+
+    @staticmethod
+    def export_to_pdf(file_name, source_file_id):
+        file_content = GoogleDriveCommands.export_to_pdf(source_file_id)
+        pdf_name = file_name.replace(DOCX_EXT, PDF_EXT)
+        with open(pdf_name, "wb") as pdf_file:
+            pdf_file.write(file_content)
+        return pdf_name

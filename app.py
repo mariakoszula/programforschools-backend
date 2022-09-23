@@ -92,7 +92,7 @@ api.add_resource(ProductBoxResource, '/product_box')
 
 api.add_resource(RecordsAllResource, '/records')
 api.add_resource(RecordResource, '/record/<int:record_id>')
-api.add_resource(RecordDeliveryResource, '/create_delivery/<int:program_id>')
+api.add_resource(RecordDeliveryResource, '/create_delivery')
 
 
 @app.route("/")
