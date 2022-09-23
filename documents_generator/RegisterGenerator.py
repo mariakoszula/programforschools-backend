@@ -27,10 +27,10 @@ class RegisterGenerator(DocumentGenerator):
         self.records_to_merge = []
         self.contracts = ContractModel.all_filtered_by_program(self.program.id)
         DocumentGenerator.__init__(self,
-                                   config_parser.get('DocTemplates', 'register'),
-                                   DirectoryCreator.get_main_dir(school_year=self.program.school_year,
-                                                                 semester_no=self.program.semester_no),
-                                   config_parser.get('DocNames', 'register').format(self.date))
+                                   template_document=config_parser.get('DocTemplates', 'register'),
+                                   output_directory=DirectoryCreator.get_main_dir(school_year=self.program.school_year,
+                                                                                  semester_no=self.program.semester_no),
+                                   output_name=config_parser.get('DocNames', 'register').format(self.date))
 
     def __prepare_school_data(self):
         for contract in sorted(self.contracts, key=lambda c: int(c.contract_no)):
@@ -73,11 +73,10 @@ class RegisterGenerator(DocumentGenerator):
         record_dict['kids_fruitveg'] = str(annex.fruitVeg_products)
         return record_dict
 
-    def generate(self, gen_pdf=True) -> None:
-        DocumentGenerator.generate(self, gen_pdf=False)
+    def generate(self) -> None:
+        DocumentGenerator.generate(self)
         generated_docx = self.generated_documents[0].name
         RegisterGenerator.__merge_cells(generated_docx)
-        self._generate_pdf(generated_docx)
 
     @staticmethod
     def __merge_cells(file_with_table_to_merge):

@@ -42,10 +42,10 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.product_type_id = product_store.product.type.id
 
     def __str__(self):
-        return f"Date: {self.date} {self.product_store.product.name} {self.contract.school.nick}"
+        return f"{self.product_store.product.name}: {self.delivered_kids_no}"
 
     def __repr__(self):
-        return self.__str__()
+        return f"Date: {self.date} {self.product_store.product.name} {self.contract.school.nick}"
 
     @classmethod
     def find(cls, date, product: ProductModel, contract_id):
@@ -63,3 +63,12 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         if data["state"]:
             data["state"] = RecordState(data["state"]).name
         return data
+
+    def change_state(self, state, **kwargs):
+        if state == RecordState.GENERATED:
+            self.delivery_date = DateConverter.convert_to_date(kwargs["date"])
+            self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
+                                                               date=self.date)
+
+        self.state = state
+        self.update_db()

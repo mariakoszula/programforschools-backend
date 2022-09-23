@@ -12,7 +12,7 @@ from os import path
 
 google_service = None
 SCOPES = ['https://www.googleapis.com/auth/drive']
-DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
 PDF_MIME_TYPE = 'application/pdf'
 DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
 
@@ -50,6 +50,7 @@ class FileData:
 
     def __repr__(self):
         return f"{str(self)} mimeType:{self.mime_type} id:{self.id if self.id else '-'}"
+
 
 def file_found(name: str, file_list: List[FileData]):
     return name in [file.name for file in file_list]
@@ -112,6 +113,16 @@ class GoogleDriveCommands:
                                                  media_body=media).execute()
             app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}"
                              f" webViewLink:{file.get('webViewLink')}")
-            return file.get('id'), file.get('webViewLink')
+            return file.get("id"), file.get('webViewLink')
         except HttpError as error:
-            app_logger.error(f"Error during uploading file '{staticmethod}' in '{parent_id}': {error}")
+            app_logger.error(f"Error during uploading file '{path_to_file}' in '{parent_id}': {error}")
+
+    @staticmethod
+    @setup_google_drive_service
+    def export_to_pdf(source_file_id):
+        try:
+            pdf_file_content = google_service.files().export(fileId=source_file_id, mimeType=PDF_MIME_TYPE).execute()
+            app_logger.debug(f"Export pdf file on google drive for {source_file_id}")
+            return pdf_file_content
+        except HttpError as error:
+            app_logger.error(f"Error during uploading file '{source_file_id}': {error}")

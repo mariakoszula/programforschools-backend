@@ -15,6 +15,9 @@ class WeightTypeModel(db.Model, BaseDatabaseQuery):
 
 
 class ProductTypeModel(db.Model, BaseDatabaseQuery):
+    DAIRY_TYPE = "nabiał"
+    FRUIT_VEG_TYPE = "owocowo-warzywny"
+
     __tablename__ = 'product_type'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False, unique=True)
@@ -24,6 +27,12 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
 
     def json(self):
         return self.name
+
+    def is_dairy(self):
+        return self.name == ProductTypeModel.DAIRY_TYPE
+
+    def is_fruit_veg(self):
+        return self.name == ProductTypeModel.FRUIT_VEG_TYPE
 
 
 class ProductModel(db.Model, BaseDatabaseQuery):
@@ -61,6 +70,9 @@ class ProductBoxModel(db.Model, BaseDatabaseQuery):
         product = ProductModel.find_one_by_name(name=name)
         self.product_id = product.id
         self.amount = amount
+
+    def __str__(self):
+        return f"{self.product.name} - {self.amount} szt"
 
     @classmethod
     def find_by(cls, name, amount):

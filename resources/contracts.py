@@ -2,12 +2,13 @@ from typing import List
 
 from flask import request
 from flask_restful import Resource, reqparse
-from marshmallow import fields, Schema
+from marshmallow import fields
 from sqlalchemy.exc import SQLAlchemyError
 
 from auth.accesscontrol import roles_required, handle_exception_pretty
 from documents_generator.AnnexGenerator import AnnexGenerator
 from documents_generator.ContractGenerator import ContractGenerator
+from helpers.common import generate_documents
 from models.base_database_query import ProgramQuerySchema, DateQuerySchema
 from models.contracts import ContractModel, AnnexModel
 from models.program import ProgramModel
@@ -64,14 +65,8 @@ def get_school_list(schools_input):
     return [int(school_id) for school_id in schools_input.split(",")]
 
 
-def generate_documents(gen, **kwargs):
-    try:
-        generator = gen(**kwargs, date=request.args["date"])
-        generator.generate()
-        generator.upload_files_to_remote_drive()
-        return [str(document) for document in generator.generated_documents]
-    except TypeError as e:
-        app_logger.error(f"{gen}: Problem occurred during document generation '{e}'")
+def generate_documents_with_date(gen, **kwargs):
+    return generate_documents(gen, date=request.args["date"], **kwargs)
 
 
 class ContractsCreateResource(Resource):
@@ -91,7 +86,7 @@ class ContractsCreateResource(Resource):
 
         uploaded_documents = []
         for contract in contracts:
-            uploaded_documents.extend(generate_documents(gen=ContractGenerator, contract=contract))
+            uploaded_documents.extend(generate_documents_with_date(gen=ContractGenerator, contract=contract))
 
         return {'contracts': [contract.json() for contract in contracts],
                 'documents': uploaded_documents}, 200
@@ -137,6 +132,9 @@ class ContractsAllResource(Resource):
 
 class AnnexResource(Resource):
     parser = reqparse.RequestParser()
+    parser.add_argument('no',
+                        required=False,
+                        type=int)
     parser.add_argument('fruitVeg_products',
                         required=False,
                         type=int)
@@ -152,8 +150,8 @@ class AnnexResource(Resource):
         errors = date_query.validate(query_args)
         if errors:
             raise ValueError(f"date: {errors['date']}")
-        if data.get("validity_date") and query_args["date"] \
-                and DateConverter.convert_to_date(data["validity_date"]) < DateConverter.convert_to_date(
+        if data.get("validity_date") and query_args["date"] and \
+                DateConverter.convert_to_date(data["validity_date"]) < DateConverter.convert_to_date(
             query_args["date"]):
             raise ValueError(f'validity_date < sign_date')
 
@@ -185,18 +183,27 @@ class AnnexResource(Resource):
     def put(cls, contract_id):
         data = AnnexResource.parser.parse_args()
         try:
+            annex = None
             AnnexResource.validate_dates(data, request.args)
             contract = AnnexResource.get_contract(contract_id)
-            annex = AnnexModel.find(validity_date=data["validity_date"], contract_id=contract.id)
+            no = data["no"]
+            if no:
+                annex = AnnexModel.find(no=no, contract_id=contract.id)
             data = dict((filter((lambda elem: elem[1]), data.items())))
-            if not annex:
+            existing_annex_by_date = AnnexModel.find_by_date(validity_date=data["validity_date"], contract_id=contract.id)
+            if annex and (not existing_annex_by_date or existing_annex_by_date.no == annex.no):
+                annex.update_db(**data)
+            elif existing_annex_by_date:
+                return {
+                    "annex": existing_annex_by_date.json(),
+                    "message": f"Annex with {data['validity_date']} already exists with {existing_annex_by_date.no}"
+                }, 404
+            elif not existing_annex_by_date and not annex:
                 AnnexResource.validate_product(data)
                 annex = AnnexModel(contract=contract, **data)
                 annex.save_to_db()
-            else:
-                annex.update_db(**data)
             return {'annex': annex.json(),
-                    'documents': generate_documents(gen=AnnexGenerator, annex=annex)}, 200
+                    'documents': generate_documents_with_date(gen=AnnexGenerator, annex=annex)}, 200
         except ValueError as e:
             return {'message': f"{e}"}, 400
         except Exception as e:
