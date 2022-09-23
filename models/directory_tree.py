@@ -30,7 +30,7 @@ class DirectoryTreeModel(db.Model, BaseDatabaseQuery):
         res = cls.get_children_and_parent(path_to_file, contains_file_name=True)
         parent = res.parent
         while res.children:
-            parent = cls.query.filter_by(parent_id=parent.id, name=res.children.pop()).one()
+            parent = cls.query.filter_by(parent_id=parent.id, name=res.children.pop(0)).one()
         return parent
 
     @classmethod

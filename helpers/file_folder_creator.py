@@ -85,7 +85,7 @@ class DirectoryCreator:
         res = DirectoryTreeModel.get_children_and_parent(path_to_file)
         parent = res.parent
         while res.children:
-            new_directory = DirectoryCreator.create_directory(name=res.children.pop(),
+            new_directory = DirectoryCreator.create_directory(name=res.children.pop(0),
                                                               program_id=parent.program_id,
                                                               google_id=parent.google_id,
                                                               parent_id=parent.id)
