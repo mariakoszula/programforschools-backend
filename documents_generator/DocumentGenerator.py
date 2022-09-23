@@ -1,3 +1,4 @@
+from helpers.file_folder_creator import DirectoryCreator
 from helpers.logger import app_logger
 from mailmerge import MailMerge
 from abc import ABC, abstractmethod
@@ -48,12 +49,12 @@ class DocumentGenerator(ABC):
             copy(source, new_dst)
             rename(path.join(new_dst, old_file_name), path.join(new_dst, new_file_name))
 
-
     @staticmethod
     def create_directory(output_directory):
         if not path.exists(output_directory):
             makedirs(output_directory)
             app_logger.debug("[%s] Created new output directory: %s", __class__.__name__, output_directory)
+        DirectoryCreator.create_remote_tree(output_directory)
 
     def __start_doc_gen(self):
         DocumentGenerator.create_directory(self.output_directory)

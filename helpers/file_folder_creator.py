@@ -3,7 +3,7 @@ from typing import List
 from helpers.config_parser import config_parser
 from models.program import ProgramModel
 from models.directory_tree import DirectoryTreeModel
-from helpers.google_drive import GoogleDriveCommands, FileData
+from helpers.google_drive import GoogleDriveCommands
 from helpers.logger import app_logger
 from collections import namedtuple
 
@@ -79,3 +79,16 @@ class DirectoryCreator:
         directory = DirectoryTreeModel(**kwargs)
         app_logger.debug(f"Directory to be saved {directory}")
         return CreateDirectoryResults(should_insert=True, directoryTreeObj=directory)
+
+    @staticmethod
+    def create_remote_tree(path_to_file):
+        res = DirectoryTreeModel.get_children_and_parent(path_to_file)
+        parent = res.parent
+        while res.children:
+            new_directory = DirectoryCreator.create_directory(name=res.children.pop(0),
+                                                              program_id=parent.program_id,
+                                                              google_id=parent.google_id,
+                                                              parent_id=parent.id)
+            parent = new_directory.directoryTreeObj
+            if new_directory.should_insert:
+                parent.save_to_db()
