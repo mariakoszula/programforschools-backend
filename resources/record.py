@@ -192,7 +192,7 @@ class RecordDeliveryResource(Resource):
         if errors or body_errors:
             return {"message": f"url: {errors} body: {body_errors}"}, 400
         records = [RecordModel.find_by_id(_id) for _id in request.json["records"]]
-        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.json["boxes"]]
+        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.json.get("boxes", [])]
         delivery_date = request.args["date"]
         for record in records:
             record.change_state(RecordState.GENERATED, date=delivery_date)
@@ -203,7 +203,7 @@ class RecordDeliveryResource(Resource):
                                                      records=records,
                                                      **request.args,
                                                      boxes=boxes,
-                                                     comments=request.json["comments"]))
+                                                     comments=request.json.get("comments", "")))
         return {
                    'documents': uploaded_documents
                }, 200

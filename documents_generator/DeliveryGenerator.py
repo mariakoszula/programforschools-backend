@@ -24,7 +24,7 @@ class DeliveryGenerator(DocumentGenerator):
             delivery_date=self.delivery_date,
             delivery_day=DeliveryGenerator.DAY_NAMES[DateConverter.get_day(self.delivery_date)].upper(),
             comments=self.comments,
-            boxes=f'Opakowania: {",".join([str(box) for box in self.boxes])}'
+            boxes='' if not len(self.boxes) else f'Opakowania: {",".join([str(box) for box in self.boxes])}'
         )
 
     def generate(self) -> None:
@@ -72,14 +72,14 @@ class DeliveryGenerator(DocumentGenerator):
         }
 
     def __school_product_summarize(self, nick):
+        if not len(self.boxes):
+            return ""
         records = filter(lambda record: record.contract.school.nick == nick, self.records)
         results = []
         for product, records in self.__dict_from_list(records,
                                                       lambda record: record.product_store.product.name).items():
             sum_res = DeliveryGenerator.__sum_products(records)
-            output = f"{product}: {sum_res}"
-            output = f"{output} = {self.__get_amount_by_boxes(product, sum_res)}"
-            results.append(output)
+            results.append(f"{product}: {self.__get_amount_by_boxes(product, sum_res)}")
         return ", ".join(results)
 
     def __product_summarize_info(self):
@@ -96,6 +96,8 @@ class DeliveryGenerator(DocumentGenerator):
         }
 
     def __get_amount_by_boxes(self, product, amount):
+        if not len(self.boxes):
+            return ""
         try:
             product_box_info = next(filter(lambda b: b.product.name == product, self.boxes))
             (boxes, items) = divmod(amount, product_box_info.amount)
