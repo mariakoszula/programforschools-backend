@@ -72,10 +72,9 @@ class DocumentGenerator(ABC):
         pass
 
     def upload_files_to_remote_drive(self, file_type=DOCX_EXT):
-        # TODO uploaded_file_id does not exists -> retry (3 times or sth)
-        # use specified folder id stored in database based on DirectoryTree model and path_to_file
-        files = list(filter(lambda file: file_type in file.name, self.generated_documents))
-        for index, file_data in enumerate(files):
+        for index, file_data in enumerate(self.generated_documents):
+            if file_type not in file_data.name:
+                continue
             parent_dir = DirectoryTreeModel.get_google_parent_directory(file_data.name)
             uploaded_file_id, web_link = GoogleDriveCommands.upload_file(path_to_file=file_data.name,
                                                                          mime_type=file_data.mime_type,
@@ -86,6 +85,7 @@ class DocumentGenerator(ABC):
                 app_logger.info(
                     f"File '{file_data.name}' successfully uploaded with id {uploaded_file_id} to "
                     f"{parent_dir}")
+
             else:
                 app_logger.error(f"Failed to upload file '{file_data.name}' to {parent_dir}")
 
