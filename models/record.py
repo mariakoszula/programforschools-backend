@@ -42,7 +42,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.product_type_id = product_store.product.type.id
 
     def __str__(self):
-        return f"{self.product_store.product.name}: {self.delivered_kids_no}"
+        return f"{self.product_store.product.name}  {self.delivered_kids_no}"
 
     def __repr__(self):
         return f"Date: {self.date} {self.product_store.product.name} {self.contract.school.nick}"
