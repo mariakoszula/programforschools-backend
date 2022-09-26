@@ -136,10 +136,10 @@ class AnnexResource(Resource):
                         required=False,
                         type=int)
     parser.add_argument('fruitVeg_products',
-                        required=False,
+                        required=True,
                         type=int)
     parser.add_argument('dairy_products',
-                        required=False,
+                        required=True,
                         type=int)
     parser.add_argument('validity_date',
                         required=True,
@@ -157,7 +157,7 @@ class AnnexResource(Resource):
 
     @staticmethod
     def validate_product(data):
-        if not (data.get("dairy_products") and data.get("fruitVeg_products")):
+        if not (data.get("dairy_products") >= 0 and data.get("fruitVeg_products") >= 0):
             raise ValueError(f'dairy_products and fruitVeg_products are required')
 
     @staticmethod
@@ -189,7 +189,7 @@ class AnnexResource(Resource):
             no = data["no"]
             if no:
                 annex = AnnexModel.find(no=no, contract_id=contract.id)
-            data = dict((filter((lambda elem: elem[1]), data.items())))
+            data = dict((filter((lambda elem: elem[1] is not None), data.items())))
             existing_annex_by_date = AnnexModel.find_by_date(validity_date=data["validity_date"], contract_id=contract.id)
             if annex and (not existing_annex_by_date or existing_annex_by_date.no == annex.no):
                 annex.update_db(**data)
