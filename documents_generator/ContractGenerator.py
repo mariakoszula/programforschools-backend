@@ -1,3 +1,4 @@
+from helpers.common import EMPTY_FILED
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
@@ -7,8 +8,6 @@ from os import path
 
 
 class ContractGenerator(DocumentGenerator):
-    FILL_WITH_EMPTY = "................................................................"
-
     def prepare_data(self):
         self._document.merge(
             city=self.contract.school.city,
@@ -20,8 +19,7 @@ class ContractGenerator(DocumentGenerator):
             address=self.contract.school.address,
             nip=self.contract.school.nip,
             regon=self.contract.school.regon,
-            representant=self.FILL_WITH_EMPTY if self.omit_representative or self.contract.school.responsible_person
-            else self.contract.school.responsible_person,
+            representant=EMPTY_FILED if self.omit_representative else self.contract.school.fill_responsible_person(),
             email=self.contract.school.email,
             program_start_date=DateConverter.convert_date_to_string(self.contract.program.start_date),
             program_end_date=DateConverter.convert_date_to_string(self.contract.program.end_date),

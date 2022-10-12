@@ -1,5 +1,6 @@
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
+from helpers.common import EMPTY_FILED
 
 
 class SchoolModel(db.Model, BaseDatabaseQuery):
@@ -25,3 +26,6 @@ class SchoolModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def find_one_by_nick(cls, nick):
         return cls.query.filter_by(nick=nick).one()
+
+    def fill_responsible_person(self):
+        return self.responsible_person if self.responsible_person else EMPTY_FILED
