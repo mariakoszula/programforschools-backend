@@ -1,6 +1,7 @@
 from helpers.config_parser import config_parser
 from helpers.logger import app_logger
 
+EMPTY_FILED = "................................................................"
 
 def generate_documents(gen, **kwargs):
     try:

@@ -18,7 +18,7 @@ class AnnexGenerator(DocumentGenerator):
             address=self.annex.contract.school.address,
             nip=self.annex.contract.school.nip,
             regon=self.annex.contract.school.regon,
-            responsible_person=self.annex.contract.school.responsible_person,
+            responsible_person=self.annex.contract.school.fill_responsible_person(),
             fruitveg_products=str(self.annex.fruitVeg_products),
             dairy_products=str(self.annex.dairy_products),
             validity_date=DateConverter.convert_date_to_string(self.annex.validity_date)
