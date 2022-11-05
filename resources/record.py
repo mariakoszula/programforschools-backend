@@ -1,19 +1,18 @@
 import enum
 from typing import List
-
 from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
+from rq import Queue, Connection
 from operator import attrgetter
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
-from documents_generator.DeliveryGenerator import DeliveryGenerator
-from documents_generator.RecordGenerator import RecordGenerator
-from helpers.common import generate_documents
 from models.base_database_query import program_schema, DateQuerySchema
 from models.contracts import ContractModel
-from models.product import ProductStoreModel, ProductBoxModel
+from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
+from tasks.create_delivery_task import create_delivery, get_create_delivery_progress
+from worker import conn as redis_connection
 
 
 def must_not_be_empty(data):
@@ -182,7 +181,10 @@ def validate_record(record: RecordModel, program_id):
     return True
 
 
-class RecordDeliveryResource(Resource):
+create_delivery_tasks = dict()
+
+
+class RecordDeliveryCreate(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -191,20 +193,50 @@ class RecordDeliveryResource(Resource):
         body_errors = CreateRecordBodySchema().validate(request.json)
         if errors or body_errors:
             return {"message": f"url: {errors} body: {body_errors}"}, 400
-        records = [RecordModel.find_by_id(_id) for _id in request.json["records"]]
-        records.sort(key=attrgetter('contract_id', 'date'))
-        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.json.get("boxes", [])]
-        delivery_date = request.args["date"]
+        records_ids = request.json["records"]
+        records = RecordModel.get_records(records_ids)
         for record in records:
-            record.change_state(RecordState.GENERATED, date=delivery_date)
-        uploaded_documents = []
-        for record in records:
-            uploaded_documents.extend(generate_documents(gen=RecordGenerator, record=record))
-        uploaded_documents.extend(generate_documents(gen=DeliveryGenerator,
-                                                     records=records,
-                                                     **request.args,
-                                                     boxes=boxes,
-                                                     comments=request.json.get("comments", "")))
+            record.change_state(RecordState.PLANNED)
+        with Connection(redis_connection):
+            q = Queue()
+            create_delivery_task = q.enqueue(create_delivery, **request.json, **request.args)
+            create_delivery_tasks[create_delivery_task.get_id()] = records_ids
         return {
-                   'documents': uploaded_documents
-               }, 200
+                   'task_id': create_delivery_task.get_id()
+               }, 202
+
+
+class RecordDeliveryStatus(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls, task_id):
+        with Connection(redis_connection):
+            q = Queue()
+            create_delivery_task = q.fetch_job(task_id)
+            if create_delivery_task:
+                task_status = create_delivery_task.get_status()
+                task_id = create_delivery_task.get_id()
+                if create_delivery_task.is_failed:
+                    if create_delivery_tasks.get(task_id, None):
+                        del create_delivery_tasks[task_id]
+                    return {
+                               'progress': get_create_delivery_progress(task_status),
+                               'message': "Task failed to finish"
+                           }, 500
+                elif uploaded_documents := create_delivery_task.result:
+                    if create_delivery_tasks.get(task_id, None):
+                        del create_delivery_tasks[task_id]
+                    return {
+                               'progress': get_create_delivery_progress(task_status),
+                               'documents': uploaded_documents
+                           }, 200
+                else:
+                    return {
+                               'progress': get_create_delivery_progress(task_status,
+                                                                        create_delivery_tasks[task_id])
+                           }, 200
+        return {
+                   'progress': get_create_delivery_progress("failed"),
+                   'message': 'Task does not exists'
+               }, 500

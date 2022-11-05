@@ -72,3 +72,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
         self.state = state
         self.update_db()
+
+    @classmethod
+    def get_records(cls, ids):
+        return [cls.find_by_id(_id) for _id in ids]
