@@ -224,18 +224,17 @@ class RecordDeliveryStatus(Resource):
                                'progress': get_create_delivery_progress(task_status),
                                'message': "Task failed to finish"
                            }, 500
-                elif uploaded_documents := create_delivery_task.result:
+                if create_delivery_task.is_finished:
                     if create_delivery_tasks.get(task_id, None):
                         del create_delivery_tasks[task_id]
                     return {
                                'progress': get_create_delivery_progress(task_status),
-                               'documents': uploaded_documents
+                               'documents':  create_delivery_task.result
                            }, 200
-                else:
-                    return {
-                               'progress': get_create_delivery_progress(task_status,
-                                                                        create_delivery_tasks[task_id])
-                           }, 200
+                return {
+                           'progress': get_create_delivery_progress(task_status,
+                                                                    create_delivery_tasks[task_id])
+                       }, 200
         return {
                    'progress': get_create_delivery_progress("failed"),
                    'message': 'Task does not exists'

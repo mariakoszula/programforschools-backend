@@ -43,4 +43,7 @@ def get_create_delivery_progress(task_status, record_ids: List[int] = None, deli
         return -1
     records = [record.state for record in RecordModel.get_records(record_ids)]
     generated = records.count(RecordState.GENERATED)
-    return round(generated / (generated + records.count(RecordState.PLANNED)), 2) * 100 - delivery_gen_offset_time
+    estimated_value = round(generated / (generated + records.count(RecordState.PLANNED)), 2) * 100
+    estimated_value -= delivery_gen_offset_time
+    return estimated_value if estimated_value > 0 else 0
+
