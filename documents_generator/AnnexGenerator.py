@@ -10,8 +10,8 @@ class AnnexGenerator(DocumentGenerator):
         self._document.merge(
             city=self.annex.contract.school.city,
             current_date=self.date,
-            contract_no=str(self.annex.contract.contract_no.split(" ")[-1]),
-            contract_year=str(self.annex.contract.contract_year),
+            contract_no=self.annex.contract.contract_no.split(" ")[-1],
+            contract_year=self.annex.contract.contract_year,
             semester_no=self.annex.contract.program.get_current_semester(),
             school_year=self.annex.contract.program.school_year,
             name=self.annex.contract.school.name,
@@ -19,8 +19,8 @@ class AnnexGenerator(DocumentGenerator):
             nip=self.annex.contract.school.nip,
             regon=self.annex.contract.school.regon,
             responsible_person=self.annex.contract.school.fill_responsible_person(),
-            fruitveg_products=str(self.annex.fruitVeg_products),
-            dairy_products=str(self.annex.dairy_products),
+            fruitveg_products=self.annex.fruitVeg_products,
+            dairy_products=self.annex.dairy_products,
             validity_date=DateConverter.convert_date_to_string(self.annex.validity_date)
         )
 

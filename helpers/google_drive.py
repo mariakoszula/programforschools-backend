@@ -15,6 +15,7 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
 PDF_MIME_TYPE = 'application/pdf'
 DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
+GOOGLE_DRIVE_ID = config_parser.get("GoogleDriveConfig", "google_drive_id")
 
 
 def setup_google_drive_service(func):
@@ -49,7 +50,7 @@ class FileData:
         return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
 
     def __repr__(self):
-        return f"{str(self)} mimeType:{self.mime_type} id:{self.id if self.id else '-'}"
+        return f"FileData(_name={self.name}, _mime_type={self.mime_type}, _id={self.id})"
 
 
 def file_found(name: str, file_list: List[FileData]):
@@ -76,7 +77,7 @@ class GoogleDriveCommands:
 
     @staticmethod
     @setup_google_drive_service
-    def search(parent_id=config_parser.get('GoogleDriveConfig', 'google_drive_id'),
+    def search(parent_id=GOOGLE_DRIVE_ID,
                mime_type_query=f"='{DIR_MIME_TYPE}'",
                recursive_search=True) -> List[FileData]:
         found = []
@@ -101,7 +102,7 @@ class GoogleDriveCommands:
     @setup_google_drive_service
     def upload_file(path_to_file,
                     mime_type='application/vnd.google-apps.folder',
-                    parent_id='1Sc6UbsrzpAfTq2pq9Ieu7VSn1CGxmGrX'):
+                    parent_id=GOOGLE_DRIVE_ID):
         try:
             file_metadata = {
                 'name': path.split(path_to_file)[1],
@@ -126,3 +127,21 @@ class GoogleDriveCommands:
             return pdf_file_content
         except HttpError as error:
             app_logger.error(f"Error during uploading file '{source_file_id}': {error}")
+
+    @staticmethod
+    @setup_google_drive_service
+    def remove(directory_id):
+        try:
+            google_service.files().delete(fileId=directory_id).execute()
+        except HttpError as error:
+            app_logger.error(f"Error during removing directory '{directory_id}': {error}")
+
+    @staticmethod
+    @setup_google_drive_service
+    def clean_main_directory():
+        for file_or_folder in GoogleDriveCommands.search():
+            try:
+                GoogleDriveCommands.remove(file_or_folder.id)
+            except HttpError as error:
+                app_logger.error(f"Error during removing directory '{file_or_folder}': {error}")
+        app_logger.info(f"Google '{GOOGLE_DRIVE_ID}' cleaned")

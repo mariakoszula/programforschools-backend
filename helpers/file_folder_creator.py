@@ -65,8 +65,13 @@ class DirectoryCreator:
         for file_data in directories:
             if file_data.name == kwargs["name"]:
                 app_logger.debug(f'{kwargs["name"]} already exists with google_id: {file_data.id}')
-                return CreateDirectoryResults(should_insert=False,
-                                              directoryTreeObj=DirectoryTreeModel.find_by_google_id(file_data.id))
+                database_row = DirectoryTreeModel.find_by(google_id=file_data.id)
+                if database_row:
+                    return CreateDirectoryResults(should_insert=False,
+                                                  directoryTreeObj=database_row)
+                else:
+                    kwargs["google_id"] = file_data.id
+                    return DirectoryCreator.create_directory_model(**kwargs)
         new_id = GoogleDriveCommands.create_directory(parent_directory_id=kwargs["google_id"],
                                                       directory_name=kwargs["name"])
         kwargs["google_id"] = new_id
