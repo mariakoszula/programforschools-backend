@@ -1,16 +1,16 @@
-from helpers.config_parser import config_parser
 from helpers.logger import app_logger
-from os import path
 
 EMPTY_FILED = "................................................................"
 
 
 def generate_documents(gen, **kwargs):
+    from documents_generator.DocumentGenerator import DocumentGenerator
+    generator = gen(**kwargs)
     try:
-        generator = gen(**kwargs)
-        generator.generate()
-        generator.upload_files_to_remote_drive()
-        generator.export_files_to_pdf()
+        DocumentGenerator.generate(generator)
+        DocumentGenerator.upload_files_to_remote_drive(generator)
+        DocumentGenerator.export_files_to_pdf(generator)
+        DocumentGenerator.upload_pdf_files_to_remote_drive(generator)
         return [str(document) for document in generator.generated_documents]
     except TypeError as e:
         app_logger.error(f"{gen}: Problem occurred during document generation '{e}'")
@@ -18,10 +18,12 @@ def generate_documents(gen, **kwargs):
 
 # TODO use in all generators if work
 def get_output_name(name, *args):
+    from helpers.config_parser import config_parser
     return config_parser.get('DocNames', name).format(*args)
 
 
 def get_parent_and_children_directories(path_to_file, skip_last=False):
+    from os import path
     children = list()
     parent_directory_name = None
     while not parent_directory_name:

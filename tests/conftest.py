@@ -6,11 +6,11 @@ from helpers.db import db
 from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
-from helpers.file_folder_creator import DirectoryCreator
 from models.company import CompanyModel
 from models.program import ProgramModel
 import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
+from helpers.file_folder_creator import DirectoryCreator
 
 
 @pytest.fixture(scope='session')
@@ -37,15 +37,6 @@ def _db(app):
     return _db
 
 
-clean_up_remote_directories = set()
-
-
-def clean_up_remote():
-    global clean_up_remote_directories
-    for directory in clean_up_remote_directories:
-        GoogleDriveCommands.remove(directory.google_id)
-
-
 @pytest.fixture(scope='session')
 def app(database):
     app = create_app()
@@ -54,7 +45,7 @@ def app(database):
         db.drop_all()
         db.create_all()
         yield app
-    clean_up_remote()
+    GoogleDriveCommands.clean_main_directory()
 
 
 class InitialSetupError(BaseException):
@@ -70,10 +61,9 @@ def initial_program_setup(_db):
     main_directory = None
     try:
         main_directory = DirectoryCreator.create_main_directory_tree(program)
-        clean_up_remote_directories.add(main_directory)
         main_directory.save_to_db()
     except sqlalchemy.exc.NoResultFound as e:
         print(e)
         raise InitialSetupError(main_directory)
     yield
-    clean_up_remote()
+    GoogleDriveCommands.clean_main_directory()

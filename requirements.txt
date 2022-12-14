@@ -16,3 +16,5 @@ pytest-flask-sqlalchemy==1.1.0
 uwsgi
 Werkzeug~=2.2.1
 SQLAlchemy~=1.4.39
+aiogoogle==4.5.0
+pytest-asyncio==0.20.3
