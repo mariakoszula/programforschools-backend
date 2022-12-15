@@ -8,33 +8,61 @@ from typing import List
 from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData
 from models.directory_tree import DirectoryTreeModel
 
-DOCX_EXT = ".docx"
-PDF_EXT = ".pdf"
+
+class DirectoryCreatorError(Exception):
+    pass
 
 
 class DocumentGenerator(ABC):
-    PDF_GENERATION_TRIES = 5
+    DOCX_EXT = ".docx"
+    PDF_EXT = ".pdf"
 
-    def __init__(self, template_document, output_directory, output_name):
+    def __init__(self, *, template_document, output_directory, output_name):
         if not path.exists(template_document):
             app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
         self.generated_documents: List[FileData] = []
         self.output_directory = output_directory
         self.output_doc_name = output_name
-
         self.template_document = template_document
+
+        self.file_path = path.join(self.output_directory, self.output_doc_name)
+        self.remote_parent_id = self.__prepare_remote_parent()
         self._document = self.__start_doc_gen()
+        self.__document_merge = self._document.merge
+        self._document.merge = self.__run_field_validation_and_merge
         self.__fields_to_merge = self._document.get_merge_fields()
 
         super(DocumentGenerator, self).__init__()
 
-    def generate(self) -> None:
-        self.prepare_data()
-        file = path.join(self.output_directory, self.output_doc_name)
+    def __prepare_remote_parent(self):
         try:
-            self.__end_doc_gen(file)
+            DirectoryCreator.create_remote_tree(self.output_directory)
+            return DirectoryTreeModel.get_google_parent_directory(self.file_path)
+        except Exception as e:
+            app_logger.errro(f"During creation of directory tree{e}")
+            raise DirectoryCreatorError()
+
+    def __check_for_missing_or_extra_keys(self, given_keys):
+        missing_fields = [key for key in self.__fields_to_merge if key not in given_keys]
+        if len(missing_fields):
+            raise ValueError(f"Missing fields from template {missing_fields}")
+        extra_fields = [key for key in given_keys if key not in self.__fields_to_merge]
+        if len(extra_fields):
+            raise ValueError(f"Extra fields not in template {extra_fields}")
+
+    def __run_field_validation_and_merge(self, **fields):
+        self.__check_for_missing_or_extra_keys(fields.keys())
+        for key, value in fields.items():
+            fields[key] = str(value)
+        self.__document_merge(**fields)
+
+    def generate(self):
+        self.prepare_data()
+        try:
+            self.__end_doc_gen(self.file_path)
+            return self
         except ValueError as e:
-            app_logger.error("Problem occurred during generating document. [%s]", e)
+            app_logger.error(f"Problem occurred during generating document {self.file_path}. [{e}]")
 
     @staticmethod
     def copy_to_path(source, dest):
@@ -54,7 +82,6 @@ class DocumentGenerator(ABC):
         if not path.exists(output_directory):
             makedirs(output_directory)
             app_logger.debug("[%s] Created new output directory: %s", __class__.__name__, output_directory)
-        DirectoryCreator.create_remote_tree(output_directory)
 
     def __start_doc_gen(self):
         DocumentGenerator.create_directory(self.output_directory)
@@ -75,33 +102,36 @@ class DocumentGenerator(ABC):
         for index, file_data in enumerate(self.generated_documents):
             if file_type not in file_data.name:
                 continue
-            parent_dir = DirectoryTreeModel.get_google_parent_directory(file_data.name)
             uploaded_file_id, web_link = GoogleDriveCommands.upload_file(path_to_file=file_data.name,
                                                                          mime_type=file_data.mime_type,
-                                                                         parent_id=parent_dir.google_id)
+                                                                         parent_id=self.remote_parent_id.google_id)
             if uploaded_file_id:
                 self.generated_documents[index].id = uploaded_file_id
                 self.generated_documents[index].web_view_link = web_link
                 app_logger.info(
                     f"File '{file_data.name}' successfully uploaded with id {uploaded_file_id} to "
-                    f"{parent_dir}")
+                    f"{self.remote_parent_id}")
 
             else:
-                app_logger.error(f"Failed to upload file '{file_data.name}' to {parent_dir}")
+                app_logger.error(f"Failed to upload file '{file_data.name}' to {self.remote_parent_id}")
+        return self
+
+    def upload_pdf_files_to_remote_drive(self):
+        return self.upload_files_to_remote_drive(file_type=DocumentGenerator.PDF_EXT)
 
     def export_files_to_pdf(self):
-        files = list(filter(lambda file: DOCX_EXT in file.name, self.generated_documents))
+        files = list(filter(lambda file: DocumentGenerator.DOCX_EXT in file.name, self.generated_documents))
         file_data: FileData
         for file_data in files:
             self.generated_documents.append(
                 FileData(_name=DocumentGenerator.export_to_pdf(file_data.name, file_data.id),
                          _mime_type=PDF_MIME_TYPE))
-        self.upload_files_to_remote_drive(file_type=PDF_EXT)
+        return self
 
     @staticmethod
     def export_to_pdf(file_name, source_file_id):
         file_content = GoogleDriveCommands.export_to_pdf(source_file_id)
-        pdf_name = file_name.replace(DOCX_EXT, PDF_EXT)
+        pdf_name = file_name.replace(DocumentGenerator.DOCX_EXT, DocumentGenerator.PDF_EXT)
         with open(pdf_name, "wb") as pdf_file:
             pdf_file.write(file_content)
         return pdf_name

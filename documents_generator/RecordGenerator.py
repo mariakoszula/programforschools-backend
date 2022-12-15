@@ -46,7 +46,7 @@ class RecordGenerator(DocumentGenerator):
             'nip': record.contract.school.nip,
             'regon': record.contract.school.regon,
             'email': record.contract.school.email,
-            'kids_no': str(record.delivered_kids_no),
+            'kids_no': record.delivered_kids_no,
             'product_name': record.product_store.product.name,
             'record_title': get_record_title_mapping(record.product_store.product.type)
         }

@@ -12,8 +12,8 @@ class ContractGenerator(DocumentGenerator):
         self._document.merge(
             city=self.contract.school.city,
             date=self.date,
-            no=str(self.contract.contract_no),
-            year=str(self.contract.contract_year),
+            no=self.contract.contract_no,
+            year=self.contract.contract_year,
             semester=self.contract.program.get_current_semester(),
             name=self.contract.school.name,
             address=self.contract.school.address,

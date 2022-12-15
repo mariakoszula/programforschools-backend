@@ -16,7 +16,10 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DATABASE_URL', local_db_name)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace(db_remote_prefix,
                                                                                           db_local_prefix)
-    app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
+    if secret := environ.get("SECRET_KEY", None):
+        app.secret_key = secret
+    else:
+        app.secret_key = f"{config_parser.get('Common', 'secret_key')}"
 
     with app.app_context():
         from helpers.db import db
@@ -24,6 +27,7 @@ def create_app():
         @app.before_first_request
         def create_tables():
             db.create_all()
+
         db.init_app(app)
 
         from routes import create_routes
