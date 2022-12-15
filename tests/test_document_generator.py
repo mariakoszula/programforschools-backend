@@ -9,7 +9,7 @@ from tests.common_data import program as program_data
 from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, get_mime_type, PDF_MIME_TYPE
 from helpers.common import generate_documents
 from models.directory_tree import DirectoryTreeModel
-
+import pytest
 
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join(config_parser.get('DocTemplates', 'directory'),
@@ -134,3 +134,4 @@ def test_successful_generate_documents_with_threads(initial_program_setup, remov
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
     __validate_successful_generation_test(results, no_of_items=loop_size)
+

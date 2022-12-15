@@ -12,6 +12,8 @@ import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
 
+pytest_plugins = ('pytest_asyncio',)
+
 
 @pytest.fixture(scope='session')
 def database(request):
