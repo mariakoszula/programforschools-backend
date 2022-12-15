@@ -39,7 +39,7 @@ class DocumentGenerator(ABC):
             DirectoryCreator.create_remote_tree(self.output_directory)
             return DirectoryTreeModel.get_google_parent_directory(self.file_path)
         except Exception as e:
-            app_logger.errro(f"During creation of directory tree{e}")
+            app_logger.error(f"During creation of directory tree{e}")
             raise DirectoryCreatorError()
 
     def __check_for_missing_or_extra_keys(self, given_keys):

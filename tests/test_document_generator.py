@@ -21,11 +21,11 @@ class CustomDocumentGenerator(DocumentGenerator):
         self._document.merge(**self.fields_to_merge)
 
     def __init__(self, directory_name="TEST", **fields_to_merge):
-        test_directory_path = path.join(CustomDocumentGenerator.main_directory_name, directory_name)
+        self.test_directory_path = path.join(CustomDocumentGenerator.main_directory_name, directory_name)
         self.fields_to_merge = fields_to_merge
         DocumentGenerator.__init__(self,
                                    template_document=CustomDocumentGenerator.template_document,
-                                   output_directory=test_directory_path,
+                                   output_directory=self.test_directory_path,
                                    output_name="test_file.docx")
 
 
@@ -44,11 +44,11 @@ valid_fields = {'dummy_data_no': 125, 'dummy_data': "Testing document generation
 
 
 @pytest.mark.parametrize('document_generator', [valid_fields], indirect=["document_generator"])
-def test_successful_generation(document_generator):
+def test_successful_generation(initial_program_setup, document_generator):
     document_generator.generate()
     assert isinstance(document_generator, CustomDocumentGenerator)
     assert len(document_generator.generated_documents) == 1
-    assert path.isdir(document_generator.directory_name)
+    assert path.isdir(document_generator.test_directory_path)
     all_fields_to_marge_are_in_file(document_generator.generated_documents[0].name,
                                     **document_generator.fields_to_merge)
 
@@ -56,7 +56,7 @@ def test_successful_generation(document_generator):
 @pytest.mark.parametrize('document_generator', [{'dummy_data_no': 125},
                                                 {'dummy_data_no': 1, 'dummy_data': 2, 'dummy_extra_field': 12}],
                          indirect=["document_generator"])
-def test_missing_or_extra_merge_field_raises_exception(document_generator):
+def test_missing_or_extra_merge_field_raises_exception(initial_program_setup, document_generator):
     with pytest.raises(ValueError):
         document_generator.generate()
         assert len(document_generator.generated_documents) == 0
@@ -127,7 +127,7 @@ def test_successful_generate_documents(initial_program_setup, remove_created_res
 
 def test_successful_generate_documents_with_threads(initial_program_setup, remove_created_resources):
     from tasks.generate_documents_task import generate_documents as generate_documents_thread
-    loop_size = 50
+    loop_size = 5
     test_documents = prepare_generate_documents_data(loop_size)
     results = generate_documents_thread(test_documents)
 

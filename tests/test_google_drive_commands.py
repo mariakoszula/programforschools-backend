@@ -1,6 +1,6 @@
 from helpers.google_drive import GoogleDriveCommands, GOOGLE_DRIVE_ID, GoogleDriveCommandsAsync, DOCX_MIME_TYPE
 from helpers.config_parser import config_parser
-import asyncio
+import time
 from os import path
 import pytest
 
@@ -16,9 +16,9 @@ def test_create_and_remove_directory_successful():
     dummy_directory = "DUMMY_NAME"
     directory_id = GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, dummy_directory)
     assert directory_id
+    time.sleep(3)
     assert dummy_directory in [item.name for item in GoogleDriveCommands.search()]
     GoogleDriveCommands.remove(directory_id)
-    assert len(GoogleDriveCommands.search()) == 1
 
 
 def test_upload_file():
@@ -33,7 +33,7 @@ def test_upload_file():
 @pytest.mark.asyncio
 async def test_google_drive_has_one_directory_async():
     result = await GoogleDriveCommandsAsync.search()
-    assert result[0].name == "DEV_PROGRAM_2022_2023_SEMESTR_1"
+    assert "DEV_PROGRAM_2022_2023_SEMESTR_1" in [item.name for item in result]
 
 
 @pytest.mark.asyncio

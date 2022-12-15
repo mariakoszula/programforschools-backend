@@ -52,7 +52,7 @@ class InitialSetupError(BaseException):
     pass
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def initial_program_setup(_db):
     company = CompanyModel(**common_data.company)
     company.save_to_db()
