@@ -1,15 +1,15 @@
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.config_parser import config_parser
-import pytest
 from os import path, remove
 from tests.common import all_fields_to_marge_are_in_file
 from shutil import rmtree
 from helpers.file_folder_creator import DirectoryCreator
 from tests.common_data import program as program_data
-from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, get_mime_type, PDF_MIME_TYPE
+from helpers.google_drive import FileData, GoogleDriveCommands, DOCX_MIME_TYPE, GoogleDriveCommandsAsync, DriveCommands
 from helpers.common import generate_documents
 from models.directory_tree import DirectoryTreeModel
 import pytest
+
 
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join(config_parser.get('DocTemplates', 'directory'),
@@ -20,18 +20,19 @@ class CustomDocumentGenerator(DocumentGenerator):
     def prepare_data(self):
         self._document.merge(**self.fields_to_merge)
 
-    def __init__(self, directory_name="TEST", **fields_to_merge):
+    def __init__(self, drive_tool=GoogleDriveCommands, directory_name="TEST", **fields_to_merge):
         self.test_directory_path = path.join(CustomDocumentGenerator.main_directory_name, directory_name)
         self.fields_to_merge = fields_to_merge
         DocumentGenerator.__init__(self,
                                    template_document=CustomDocumentGenerator.template_document,
                                    output_directory=self.test_directory_path,
-                                   output_name="test_file.docx")
+                                   output_name="test_file.docx",
+                                   drive_tool=drive_tool)
 
 
 @pytest.fixture
 def document_generator(request):
-    test_doc_gen = CustomDocumentGenerator(**request.param)
+    test_doc_gen = CustomDocumentGenerator(drive_tool=GoogleDriveCommands, **request.param)
     yield test_doc_gen
     remove_local_directory()
 
@@ -71,7 +72,8 @@ def test_successful_remote_upload(initial_program_setup, document_generator):
 
 @pytest.fixture
 def uploaded_file():
-    (file_id, _) = GoogleDriveCommands.upload_file(CustomDocumentGenerator.template_document, mime_type=DOCX_MIME_TYPE)
+    file_data = FileData(_name=CustomDocumentGenerator.template_document, _mime_type=DOCX_MIME_TYPE)
+    (file_id, _) = GoogleDriveCommands.upload_file(file_data)
     yield file_id
     remove_created_pdf()
 
@@ -87,7 +89,8 @@ def remove_created_pdf():
 
 def test_successful_pdf_generation(uploaded_file):
     pdf_name = DocumentGenerator.export_to_pdf(file_name=CustomDocumentGenerator.template_document,
-                                               source_file_id=uploaded_file)
+                                               source_file_id=uploaded_file,
+                                               drive_tool=GoogleDriveCommands)
     with open(pdf_name, "rb") as pdf_file:
         content = pdf_file.read()
         assert b"PDF" in content
@@ -100,12 +103,13 @@ def remove_created_resources():
     remove_local_directory()
 
 
-def prepare_generate_documents_data(loop_size):
+def prepare_generate_documents_data(loop_size, drive_tool):
     test_data = []
     for i in range(loop_size):
         args = valid_fields.copy()
         args["directory_name"] = f"TEST_{i}"
-        test_data.append((CustomDocumentGenerator, args))
+        args["drive_tool"] = drive_tool
+        test_data.append((CustomDocumentGenerator,  args))
     return test_data
 
 
@@ -119,19 +123,21 @@ def __validate_successful_generation_test(res, no_of_items):
 
 
 def test_successful_generate_documents(initial_program_setup, remove_created_resources):
-    for item in prepare_generate_documents_data(loop_size=5):
+    for item in prepare_generate_documents_data(loop_size=1, drive_tool=GoogleDriveCommands):
         results = generate_documents(item[0], **item[1])
         __validate_successful_generation_test(results, 1)
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
 
 
-def test_successful_generate_documents_with_threads(initial_program_setup, remove_created_resources):
-    from tasks.generate_documents_task import generate_documents as generate_documents_thread
-    loop_size = 5
-    test_documents = prepare_generate_documents_data(loop_size)
-    results = generate_documents_thread(test_documents)
-
+@pytest.mark.asyncio
+async def test_successful_generate_documents_async(initial_program_setup, remove_created_resources):
+    from tasks.generate_documents_task import generate_documents_async
+    loop_size = 50
+    test_documents = prepare_generate_documents_data(loop_size, drive_tool=DriveCommands)
+    results = await generate_documents_async(test_documents)
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
     __validate_successful_generation_test(results, no_of_items=loop_size)
+    GoogleDriveCommandsAsync.clear_tmp()
+
 
