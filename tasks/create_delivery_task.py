@@ -3,10 +3,10 @@ from typing import List
 
 from documents_generator.DeliveryGenerator import DeliveryGenerator
 from documents_generator.RecordGenerator import RecordGenerator
-from helpers.common import generate_documents
 from models.record import RecordModel, RecordState
 from models.product import ProductBoxModel
 from app import create_app
+from tasks.generate_documents_task import generate_documents
 
 
 def create_delivery(**request):
@@ -16,17 +16,19 @@ def create_delivery(**request):
         records.sort(key=attrgetter('contract_id', 'date'))
         boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
         delivery_date = request["date"]
-        uploaded_documents = []
+        upload_documents = []
+        record_delivery = []
         for record in records:
             record.change_state(RecordState.GENERATED, date=delivery_date)
-            uploaded_documents.extend(generate_documents(gen=RecordGenerator, record=record))
-        uploaded_documents.extend(generate_documents(gen=DeliveryGenerator,
-                                                     records=records,
-                                                     date=delivery_date,
-                                                     driver=request["driver"],
-                                                     boxes=boxes,
-                                                     comments=request.get("comments", "")))
-        return uploaded_documents
+            record_delivery.append((RecordGenerator, {'record': record}))
+        upload_documents.extend(generate_documents(record_delivery))
+
+        upload_documents.extend(generate_documents([(DeliveryGenerator, {'records': records,
+                                                                         'date': delivery_date,
+                                                                         'driver': request["driver"],
+                                                                         'boxes': boxes,
+                                                                         'comments': request.get("comments", "")})]))
+        return upload_documents
 
 
 def get_create_delivery_progress(task_status, record_ids: List[int] = None, delivery_gen_offset_time=5):
@@ -46,4 +48,3 @@ def get_create_delivery_progress(task_status, record_ids: List[int] = None, deli
     estimated_value = round(generated / (generated + records.count(RecordState.PLANNED)), 2) * 100
     estimated_value -= delivery_gen_offset_time
     return estimated_value if estimated_value > 0 else 0
-

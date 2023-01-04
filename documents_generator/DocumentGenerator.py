@@ -51,10 +51,14 @@ class DocumentGenerator(ABC):
         if len(extra_fields):
             raise ValueError(f"Extra fields not in template {extra_fields}")
 
-    def __run_field_validation_and_merge(self, **fields):
-        self.__check_for_missing_or_extra_keys(fields.keys())
-        for key, value in fields.items():
-            fields[key] = str(value)
+    def __run_field_validation_and_merge(self, parts=None, **fields):
+        if not parts:
+            try:
+                self.__check_for_missing_or_extra_keys(fields.keys())
+            except ValueError as e:
+                app_logger.warn(f"{e}")
+            for key, value in fields.items():
+                fields[key] = str(value)
         self.__document_merge(**fields)
 
     def generate(self):

@@ -199,7 +199,7 @@ class RecordDeliveryCreate(Resource):
             record.change_state(RecordState.PLANNED)
         with Connection(redis_connection):
             q = Queue()
-            create_delivery_task = q.enqueue(create_delivery, **request.json, **request.args)
+            create_delivery_task = q.enqueue(create_delivery, result_ttl=60*60, **request.json, **request.args)
             create_delivery_tasks[create_delivery_task.get_id()] = records_ids
         return {
                    'task_id': create_delivery_task.get_id()

@@ -87,6 +87,7 @@ def __run_generate_and_upload_documents(generators: List[DocumentGenerator]):
 
 def generate_documents(generators_init_data: List[tuple]):
     generators = []
+    print(f"Mery generators_init: {generators_init_data}")
     for (gen, args) in generators_init_data:
         try:
             generator = gen(**args)
