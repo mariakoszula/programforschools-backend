@@ -37,15 +37,16 @@ async def create_delivery_async(**request):
         records.sort(key=attrgetter('contract_id', 'date'))
         boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
         delivery_date = request["date"]
-        delivery_documents = [(RecordGenerator, {'record': record}) for record in records]
+        generated_documents = await generate_documents_async([(RecordGenerator, {'record': record}) for record in records])
+        #TODO check in results and thn update GENERATED
+        for record in records:
+            record.change_state(RecordState.GENERATED, date=delivery_date)
         delivery_args = {'records': records, 'date': delivery_date,
                          'driver': request["driver"],
                          'boxes': boxes,
                          'comments': request.get("comments", "")}
-        delivery_documents.append((DeliveryGenerator, delivery_args))
-        generated_documents = await generate_documents_async(delivery_documents)
-        for record in records:
-            record.change_state(RecordState.GENERATED, date=delivery_date)
+        #TODO on get check how many already uploaded move this to
+        generated_documents.append(await generate_documents_async([(DeliveryGenerator, delivery_args)]))
         return generated_documents
 
 
