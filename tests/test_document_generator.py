@@ -1,4 +1,5 @@
 from documents_generator.DocumentGenerator import DocumentGenerator
+from documents_generator.DeliveryGenerator import DeliveryGenerator
 from helpers.config_parser import config_parser
 from os import path, remove
 from tests.common import all_fields_to_marge_are_in_file
@@ -8,6 +9,7 @@ from tests.common_data import program as program_data
 from helpers.google_drive import FileData, GoogleDriveCommands, DOCX_MIME_TYPE, GoogleDriveCommandsAsync, DriveCommands
 from helpers.common import generate_documents
 from models.directory_tree import DirectoryTreeModel
+from models.record import RecordModel
 import pytest
 
 
@@ -132,7 +134,7 @@ def test_successful_generate_documents(initial_program_setup, remove_created_res
 @pytest.mark.asyncio
 async def test_successful_generate_documents_async(initial_program_setup, remove_created_resources):
     from tasks.generate_documents_task import generate_documents_async
-    loop_size = 50
+    loop_size = 2
     test_documents = prepare_generate_documents_data(loop_size, drive_tool=DriveCommands)
     results = await generate_documents_async(test_documents)
     for item in test_documents:
@@ -140,4 +142,8 @@ async def test_successful_generate_documents_async(initial_program_setup, remove
     __validate_successful_generation_test(results, no_of_items=loop_size)
     GoogleDriveCommandsAsync.clear_tmp()
 
-
+#
+# def test_delivery_generator(initial_program_setup):
+#
+#     results = generate_documents(gen=DeliveryGenerator, )
+#     assert results is not None

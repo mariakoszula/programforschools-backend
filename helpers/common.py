@@ -3,7 +3,6 @@ from helpers.logger import app_logger
 EMPTY_FILED = "................................................................"
 
 
-
 def generate_documents(gen, **kwargs):
     from documents_generator.DocumentGenerator import DocumentGenerator
     generator = gen(**kwargs)

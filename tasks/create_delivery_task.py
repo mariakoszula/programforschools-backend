@@ -7,6 +7,7 @@ from helpers.common import generate_documents
 from models.record import RecordModel, RecordState
 from models.product import ProductBoxModel
 from app import create_app
+from tasks.generate_documents_task import generate_documents_async
 
 
 def create_delivery(**request):
@@ -29,6 +30,25 @@ def create_delivery(**request):
         return uploaded_documents
 
 
+async def create_delivery_async(**request):
+    app = create_app()
+    with app.app_context():
+        records = RecordModel.get_records(request["records"])
+        records.sort(key=attrgetter('contract_id', 'date'))
+        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
+        delivery_date = request["date"]
+        delivery_documents = [(RecordGenerator, {'record': record}) for record in records]
+        delivery_args = {'records': records, 'date': delivery_date,
+                         'driver': request["driver"],
+                         'boxes': boxes,
+                         'comments': request.get("comments", "")}
+        delivery_documents.append((DeliveryGenerator, delivery_args))
+        generated_documents = await generate_documents_async(delivery_documents)
+        for record in records:
+            record.change_state(RecordState.GENERATED, date=delivery_date)
+        return generated_documents
+
+
 def get_create_delivery_progress(task_status, record_ids: List[int] = None, delivery_gen_offset_time=5):
     """
     Calculates progress based on RecordState change from PLANNED to GENERATED and task_status
@@ -46,4 +66,3 @@ def get_create_delivery_progress(task_status, record_ids: List[int] = None, deli
     estimated_value = round(generated / (generated + records.count(RecordState.PLANNED)), 2) * 100
     estimated_value -= delivery_gen_offset_time
     return estimated_value if estimated_value > 0 else 0
-

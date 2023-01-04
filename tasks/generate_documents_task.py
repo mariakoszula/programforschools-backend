@@ -5,6 +5,7 @@ from documents_generator.DocumentGenerator import DocumentGenerator, DirectoryCr
 from helpers.google_drive import GoogleDriveCommandsAsync, FileData
 from threading import Thread
 
+
 def __get_results(files_data: List[FileData]):
     generator: DocumentGenerator
     return [str(file_data) for file_data in files_data]
