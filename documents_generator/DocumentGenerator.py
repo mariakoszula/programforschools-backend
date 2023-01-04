@@ -22,6 +22,7 @@ class DocumentGenerator(ABC):
         if not path.exists(template_document):
             app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
         self.generated_documents: List[FileData] = []
+        self.generated_document = None
         self.output_directory = output_directory
         self.output_doc_name = output_name
         self.template_document = template_document
@@ -35,6 +36,7 @@ class DocumentGenerator(ABC):
 
         super(DocumentGenerator, self).__init__()
 
+    # TODO create uploading async and move this to create many dir async
     def __prepare_remote_parent(self):
         try:
             DirectoryCreator.create_remote_tree(self.output_directory)
@@ -57,6 +59,7 @@ class DocumentGenerator(ABC):
                 self.__check_for_missing_or_extra_keys(fields.keys())
             except ValueError as e:
                 app_logger.warn(f"{e}")
+
             for key, value in fields.items():
                 fields[key] = str(value)
         self.__document_merge(**fields)
@@ -96,7 +99,9 @@ class DocumentGenerator(ABC):
         self._document.write(generated_file)
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
-        self.generated_documents.append(FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE))
+        self.generated_document = FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE,
+                                           _parent_id=self.remote_parent_id.google_id)
+        self.generated_documents.append(self.generated_document)
         app_logger.debug("[%s] Created new output file: %s", __class__.__name__, generated_file, )
 
     @abstractmethod
@@ -107,9 +112,7 @@ class DocumentGenerator(ABC):
         for index, file_data in enumerate(self.generated_documents):
             if file_type not in file_data.name:
                 continue
-            uploaded_file_id, web_link = self.drive_tool.upload_file(path_to_file=file_data.name,
-                                                                     mime_type=file_data.mime_type,
-                                                                     parent_id=self.remote_parent_id.google_id)
+            uploaded_file_id, web_link = self.drive_tool.upload_file(file_data)
             if uploaded_file_id:
                 self.generated_documents[index].id = uploaded_file_id
                 self.generated_documents[index].web_view_link = web_link
@@ -129,12 +132,15 @@ class DocumentGenerator(ABC):
         file_data: FileData
         for file_data in files:
             self.generated_documents.append(
-                FileData(_name=DocumentGenerator.export_to_pdf(file_data.name, file_data.id, self.drive_tool),
-                         _mime_type=PDF_MIME_TYPE))
+                FileData(_name=DocumentGenerator.export_to_pdf(file_name=file_data.name,
+                                                               source_file_id=file_data.id,
+                                                               drive_tool=self.drive_tool),
+                         _mime_type=PDF_MIME_TYPE,
+                         _parent_id=self.remote_parent_id.google_id))
         return self
 
     @staticmethod
-    def export_to_pdf(file_name, source_file_id, drive_tool=GoogleDriveCommands):
+    def export_to_pdf(file_name, source_file_id, drive_tool):
         file_content = drive_tool.convert_to_pdf(source_file_id)
         pdf_name = file_name.replace(DocumentGenerator.DOCX_EXT, DocumentGenerator.PDF_EXT)
         with open(pdf_name, "wb") as pdf_file:

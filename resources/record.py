@@ -11,7 +11,7 @@ from models.contracts import ContractModel
 from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
-from tasks.create_delivery_task import create_delivery, get_create_delivery_progress
+from tasks.create_delivery_task import create_delivery, get_create_delivery_progress, create_delivery_async
 from worker import conn as redis_connection
 
 
@@ -199,7 +199,7 @@ class RecordDeliveryCreate(Resource):
             record.change_state(RecordState.PLANNED)
         with Connection(redis_connection):
             q = Queue()
-            create_delivery_task = q.enqueue(create_delivery, result_ttl=60*60, **request.json, **request.args)
+            create_delivery_task = q.enqueue(create_delivery_async, result_ttl=60*60, **request.json, **request.args)
             create_delivery_tasks[create_delivery_task.get_id()] = records_ids
         return {
                    'task_id': create_delivery_task.get_id()

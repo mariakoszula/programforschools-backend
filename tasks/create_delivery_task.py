@@ -3,10 +3,11 @@ from typing import List
 
 from documents_generator.DeliveryGenerator import DeliveryGenerator
 from documents_generator.RecordGenerator import RecordGenerator
+from helpers.common import generate_documents
 from models.record import RecordModel, RecordState
 from models.product import ProductBoxModel
 from app import create_app
-from tasks.generate_documents_task import generate_documents
+from tasks.generate_documents_task import generate_documents_async
 
 
 def create_delivery(**request):
@@ -16,19 +17,37 @@ def create_delivery(**request):
         records.sort(key=attrgetter('contract_id', 'date'))
         boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
         delivery_date = request["date"]
-        upload_documents = []
-        record_delivery = []
+        uploaded_documents = []
         for record in records:
             record.change_state(RecordState.GENERATED, date=delivery_date)
-            record_delivery.append((RecordGenerator, {'record': record}))
-        upload_documents.extend(generate_documents(record_delivery))
+            uploaded_documents.extend(generate_documents(gen=RecordGenerator, record=record))
+        uploaded_documents.extend(generate_documents(gen=DeliveryGenerator,
+                                                     records=records,
+                                                     date=delivery_date,
+                                                     driver=request["driver"],
+                                                     boxes=boxes,
+                                                     comments=request.get("comments", "")))
+        return uploaded_documents
 
-        upload_documents.extend(generate_documents([(DeliveryGenerator, {'records': records,
-                                                                         'date': delivery_date,
-                                                                         'driver': request["driver"],
-                                                                         'boxes': boxes,
-                                                                         'comments': request.get("comments", "")})]))
-        return upload_documents
+
+async def create_delivery_async(**request):
+    app = create_app()
+    with app.app_context():
+        records = RecordModel.get_records(request["records"])
+        records.sort(key=attrgetter('contract_id', 'date'))
+        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
+        delivery_date = request["date"]
+        generated_documents = await generate_documents_async([(RecordGenerator, {'record': record}) for record in records])
+        #TODO check in results and thn update GENERATED
+        for record in records:
+            record.change_state(RecordState.GENERATED, date=delivery_date)
+        delivery_args = {'records': records, 'date': delivery_date,
+                         'driver': request["driver"],
+                         'boxes': boxes,
+                         'comments': request.get("comments", "")}
+        #TODO on get check how many already uploaded move this to
+        generated_documents.append(await generate_documents_async([(DeliveryGenerator, delivery_args)]))
+        return generated_documents
 
 
 def get_create_delivery_progress(task_status, record_ids: List[int] = None, delivery_gen_offset_time=5):

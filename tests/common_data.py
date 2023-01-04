@@ -1,3 +1,5 @@
+import datetime
+
 company = {
     "name": "Dummy company name",
     "nip": "123-123-123",
@@ -19,6 +21,11 @@ program = {
     "dairy_amount": 12,
     "fruitVeg_amount": 21
 }
+
+school_data = {
+    "nick": "My dummy school"
+}
+
 
 
 def get_program_data(company_id):

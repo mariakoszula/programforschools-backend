@@ -67,5 +67,5 @@ def initial_program_setup(_db):
     except sqlalchemy.exc.NoResultFound as e:
         print(e)
         raise InitialSetupError(main_directory)
-    yield
+    yield program
     GoogleDriveCommands.clean_main_directory()
