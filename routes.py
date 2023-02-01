@@ -6,8 +6,9 @@ from resources.contracts import ContractsCreateResource, ContractResource, Contr
 from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource, ProductBoxResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
-from resources.record import RecordsAllResource, RecordResource, RecordDeliveryCreate, RecordDeliveryStatus
+from resources.record import RecordsAllResource, RecordResource, RecordDeliveryCreate
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
+from resources.task_progress import TaskProgressStatus
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
 from resources.register import RegisterResource
 from helpers.google_drive import GoogleDriveCommands
@@ -74,7 +75,7 @@ def create_routes(app):
     api.add_resource(RecordsAllResource, '/records')
     api.add_resource(RecordResource, '/record/<int:record_id>')
     api.add_resource(RecordDeliveryCreate, '/create_delivery')
-    api.add_resource(RecordDeliveryStatus, '/create_delivery/<string:task_id>')
+    api.add_resource(TaskProgressStatus, '/task_progress/<string:task_id>')
 
     @app.route("/")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
