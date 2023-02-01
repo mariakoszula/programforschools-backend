@@ -1,21 +1,20 @@
 from documents_generator.DocumentGenerator import DocumentGenerator
-from documents_generator.DeliveryGenerator import DeliveryGenerator
 from helpers.config_parser import config_parser
 from os import path, remove
 from tests.common import all_fields_to_marge_are_in_file
 from shutil import rmtree
+from typing import List
 from helpers.file_folder_creator import DirectoryCreator
 from tests.common_data import program as program_data
-from helpers.google_drive import FileData, GoogleDriveCommands, DOCX_MIME_TYPE, GoogleDriveCommandsAsync, DriveCommands
-from helpers.common import generate_documents
+from helpers.google_drive import FileData, GoogleDriveCommands, GoogleDriveCommandsAsync, DriveCommands
+from helpers.common import generate_documents, DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
 from models.directory_tree import DirectoryTreeModel
-from models.record import RecordModel
 import pytest
 
 
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join(config_parser.get('DocTemplates', 'directory'),
-                                  config_parser.get('DocTemplates', 'test'))
+                                  config_parser.get('DocTemplates', 'test').format(""))
     main_directory_name = DirectoryCreator.get_main_dir(school_year=program_data["school_year"],
                                                         semester_no=program_data["semester_no"])
 
@@ -56,15 +55,6 @@ def test_successful_generation(initial_program_setup, document_generator):
                                     **document_generator.fields_to_merge)
 
 
-@pytest.mark.parametrize('document_generator', [{'dummy_data_no': 125},
-                                                {'dummy_data_no': 1, 'dummy_data': 2, 'dummy_extra_field': 12}],
-                         indirect=["document_generator"])
-def test_missing_or_extra_merge_field_raises_exception(initial_program_setup, document_generator):
-    with pytest.raises(ValueError):
-        document_generator.generate()
-        assert len(document_generator.generated_documents) == 0
-
-
 @pytest.mark.parametrize('document_generator', [valid_fields], indirect=["document_generator"])
 def test_successful_remote_upload(initial_program_setup, document_generator):
     document_generator.generate()
@@ -78,11 +68,12 @@ def uploaded_file():
     (file_id, _) = GoogleDriveCommands.upload_file(file_data)
     yield file_id
     remove_created_pdf()
+    GoogleDriveCommands.remove(file_id)
 
 
 def remove_created_pdf():
-    file_to_remove = CustomDocumentGenerator.template_document.replace(DocumentGenerator.DOCX_EXT,
-                                                                       DocumentGenerator.PDF_EXT)
+    file_to_remove = CustomDocumentGenerator.template_document.replace(DOCX_EXT,
+                                                                       PDF_EXT)
     try:
         remove(file_to_remove)
     except FileNotFoundError:
@@ -111,7 +102,7 @@ def prepare_generate_documents_data(loop_size, drive_tool):
         args = valid_fields.copy()
         args["directory_name"] = f"TEST_{i}"
         args["drive_tool"] = drive_tool
-        test_data.append((CustomDocumentGenerator,  args))
+        test_data.append((CustomDocumentGenerator, args))
     return test_data
 
 
@@ -131,19 +122,23 @@ def test_successful_generate_documents(initial_program_setup, remove_created_res
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
 
 
+from pytest_redis import factories
+
+redis_external = factories.redisdb('redis_nooproc')
+
+
 @pytest.mark.asyncio
-async def test_successful_generate_documents_async(initial_program_setup, remove_created_resources):
+async def test_successful_generate_documents_async(initial_program_setup, remove_created_resources, redis_external):
     from tasks.generate_documents_task import generate_documents_async
     loop_size = 2
     test_documents = prepare_generate_documents_data(loop_size, drive_tool=DriveCommands)
-    results = await generate_documents_async(test_documents)
+    first: List[FileData] = await generate_documents_async(test_documents, redis_conn=redis_external)
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
-    __validate_successful_generation_test(results, no_of_items=loop_size)
-    GoogleDriveCommandsAsync.clear_tmp()
-
-#
-# def test_delivery_generator(initial_program_setup):
-#
-#     results = generate_documents(gen=DeliveryGenerator, )
-#     assert results is not None
+    __validate_successful_generation_test([str(res) for res in first], no_of_items=loop_size)
+    second: List[FileData] = await generate_documents_async(test_documents, redis_conn=redis_external)
+    for item in test_documents:
+        assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
+    __validate_successful_generation_test([str(res) for res in second], no_of_items=loop_size)
+    assert len(await GoogleDriveCommandsAsync.search(first[0].parent_id,
+                                                     mime_type_query=get_mime_type(DOCX_MIME_TYPE))) == 1

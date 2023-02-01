@@ -2,6 +2,7 @@ from datetime import datetime
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.config_parser import config_parser
 from helpers.date_converter import DateConverter
+from helpers.common import get_output_name
 from models.contracts import ContractModel, AnnexModel
 from models.program import ProgramModel
 from helpers.file_folder_creator import DirectoryCreator
@@ -30,7 +31,7 @@ class RegisterGenerator(DocumentGenerator):
                                    template_document=config_parser.get('DocTemplates', 'register'),
                                    output_directory=DirectoryCreator.get_main_dir(school_year=self.program.school_year,
                                                                                   semester_no=self.program.semester_no),
-                                   output_name=config_parser.get('DocNames', 'register').format(self.date))
+                                   output_name=get_output_name('register', self.date))
 
     def __prepare_school_data(self):
         for contract in sorted(self.contracts, key=lambda c: int(c.contract_no)):

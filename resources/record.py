@@ -4,15 +4,14 @@ from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
 from rq import Queue, Connection
-from operator import attrgetter
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
 from models.base_database_query import program_schema, DateQuerySchema
 from models.contracts import ContractModel
 from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
-from tasks.create_delivery_task import create_delivery, get_create_delivery_progress, create_delivery_async
-from worker import conn as redis_connection
+from tasks.generate_documents_task import create_delivery_async, on_success_delivery_update, calculate_progress
+from helpers.redis_commands import conn as redis_connection
 
 
 def must_not_be_empty(data):
@@ -181,10 +180,8 @@ def validate_record(record: RecordModel, program_id):
     return True
 
 
-create_delivery_tasks = dict()
-
-
 class RecordDeliveryCreate(Resource):
+
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -195,12 +192,17 @@ class RecordDeliveryCreate(Resource):
             return {"message": f"url: {errors} body: {body_errors}"}, 400
         records_ids = request.json["records"]
         records = RecordModel.get_records(records_ids)
-        for record in records:
-            record.change_state(RecordState.PLANNED)
+        if any(record.state == RecordState.GENERATION_IN_PROGRESS for record in records):
+            return {
+                       "message": f"One of the records is already added to other delivery, wait after it is finished",
+                       "records": [record.json() for record in records]
+                   }, 400
         with Connection(redis_connection):
             q = Queue()
-            create_delivery_task = q.enqueue(create_delivery_async, result_ttl=60*60, **request.json, **request.args)
-            create_delivery_tasks[create_delivery_task.get_id()] = records_ids
+            create_delivery_task = q.enqueue(create_delivery_async,
+                                             result_ttl=60 * 60,
+                                             on_success=on_success_delivery_update,
+                                             **request.json, **request.args)
         return {
                    'task_id': create_delivery_task.get_id()
                }, 202
@@ -214,28 +216,22 @@ class RecordDeliveryStatus(Resource):
         with Connection(redis_connection):
             q = Queue()
             create_delivery_task = q.fetch_job(task_id)
+            progress = calculate_progress(create_delivery_task)
             if create_delivery_task:
-                task_status = create_delivery_task.get_status()
-                task_id = create_delivery_task.get_id()
                 if create_delivery_task.is_failed:
-                    if create_delivery_tasks.get(task_id, None):
-                        del create_delivery_tasks[task_id]
                     return {
-                               'progress': get_create_delivery_progress(task_status),
+                               'progress': progress,
                                'message': "Task failed to finish"
                            }, 500
                 if create_delivery_task.is_finished:
-                    if create_delivery_tasks.get(task_id, None):
-                        del create_delivery_tasks[task_id]
                     return {
-                               'progress': get_create_delivery_progress(task_status),
-                               'documents':  create_delivery_task.result
+                               'progress': progress,
+                               'documents': [str(res) for res in create_delivery_task.result]
                            }, 200
                 return {
-                           'progress': get_create_delivery_progress(task_status,
-                                                                    create_delivery_tasks[task_id])
+                           'progress': progress
                        }, 200
         return {
-                   'progress': get_create_delivery_progress("failed"),
-                   'message': 'Task does not exists'
+                   'progress': -1,
+                   'message': 'Task does not exists or already finished'
                }, 500

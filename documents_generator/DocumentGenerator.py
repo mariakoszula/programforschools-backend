@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
 from typing import List
-from helpers.google_drive import GoogleDriveCommands, DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData
+from helpers.google_drive import GoogleDriveCommands
+from helpers.common import DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData, DOCX_EXT, PDF_EXT
 from models.directory_tree import DirectoryTreeModel
 
 
@@ -14,9 +15,6 @@ class DirectoryCreatorError(Exception):
 
 
 class DocumentGenerator(ABC):
-    DOCX_EXT = ".docx"
-    PDF_EXT = ".pdf"
-
     def __init__(self, *, template_document, output_directory, output_name, drive_tool=GoogleDriveCommands):
         self.drive_tool = drive_tool
         if not path.exists(template_document):
@@ -58,7 +56,7 @@ class DocumentGenerator(ABC):
             try:
                 self.__check_for_missing_or_extra_keys(fields.keys())
             except ValueError as e:
-                app_logger.warn(f"{e}")
+                app_logger.debug(f"{e}")
 
             for key, value in fields.items():
                 fields[key] = str(value)
@@ -125,10 +123,10 @@ class DocumentGenerator(ABC):
         return self
 
     def upload_pdf_files_to_remote_drive(self):
-        return self.upload_files_to_remote_drive(file_type=DocumentGenerator.PDF_EXT)
+        return self.upload_files_to_remote_drive(file_type=PDF_EXT)
 
     def export_files_to_pdf(self):
-        files = list(filter(lambda file: DocumentGenerator.DOCX_EXT in file.name, self.generated_documents))
+        files = list(filter(lambda file: DOCX_EXT in file.name, self.generated_documents))
         file_data: FileData
         for file_data in files:
             self.generated_documents.append(
@@ -142,7 +140,7 @@ class DocumentGenerator(ABC):
     @staticmethod
     def export_to_pdf(file_name, source_file_id, drive_tool):
         file_content = drive_tool.convert_to_pdf(source_file_id)
-        pdf_name = file_name.replace(DocumentGenerator.DOCX_EXT, DocumentGenerator.PDF_EXT)
+        pdf_name = file_name.replace(DOCX_EXT, PDF_EXT)
         with open(pdf_name, "wb") as pdf_file:
             pdf_file.write(file_content)
         return pdf_name

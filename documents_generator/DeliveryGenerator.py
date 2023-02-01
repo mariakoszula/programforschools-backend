@@ -14,6 +14,10 @@ from models.record import RecordModel
 class DeliveryGenerator(DocumentGenerator):
     DAY_NAMES = ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"]
 
+    @staticmethod
+    def get_delivery_output_name(delivery_date, driver):
+        return get_output_name('delivery', delivery_date, driver)
+
     def prepare_data(self):
         self.__schools_delivery_info()
         self._document.merge_rows("school_nick", self.schools_delivery_rows)
@@ -47,7 +51,7 @@ class DeliveryGenerator(DocumentGenerator):
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'delivery'),
                                    output_directory=self.get_output_dir(),
-                                   output_name=get_output_name('delivery', self.delivery_date, self.driver))
+                                   output_name=self.get_delivery_output_name(self.delivery_date, self.driver))
 
     @staticmethod
     def __dict_from_list(data, get_key_fun):

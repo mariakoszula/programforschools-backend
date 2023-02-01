@@ -68,4 +68,3 @@ def initial_program_setup(_db):
         print(e)
         raise InitialSetupError(main_directory)
     yield program
-    GoogleDriveCommands.clean_main_directory()

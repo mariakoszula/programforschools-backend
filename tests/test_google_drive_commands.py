@@ -1,9 +1,10 @@
-from helpers.google_drive import GoogleDriveCommands, GOOGLE_DRIVE_ID, GoogleDriveCommandsAsync, DOCX_MIME_TYPE, \
-    FileData
+from helpers.google_drive import GoogleDriveCommands, GoogleDriveCommandsAsync
+from helpers.common import GOOGLE_DRIVE_ID, FileData
 from helpers.config_parser import config_parser
 import time
 import pytest
 from os import path
+from shutil import copy
 
 
 def test_google_drive_has_one_directory():
@@ -21,9 +22,18 @@ def test_create_and_remove_directory_successful():
 
 
 loop_size = 2
-_file_to_upload = FileData(_name=path.join(config_parser.get('DocTemplates', 'directory'),
-                                           config_parser.get('DocTemplates', 'test')))
-file_to_upload_list = [_file_to_upload for _ in range(loop_size)]
+
+
+def get_file_to_upload(file_no) -> FileData:
+    helper_files_dir = config_parser.get('DocTemplates', 'directory')
+    file_name = path.join(helper_files_dir,
+                          config_parser.get('DocTemplates', 'test').format(file_no))
+    if not path.exists(file_name):
+        copy(path.join(helper_files_dir, "test_file.docx"), file_name)
+    return FileData(_name=file_name)
+
+
+file_to_upload_list = [get_file_to_upload(i + 1) for i in range(loop_size)]
 
 
 def clean_remote_files(file_ids_to_clean):
@@ -42,7 +52,7 @@ def test_upload_file():
 
 
 file_id_to_export_list = [
-    FileData(_name=_file_to_upload.name, _id='1rKb3PXPyTGZvtb8WgS4hcVBKhO7ydb1oty5O6u0CJC4')
+    FileData(_name=get_file_to_upload(loop_size).name, _id='1rKb3PXPyTGZvtb8WgS4hcVBKhO7ydb1oty5O6u0CJC4')
     for _ in range(loop_size)]
 
 
@@ -60,11 +70,12 @@ async def test_google_drive_has_one_directory_async():
 
 @pytest.mark.asyncio
 async def test_upload_file_async():
-    file_data: FileData = await GoogleDriveCommandsAsync.upload_file(_file_to_upload)
-    assert file_data.name == _file_to_upload.name
+    file = get_file_to_upload(1)
+    file_data: FileData = await GoogleDriveCommandsAsync.upload_file(file)
+    assert file_data.name == file.name
     assert file_data.web_view_link is not None
     assert file_data.id is not None
-    clean_remote_files(file_data.id)
+    clean_remote_files([file_data.id])
 
 
 @pytest.mark.asyncio
@@ -76,6 +87,7 @@ async def test_upload_many_async():
         files_to_clean.append(file_data.id)
         assert file_data.id is not None
         assert file_data.web_view_link is not None
+    time.sleep(3)
     clean_remote_files(files_to_clean)
 
 
