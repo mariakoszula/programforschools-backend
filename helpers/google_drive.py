@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Tuple
+from abc import ABC, abstractmethod
 
 import google_auth_httplib2
 import httplib2
@@ -8,12 +9,17 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 import json
-from os import getenv
-from helpers.config_parser import config_parser
+from os import getenv, getcwd, listdir, makedirs, remove
+
 from helpers.logger import app_logger
+from helpers.common import FileData, DOCX_MIME_TYPE, PDF_MIME_TYPE, DIR_MIME_TYPE, GOOGLE_DRIVE_ID, get_mime_type, \
+    DOCX_EXT, PDF_EXT
 from os import path
 from aiogoogle import Aiogoogle
 from aiogoogle.auth.creds import ServiceAccountCreds
+from asynctempfile import NamedTemporaryFile
+import asyncio
+from shutil import copy
 
 
 def validate_google_env_setup():
@@ -25,10 +31,6 @@ def validate_google_env_setup():
 
 validate_google_env_setup()
 SCOPES = ['https://www.googleapis.com/auth/drive']
-DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
-PDF_MIME_TYPE = 'application/pdf'
-DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
-GOOGLE_DRIVE_ID = config_parser.get("GoogleDriveConfig", "google_drive_id")
 
 service_account_key = json.loads(getenv('GOOGLE_DRIVE_AUTH'))
 google_service = None
@@ -56,30 +58,31 @@ def setup_google_drive_service(func):
     return wrapper
 
 
-class FileData:
-    def __init__(self, _name, _mime_type, _id=None):
-        self.name = _name
-        self.mime_type = _mime_type
-        self.id = _id
-        self.web_view_link = None
-        super().__init__()
+class DriveCommands(ABC):
+    @staticmethod
+    @abstractmethod
+    def upload_file(file: FileData):
+        pass
 
-    def __str__(self):
-        return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
+    @staticmethod
+    @abstractmethod
+    def convert_to_pdf(source_file_id):
+        pass
 
-    def __repr__(self):
-        return f"FileData(_name={self.name}, _mime_type={self.mime_type}, _id={self.id})"
+    @staticmethod
+    @abstractmethod
+    def search(parent_id=GOOGLE_DRIVE_ID,
+               mime_type_query=get_mime_type(DIR_MIME_TYPE),
+               recursive_search=True):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def create_directory(parent_directory_id, directory_name):
+        pass
 
 
-def file_found(name: str, file_list: List[FileData]):
-    return name in [file.name for file in file_list]
-
-
-def get_mime_type(mime_type):
-    return f"='{mime_type}'"
-
-
-class GoogleDriveCommands:
+class GoogleDriveCommands(DriveCommands):
     @staticmethod
     @setup_google_drive_service
     def create_directory(parent_directory_id, directory_name):
@@ -96,6 +99,17 @@ class GoogleDriveCommands:
             app_logger.error(f"Error during creation '{directory_name}' in '{parent_directory_id}': {error}")
             raise ValueError(f"'{directory_name}' failed to create")
         return folder.get("id")
+
+    @staticmethod
+    def search_many(google_id_mime_type_list: List[Tuple[int, str]]):
+        set_to_search = set()
+        for (google_id, name) in google_id_mime_type_list:
+            mime_type = PDF_MIME_TYPE if PDF_EXT in name else DOCX_MIME_TYPE
+            set_to_search.add((google_id, get_mime_type(mime_type)))
+        results = set()
+        for (google_id, mime_type) in set_to_search:
+            results.update(GoogleDriveCommands.search(google_id, mime_type))
+        return results
 
     @staticmethod
     @setup_google_drive_service
@@ -122,27 +136,26 @@ class GoogleDriveCommands:
 
     @staticmethod
     @setup_google_drive_service
-    def upload_file(path_to_file,
-                    mime_type='application/vnd.google-apps.folder',
-                    parent_id=GOOGLE_DRIVE_ID):
+    def upload_file(file_data: FileData):
         try:
             file_metadata = {
-                'name': path.split(path_to_file)[1],
-                'parents': [parent_id],
-                'mimeType': mime_type
+                'name': path.split(file_data.name)[1],
+                'parents': [file_data.parent_id],
+                'mimeType': file_data.mime_type
             }
-            media = MediaFileUpload(path_to_file)
+            media = MediaFileUpload(file_data.name)
             file = google_service.files().create(body=file_metadata, fields="id,webViewLink",
                                                  media_body=media).execute()
-            app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}"
-                             f" webViewLink:{file.get('webViewLink')}")
+            app_logger.debug(
+                f"Uploaded file on google drive {file.get('id')} {file_data.name} parent_id: {file_data.parent_id}"
+                f" webViewLink:{file.get('webViewLink')}")
             return file.get("id"), file.get('webViewLink')
         except HttpError as error:
-            app_logger.error(f"Error during uploading file '{path_to_file}' in '{parent_id}': {error}")
+            app_logger.error(f"Error during uploading file '{file_data.name}' in '{file_data.parent_id}': {error}")
 
     @staticmethod
     @setup_google_drive_service
-    def export_to_pdf(source_file_id):
+    def convert_to_pdf(source_file_id):
         try:
             pdf_file_content = google_service.files().export(fileId=source_file_id, mimeType=PDF_MIME_TYPE).execute()
             app_logger.debug(f"Export pdf file on google drive for {source_file_id}")
@@ -152,11 +165,11 @@ class GoogleDriveCommands:
 
     @staticmethod
     @setup_google_drive_service
-    def remove(directory_id):
+    def remove(google_id):
         try:
-            google_service.files().delete(fileId=directory_id).execute()
+            google_service.files().delete(fileId=google_id).execute()
         except HttpError as error:
-            app_logger.error(f"Error during removing directory '{directory_id}': {error}")
+            app_logger.error(f"Error during removing directory '{google_id}': {error}")
 
     @staticmethod
     @setup_google_drive_service
@@ -169,30 +182,95 @@ class GoogleDriveCommands:
         app_logger.info(f"Google '{GOOGLE_DRIVE_ID}' cleaned")
 
 
-class GoogleDriveCommandsAsync:
+async def schedule_task(func, list_of_items):
+    results = [asyncio.create_task(func(item)) for item in list_of_items]
+    return await asyncio.gather(*results)
+
+
+async def schedule(func, list_of_items, limit=30):
+    items = len(list_of_items)
+    (loops, reminder) = divmod(items, limit)
+    if reminder > 0:
+        loops += 1
+    results = []
+    for i in range(loops):
+        start = limit * i
+        estimated_end = limit * (i + 1)
+        end = items if estimated_end > items else estimated_end
+        val = await schedule_task(func, list_of_items[start:end])
+        results.extend(val)
+    return results
+
+
+class GoogleDriveCommandsAsync(DriveCommands):
     @staticmethod
-    async def upload_file(path_to_file,
-                          mime_type=get_mime_type(DOCX_MIME_TYPE),
-                          parent_id=GOOGLE_DRIVE_ID):
+    def create_directory(parent_directory_id, directory_name):
+        raise NotImplementedError(f"Need to be implemented so far problems with aiogoogle how to setup this")
+
+    tmp_pdf_dir = path.join(getcwd(), "tmp")
+    if not path.isdir(tmp_pdf_dir):
+        makedirs(tmp_pdf_dir)
+
+    @staticmethod
+    def clear_tmp():
+        for file in listdir(GoogleDriveCommandsAsync.tmp_pdf_dir):
+            remove(path.join(GoogleDriveCommandsAsync.tmp_pdf_dir, file))
+
+    @staticmethod
+    async def convert_to_pdf_many(files_data: List[FileData]):
+        return await schedule(GoogleDriveCommandsAsync.convert_to_pdf, files_data)
+
+    @staticmethod
+    async def convert_to_pdf(file_data: FileData):
+        if file_data.id is None:
+            raise Exception(f"Source file Id needs to be specified for converting pdf using Google Drive API")
         async with Aiogoogle(service_account_creds=aio_creds) as aiogoogle:
             google_drive = await aiogoogle.discover('drive', 'v3')
             try:
-                file_metadata = {
-                    'name': path.split(path_to_file)[1],
-                    'parents': [parent_id],
-                    'mimeType': mime_type
-                }
-                media = MediaFileUpload(path_to_file)
-                command = google_drive.files.create(body=file_metadata,
-                                                    fields="id,webViewLink",
-                                                    media_body=media, upload_file=path_to_file)
-                file = await aiogoogle.as_service_account(command)
-                print(file)
-                app_logger.debug(f"Uploaded file on google drive {file.get('id')} {path_to_file} parent_id: {parent_id}"
-                                 f" webViewLink:{file.get('webViewLink')}")
-                return file.get("id"), file.get('webViewLink')
+                async with NamedTemporaryFile(dir=GoogleDriveCommandsAsync.tmp_pdf_dir,
+                                              delete=False) as file:
+                    command = google_drive.files.export(fileId=file_data.id, mimeType=PDF_MIME_TYPE,
+                                                        download_file=file.name)
+                    await aiogoogle.as_service_account(command)
+                    pdf_name = file_data.name.replace(DOCX_EXT, PDF_EXT)
+                    pdf_file: FileData = FileData(_name=pdf_name, _mime_type=PDF_MIME_TYPE,
+                                                  _parent_id=file_data.parent_id)
+                    copy(file.name, pdf_name)
+                    app_logger.debug(f"Export pdf file on google drive for {file_data.id} Pdf file info: {pdf_file}")
+                return pdf_file
             except HttpError as error:
-                app_logger.error(f"Error during uploading file '{path_to_file}' in '{parent_id}': {error}")
+                app_logger.error(f"Error during uploading file '{file_data.id}': {error}")
+
+    @staticmethod
+    async def upload_many(file_data_list: List[FileData]):
+        return await schedule(GoogleDriveCommandsAsync.upload_file, file_data_list)
+
+    @staticmethod
+    async def upload_file(file_data: FileData):
+        async with Aiogoogle(service_account_creds=aio_creds) as aiogoogle:
+            google_drive = await aiogoogle.discover('drive', 'v3')
+            try:
+                json_body = {
+                    'name': path.split(file_data.name)[1],
+                    'parents': [file_data.parent_id],
+                    'mimeType': file_data.mime_type
+                }
+                command = google_drive.files.create(validate=True,
+                                                    upload_file=file_data.name,
+                                                    fields="id,webViewLink",
+                                                    includePermissionsForView="published",
+                                                    json=json_body)
+
+                response = await aiogoogle.as_service_account(command, full_res=True)
+                app_logger.debug(
+                    f"Uploaded file on google drive {response.json.get('id')} {file_data.name} parent_id: {file_data.parent_id}"
+                    f" webViewLink:{response.json.get('webViewLink')}")
+                file_data.id = response.json.get("id")
+                file_data.web_view_link = response.json.get('webViewLink')
+                return file_data
+            except HttpError as error:
+                app_logger.error(
+                    f"Error during uploading file '{file_data.name}' in '{file_data.parent_id}': {error}")
 
     @staticmethod
     async def search(parent_id=GOOGLE_DRIVE_ID,
@@ -219,4 +297,3 @@ class GoogleDriveCommandsAsync:
             except HttpError as error:
                 app_logger.error(f"Error during search of mime_type: {error}")
             return found
-

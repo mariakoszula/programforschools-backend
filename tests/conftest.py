@@ -12,6 +12,8 @@ import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
 
+pytest_plugins = ('pytest_asyncio',)
+
 
 @pytest.fixture(scope='session')
 def database(request):
@@ -65,5 +67,4 @@ def initial_program_setup(_db):
     except sqlalchemy.exc.NoResultFound as e:
         print(e)
         raise InitialSetupError(main_directory)
-    yield
-    GoogleDriveCommands.clean_main_directory()
+    yield program

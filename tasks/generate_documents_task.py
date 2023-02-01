@@ -1,105 +1,127 @@
-from queue import Queue
-from threading import Thread
-from helpers.logger import app_logger
 from typing import List
+from operator import attrgetter
+from threading import Thread
+from rq import get_current_job
 from documents_generator.DocumentGenerator import DocumentGenerator, DirectoryCreatorError
+from helpers.google_drive import GoogleDriveCommandsAsync
+from helpers.logger import app_logger
+from helpers.redis_commands import remove_old_save_new
+from helpers.common import FileData
+from models.record import RecordModel, RecordState
+from documents_generator.DeliveryGenerator import DeliveryGenerator
+from documents_generator.RecordGenerator import RecordGenerator
+from app import create_app
+from models.product import ProductBoxModel
 
 
-class ClosableQueue(Queue):
-    SENTINEL = object()
-
-    def close(self):
-        self.put(self.SENTINEL)
-
-    def __iter__(self):
-        while True:
-            item = self.get()
-            try:
-                if item is self.SENTINEL:
-                    return
-                yield item
-            finally:
-                self.task_done()
+def setup_progress_meta(documents_no: int):
+    job = get_current_job()
+    if not job:
+        return
+    job.meta["documents_no"] = documents_no * NO_OF_GOOGLE_DRIVE_ACTIONS
+    job.meta["finished_documents_no"] = 0
+    job.save_meta()
 
 
-class StoppableWorker(Thread):
-    def __init__(self, func, in_queue, out_queue):
-        super().__init__()
-        self.func = func
-        self.in_queue = in_queue
-        self.out_queue = out_queue
-
-    def run(self):
-        for item in self.in_queue:
-            result = self.func(item)
-            self.out_queue.put(result)
+def update_finished_documents_meta(documents_no: int):
+    job = get_current_job()
+    if not job:
+        return
+    job.meta["finished_documents_no"] += documents_no
+    job.save_meta()
 
 
-generate_queue = ClosableQueue()
-export_to_pdf_queue = ClosableQueue()
-upload_queue = ClosableQueue()
-upload_pdf_queue = ClosableQueue()
-done_queue = ClosableQueue()
+def calculate_progress(current_job):
+    meta = current_job.get_meta(refresh=True)
+    if meta.get("documents_no") and meta.get("finished_documents_no"):
+        return meta.get("finished_documents_no") / meta.get("documents_no") * 100
+    return 0
 
 
-def start_threads(count, *args):
-    _threads = [StoppableWorker(*args) for _ in range(count)]
-    for t in _threads:
-        t.start()
-    return _threads
+def get_generator(gen, **args):
+    try:
+        generator = gen(**args)
+        return generator
+    except DirectoryCreatorError:
+        app_logger.error(f"Failed to create remote directory tree for {gen} with {args}")
+    except TypeError as e:
+        app_logger.error(f"{generator}: Problem occurred during document generation '{e}'")
 
 
-def stop_threads(closable_queue, threads):
-    for _ in threads:
-        closable_queue.close()
-    closable_queue.join()
+def get_generator_list(generators_init_data: List[tuple]):
+    generators = []
+    for (gen, args) in generators_init_data:
+        generator = get_generator(gen, **args)
+        if generator:
+            generators.append(generator)
+    return generators
+
+
+def start_thread(func, *args):
+    _thread = Thread(target=func, args=args)
+    _thread.start()
+    return _thread
+
+
+def stop_threads(threads):
     for thread in threads:
         thread.join()
 
 
-def __get_results_from_done_queue_and_clear():
-    app_logger.debug(f"Generated and uploaded documents for {done_queue.qsize()} items")
-    generated_documents = []
-    item: DocumentGenerator
-    for item in done_queue.queue:
-        generated_documents.extend([str(document) for document in item.generated_documents])
-    done_queue.queue.clear()
-    return generated_documents
-
-
-def __run_generate_and_upload_documents(generators: List[DocumentGenerator]):
-    generate_threads = start_threads(4, DocumentGenerator.generate, generate_queue, upload_queue)
-    upload_threads = start_threads(4, DocumentGenerator.upload_files_to_remote_drive, upload_queue, export_to_pdf_queue)
-    export_to_pdf_threads = start_threads(4, DocumentGenerator.export_files_to_pdf, export_to_pdf_queue,
-                                          upload_pdf_queue)
-    upload_pdf_threads = start_threads(4, DocumentGenerator.upload_pdf_files_to_remote_drive, upload_pdf_queue,
-                                       done_queue)
-
+def run_generate_documents(generators: List[DocumentGenerator]):
+    threads = []
     for generator in generators:
-        queue_generator(generator)
-
-    stop_threads(generate_queue, generate_threads)
-    stop_threads(upload_queue, upload_threads)
-    stop_threads(export_to_pdf_queue, export_to_pdf_threads)
-    stop_threads(upload_pdf_queue, upload_pdf_threads)
+        threads.append(start_thread(DocumentGenerator.generate, generator))
+    stop_threads(threads)
 
 
-def generate_documents(generators_init_data: List[tuple]):
-    generators = []
-    for (gen, args) in generators_init_data:
-        try:
-            generator = gen(**args)
-        except DirectoryCreatorError:
-            app_logger.error(f"Failed to create remote directory tree for {gen} with {args}")
-        else:
-            generators.append(generator)
-    __run_generate_and_upload_documents(generators)
-    return __get_results_from_done_queue_and_clear()
+NO_OF_GOOGLE_DRIVE_ACTIONS = 4  # Docx generation and upload, generate PDF and upload pdf to Google Drive
 
 
-def queue_generator(generator: DocumentGenerator):
-    try:
-        app_logger.debug(f"{generator}")
-        generate_queue.put(generator)
-    except TypeError as e:
-        app_logger.error(f"{generator}: Problem occurred during document generation '{e}'")
+async def upload_and_update_meta(func, input_doc):
+    documents = await func(input_doc)
+    update_finished_documents_meta(len(documents))
+    return documents
+
+
+async def generate_documents_async(generators_init_data: List[tuple], redis_conn=None) -> List[FileData]:
+    produced_generators = get_generator_list(generators_init_data)
+    run_generate_documents(produced_generators)
+    generator: DocumentGenerator
+    uploaded_documents = []
+    docx_files_to_upload = [generator.generated_document for generator in produced_generators if
+                            generator.generated_document]
+    update_finished_documents_meta(len(docx_files_to_upload))
+    output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, docx_files_to_upload)
+    uploaded_documents.extend(output)
+    output = await upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output)
+    output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)
+    uploaded_documents.extend(output)
+    remove_old_save_new(uploaded_documents, redis_conn)
+    return uploaded_documents
+
+
+async def create_delivery_async(**request):
+    with create_app().app_context():
+        records = RecordModel.get_records(request["records"])
+        records.sort(key=attrgetter('contract_id', 'date'))
+        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
+        delivery_date = request["date"]
+        for record in records:
+            record.change_state(RecordState.GENERATION_IN_PROGRESS, date=delivery_date)
+        setup_progress_meta(len(records) + 1)
+        generated_documents = await generate_documents_async([(RecordGenerator,
+                                                               {'record': record}) for record in records])
+        delivery_args = {'records': records, 'date': delivery_date,
+                         'driver': request["driver"],
+                         'boxes': boxes,
+                         'comments': request.get("comments", "")}
+        generated_documents.extend(await generate_documents_async([(DeliveryGenerator, delivery_args)]))
+        return generated_documents
+
+
+def on_success_delivery_update(job, connection, result, *args, **kwargs):
+    with create_app().app_context():
+        for record in RecordModel.get_records(job.kwargs['records']):
+            record.change_state(RecordState.GENERATED)
+        app_logger.debug(f"Delivery job time diff: {job.ended_at - job.started_at}")

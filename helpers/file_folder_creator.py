@@ -60,8 +60,8 @@ class DirectoryCreator:
             raise
 
     @staticmethod
-    def create_directory(**kwargs) -> CreateDirectoryResults:
-        directories = GoogleDriveCommands.search(parent_id=kwargs["google_id"])
+    def create_directory(drive_tool=GoogleDriveCommands, **kwargs) -> CreateDirectoryResults:
+        directories = drive_tool.search(parent_id=kwargs["google_id"])
         for file_data in directories:
             if file_data.name == kwargs["name"]:
                 app_logger.debug(f'{kwargs["name"]} already exists with google_id: {file_data.id}')
@@ -72,8 +72,8 @@ class DirectoryCreator:
                 else:
                     kwargs["google_id"] = file_data.id
                     return DirectoryCreator.create_directory_model(**kwargs)
-        new_id = GoogleDriveCommands.create_directory(parent_directory_id=kwargs["google_id"],
-                                                      directory_name=kwargs["name"])
+        new_id = drive_tool.create_directory(parent_directory_id=kwargs["google_id"],
+                                             directory_name=kwargs["name"])
         kwargs["google_id"] = new_id
         return DirectoryCreator.create_directory_model(**kwargs)
 

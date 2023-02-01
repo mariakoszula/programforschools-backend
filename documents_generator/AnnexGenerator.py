@@ -2,6 +2,7 @@ from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
 from helpers.config_parser import config_parser
+from helpers.common import get_output_name
 from os import path
 
 
@@ -32,13 +33,13 @@ class AnnexGenerator(DocumentGenerator):
 
         _template_document = config_parser.get('DocTemplates', 'annex')
         _output_directory = path.join(program_dir,
-                                     config_parser.get('Directories', 'annex'))
+                                      config_parser.get('Directories', 'annex'))
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'annex'),
                                    output_directory=path.join(program_dir,
                                                               config_parser.get('Directories', 'annex')),
-                                   output_name=config_parser.get('DocNames', 'annex').format(
-                                       self.annex.contract.school.nick.strip(),
-                                       self.annex.contract.contract_no,
-                                       self.annex.contract.contract_year,
-                                       self.annex.no))
+                                   output_name=get_output_name('annex',
+                                                               self.annex.contract.school.nick.strip(),
+                                                               self.annex.contract.contract_no,
+                                                               self.annex.contract.contract_year,
+                                                               self.annex.no))
