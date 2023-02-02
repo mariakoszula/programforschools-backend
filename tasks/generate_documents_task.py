@@ -1,5 +1,4 @@
-from typing import List
-from operator import attrgetter
+from typing import List, Type, Tuple, Dict
 from threading import Thread
 from rq import get_current_job
 from documents_generator.DocumentGenerator import DocumentGenerator, DirectoryCreatorError
@@ -7,11 +6,31 @@ from helpers.google_drive import GoogleDriveCommandsAsync
 from helpers.logger import app_logger
 from helpers.redis_commands import remove_old_save_new
 from helpers.common import FileData
-from models.record import RecordModel, RecordState
-from documents_generator.DeliveryGenerator import DeliveryGenerator
-from documents_generator.RecordGenerator import RecordGenerator
+from helpers.redis_commands import conn as redis_connection
+from rq import Queue, Connection
 from app import create_app
-from models.product import ProductBoxModel
+
+NO_OF_GOOGLE_DRIVE_ACTIONS = 4  # 1. Docx gen, 2. upload, 3. pdf gen, 4. upload
+
+
+def measure_time_callback(job, connection, result, *args, **kwargs):
+    with create_app().app_context():
+        app_logger.debug(f"Delivery job time diff: {job.ended_at - job.started_at}")
+
+
+def queue_task(*, func, request, callback=measure_time_callback):
+    with Connection(redis_connection):
+        q = Queue()
+        req_in = dict(**request.args)
+        if request.is_json:
+            req_in.update(**request.json)
+        create_task = q.enqueue(func,
+                                result_ttl=60 * 60,
+                                on_success=callback,
+                                **req_in)
+    return {
+               'task_id': create_task.get_id()
+           }, 202
 
 
 def setup_progress_meta(documents_no: int):
@@ -75,16 +94,22 @@ def run_generate_documents(generators: List[DocumentGenerator]):
     stop_threads(threads)
 
 
-NO_OF_GOOGLE_DRIVE_ACTIONS = 4  # Docx generation and upload, generate PDF and upload pdf to Google Drive
-
-
 async def upload_and_update_meta(func, input_doc):
     documents = await func(input_doc)
     update_finished_documents_meta(len(documents))
     return documents
 
 
-async def generate_documents_async(generators_init_data: List[tuple], redis_conn=None) -> List[FileData]:
+async def generate_documents_async(generators_init_data: List[Tuple[Type[DocumentGenerator], Dict]], redis_conn=None) \
+        -> List[FileData]:
+    """
+    Async function for generating documents based on template docx, upload them to GoogleDrive,
+    generate pdf and upload pdf to GoogleDrive.
+    :param generators_init_data: Use proper DocumentGenerator e.g. RecordGenerator and
+                                 pass arguments as dict with arguments
+    :param redis_conn: Extracted for testing purpose, by default will use url from config.ini: [Redis.url]
+    :return: List[FileData] - List of all generated files with information about name, and google id
+    """
     produced_generators = get_generator_list(generators_init_data)
     run_generate_documents(produced_generators)
     generator: DocumentGenerator
@@ -99,29 +124,3 @@ async def generate_documents_async(generators_init_data: List[tuple], redis_conn
     uploaded_documents.extend(output)
     remove_old_save_new(uploaded_documents, redis_conn)
     return uploaded_documents
-
-
-async def create_delivery_async(**request):
-    with create_app().app_context():
-        records = RecordModel.get_records(request["records"])
-        records.sort(key=attrgetter('contract_id', 'date'))
-        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
-        delivery_date = request["date"]
-        for record in records:
-            record.change_state(RecordState.GENERATION_IN_PROGRESS, date=delivery_date)
-        setup_progress_meta(len(records) + 1)
-        generated_documents = await generate_documents_async([(RecordGenerator,
-                                                               {'record': record}) for record in records])
-        delivery_args = {'records': records, 'date': delivery_date,
-                         'driver': request["driver"],
-                         'boxes': boxes,
-                         'comments': request.get("comments", "")}
-        generated_documents.extend(await generate_documents_async([(DeliveryGenerator, delivery_args)]))
-        return generated_documents
-
-
-def on_success_delivery_update(job, connection, result, *args, **kwargs):
-    with create_app().app_context():
-        for record in RecordModel.get_records(job.kwargs['records']):
-            record.change_state(RecordState.GENERATED)
-        app_logger.debug(f"Delivery job time diff: {job.ended_at - job.started_at}")

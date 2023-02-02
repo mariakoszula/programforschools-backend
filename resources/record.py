@@ -3,15 +3,13 @@ from typing import List
 from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
-from rq import Queue, Connection
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
 from models.base_database_query import program_schema, DateQuerySchema
 from models.contracts import ContractModel
 from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
-from tasks.generate_documents_task import create_delivery_async, on_success_delivery_update, calculate_progress
-from helpers.redis_commands import conn as redis_connection
+from tasks.generate_delivery_task import queue_delivery
 
 
 def must_not_be_empty(data):
@@ -197,41 +195,4 @@ class RecordDeliveryCreate(Resource):
                        "message": f"One of the records is already added to other delivery, wait after it is finished",
                        "records": [record.json() for record in records]
                    }, 400
-        with Connection(redis_connection):
-            q = Queue()
-            create_delivery_task = q.enqueue(create_delivery_async,
-                                             result_ttl=60 * 60,
-                                             on_success=on_success_delivery_update,
-                                             **request.json, **request.args)
-        return {
-                   'task_id': create_delivery_task.get_id()
-               }, 202
-
-
-class RecordDeliveryStatus(Resource):
-    @classmethod
-    @handle_exception_pretty
-    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-    def get(cls, task_id):
-        with Connection(redis_connection):
-            q = Queue()
-            create_delivery_task = q.fetch_job(task_id)
-            progress = calculate_progress(create_delivery_task)
-            if create_delivery_task:
-                if create_delivery_task.is_failed:
-                    return {
-                               'progress': progress,
-                               'message': "Task failed to finish"
-                           }, 500
-                if create_delivery_task.is_finished:
-                    return {
-                               'progress': progress,
-                               'documents': [str(res) for res in create_delivery_task.result]
-                           }, 200
-                return {
-                           'progress': progress
-                       }, 200
-        return {
-                   'progress': -1,
-                   'message': 'Task does not exists or already finished'
-               }, 500
+        return queue_delivery(request)
