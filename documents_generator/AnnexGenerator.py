@@ -22,7 +22,9 @@ class AnnexGenerator(DocumentGenerator):
             responsible_person=self.annex.contract.school.fill_responsible_person(),
             fruitveg_products=self.annex.fruitVeg_products,
             dairy_products=self.annex.dairy_products,
-            validity_date=DateConverter.convert_date_to_string(self.annex.validity_date)
+            validity_date=DateConverter.convert_date_to_string(self.annex.validity_date),
+            annex_no=self.annex.no,
+            validity_date_end="-"
         )
 
     def __init__(self, annex, date):

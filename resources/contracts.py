@@ -98,16 +98,22 @@ class AnnexResource(Resource):
     parser.add_argument('validity_date',
                         required=True,
                         type=lambda date: DateConverter.convert_to_date(date))
+    parser.add_argument('validity_date_end',
+                        required=False,
+                        type=lambda date: DateConverter.convert_to_date(date))
+
+    @staticmethod
+    def is_date_before(first_date, second_date):
+        if DateConverter.convert_to_date(first_date) < DateConverter.convert_to_date(second_date):
+            raise ValueError(f'{first_date} < {second_date}')
 
     @staticmethod
     def validate_dates(data, query_args):
         errors = date_query.validate(query_args)
         if errors:
             raise ValueError(f"date: {errors['date']}")
-        if data.get("validity_date") and query_args["date"] and \
-                DateConverter.convert_to_date(data["validity_date"]) < DateConverter.convert_to_date(
-            query_args["date"]):
-            raise ValueError(f'validity_date < sign_date')
+        if data.get("validity_date") and query_args["date"]:
+            AnnexResource.is_date_before(data["validity_date"], query_args["date"])
 
     @staticmethod
     def validate_product(data):
