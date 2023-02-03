@@ -42,7 +42,6 @@ def simple_post(model, *args, validator=name_query):
     if found:
         return {'message': f"{model.__tablename__} {request.json['name']} already exists"}, 400
     new = model(**request.json)
-    new.save_to_db()
     return {
                model.__tablename__: new.json()
            }, 200

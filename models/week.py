@@ -22,6 +22,7 @@ class WeekModel(db.Model, BaseDatabaseQuery):
         self.start_date = start_date
         self.end_date = end_date
         self.program_id = program_id
+        self.save_to_db()
 
     def json(self):
         data: {} = super().json()

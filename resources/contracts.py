@@ -162,7 +162,6 @@ class AnnexResource(Resource):
             elif not existing_annex_by_date and not annex:
                 AnnexResource.validate_product(data)
                 annex = AnnexModel(contract=contract, **data)
-                annex.save_to_db()
             return {'annex': annex.json(),
                     'documents': generate_documents_with_date(gen=AnnexGenerator, annex=annex)}, 200
         except ValueError as e:
