@@ -28,9 +28,8 @@ class DocumentGenerator(ABC):
         self.file_path = path.join(self.output_directory, self.output_doc_name)
         self.remote_parent_id = self.__prepare_remote_parent()
         self._document = self.__start_doc_gen()
-        self.__document_merge = self._document.merge
-        self._document.merge = self.__run_field_validation_and_merge
-        self.__fields_to_merge = self._document.get_merge_fields()
+        self._fields_to_merge = self._document.get_merge_fields()
+        self._given_keys = set()
 
         super(DocumentGenerator, self).__init__()
 
@@ -43,24 +42,27 @@ class DocumentGenerator(ABC):
             app_logger.error(f"During creation of directory tree{e}")
             raise DirectoryCreatorError()
 
-    def __check_for_missing_or_extra_keys(self, given_keys):
-        missing_fields = [key for key in self.__fields_to_merge if key not in given_keys]
+    def __check_for_missing_or_extra_keys(self):
+        missing_fields = [key for key in self._fields_to_merge if key not in self._given_keys]
         if len(missing_fields):
             raise ValueError(f"Missing fields from template {missing_fields}")
-        extra_fields = [key for key in given_keys if key not in self.__fields_to_merge]
+        extra_fields = [key for key in self._given_keys if key not in self._fields_to_merge]
         if len(extra_fields):
             raise ValueError(f"Extra fields not in template {extra_fields}")
 
-    def __run_field_validation_and_merge(self, parts=None, **fields):
-        if not parts:
-            try:
-                self.__check_for_missing_or_extra_keys(fields.keys())
-            except ValueError as e:
-                app_logger.debug(f"{e}")
+    def __prepare_data(self, fields):
+        self._given_keys.update(fields.keys())
+        for key, value in fields.items():
+            fields[key] = str(value) if value else ""
 
-            for key, value in fields.items():
-                fields[key] = str(value)
-        self.__document_merge(**fields)
+    def merge(self, **fields):
+        self.__prepare_data(fields)
+        self._document.merge(**fields)
+
+    def merge_rows(self, anchor, fields):
+        for field in fields:
+            self.__prepare_data(field)
+        self._document.merge_rows(anchor, fields)
 
     def generate(self):
         self.prepare_data()
@@ -94,6 +96,10 @@ class DocumentGenerator(ABC):
         return MailMerge(self.template_document)
 
     def __end_doc_gen(self, generated_file):
+        try:
+            self.__check_for_missing_or_extra_keys()
+        except ValueError as e:
+            app_logger.debug(e)
         self._document.write(generated_file)
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")

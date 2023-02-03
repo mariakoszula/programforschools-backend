@@ -15,8 +15,8 @@ class RegisterGenerator(DocumentGenerator):
 
     def prepare_data(self):
         self.__prepare_school_data()
-        self._document.merge_rows('no', self.records_to_merge)
-        self._document.merge(
+        self.merge_rows('no', self.records_to_merge)
+        self.merge(
             semester_no=self.program.get_current_semester(),
             school_year=self.program.school_year,
             date=self.date
@@ -43,7 +43,7 @@ class RegisterGenerator(DocumentGenerator):
     @staticmethod
     def __prepare_contract_data(contract: ContractModel):
         record_dict = dict()
-        record_dict['no'] = str(contract.contract_no)
+        record_dict['no'] = contract.contract_no
         record_dict['contract_info'] = f"{contract.contract_no}/{contract.contract_year}"
         record_dict['school_name'] = contract.school.name
         record_dict['school_nip'] = contract.school.nip
@@ -52,8 +52,8 @@ class RegisterGenerator(DocumentGenerator):
         record_dict['school_regon'] = contract.school.regon
         record_dict['school_phone'] = contract.school.phone
         record_dict['school_email'] = contract.school.email
-        record_dict['kids_milk'] = str(contract.dairy_products)
-        record_dict['kids_fruitveg'] = str(contract.fruitVeg_products)
+        record_dict['kids_milk'] = contract.dairy_products
+        record_dict['kids_fruitveg'] = contract.fruitVeg_products
         return record_dict
 
     @staticmethod
@@ -69,9 +69,12 @@ class RegisterGenerator(DocumentGenerator):
         record_dict['school_email'] = RegisterGenerator.CELL_TO_MERGE_MARK
         record_dict['contract_info'] = RegisterGenerator.CELL_TO_MERGE_MARK
         validity_date = DateConverter.convert_date_to_string(annex.validity_date)
-        record_dict['change_info'] = f"Aneks_{annex.no} {validity_date}*"
-        record_dict['kids_milk'] = str(annex.dairy_products)
-        record_dict['kids_fruitveg'] = str(annex.fruitVeg_products)
+        if_valid_date_end = annex.get_validity_date_end(empty="")
+        nl = '\n'
+        record_dict['change_info'] = f"Aneks_{annex.no} {validity_date}" \
+                                     f"{nl + '-' + if_valid_date_end if if_valid_date_end else if_valid_date_end}*"
+        record_dict['kids_milk'] = annex.dairy_products
+        record_dict['kids_fruitveg'] = annex.fruitVeg_products
         return record_dict
 
     def generate(self) -> None:

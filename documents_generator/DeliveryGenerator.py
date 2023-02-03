@@ -20,10 +20,10 @@ class DeliveryGenerator(DocumentGenerator):
 
     def prepare_data(self):
         self.__schools_delivery_info()
-        self._document.merge_rows("school_nick", self.schools_delivery_rows)
+        self.merge_rows("school_nick", self.schools_delivery_rows)
         self.__product_summarize_info()
-        self._document.merge_rows("product", self.product_summarize_rows)
-        self._document.merge(
+        self.merge_rows("product", self.product_summarize_rows)
+        self.merge(
             driver=self.driver.upper(),
             delivery_date=self.delivery_date,
             delivery_day=DeliveryGenerator.DAY_NAMES[DateConverter.get_day(self.delivery_date)].upper(),

@@ -1,4 +1,3 @@
-from helpers.logger import app_logger
 from helpers.config_parser import config_parser
 from typing import List
 
@@ -26,27 +25,14 @@ class FileData:
         super().__init__()
 
     def __str__(self):
-        return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'} {id(self)}"
+        return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
 
     def __repr__(self):
-        return f"FileData(_name={self.name}, _mime_type={self.mime_type}, _id={self.id})"
+        return f"FileData(_name={self.name}, _mime_type={self.mime_type}, _id={self.id}, _parent_id={self.parent_id})"
 
 
 def file_found(name: str, file_list: List[FileData]):
     return name in [file.name for file in file_list]
-
-
-def generate_documents(gen, **kwargs):
-    from documents_generator.DocumentGenerator import DocumentGenerator
-    generator = gen(**kwargs)
-    try:
-        DocumentGenerator.generate(generator)
-        DocumentGenerator.upload_files_to_remote_drive(generator)
-        DocumentGenerator.export_files_to_pdf(generator)
-        DocumentGenerator.upload_pdf_files_to_remote_drive(generator)
-        return [str(document) for document in generator.generated_documents]
-    except TypeError as e:
-        app_logger.error(f"{gen}: Problem occurred during document generation '{e}'")
 
 
 def get_output_name(name, *args):

@@ -24,7 +24,7 @@ class RecordGenerator(DocumentGenerator):
                                record.product_store.product.type.name[:3])
 
     def prepare_data(self):
-        self._document.merge(**RecordGenerator.prepare_data_to_fill(self.record))
+        self.merge(**RecordGenerator.prepare_data_to_fill(self.record))
 
     def __init__(self, record: RecordModel):
         self.record = record

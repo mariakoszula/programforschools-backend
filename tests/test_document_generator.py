@@ -7,7 +7,8 @@ from typing import List
 from helpers.file_folder_creator import DirectoryCreator
 from tests.common_data import program as program_data
 from helpers.google_drive import FileData, GoogleDriveCommands, GoogleDriveCommandsAsync, DriveCommands
-from helpers.common import generate_documents, DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
+from helpers.common import DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
+from tasks.generate_documents_task import generate_documents
 from models.directory_tree import DirectoryTreeModel
 import pytest
 
@@ -19,7 +20,7 @@ class CustomDocumentGenerator(DocumentGenerator):
                                                         semester_no=program_data["semester_no"])
 
     def prepare_data(self):
-        self._document.merge(**self.fields_to_merge)
+        self.merge(**self.fields_to_merge)
 
     def __init__(self, drive_tool=GoogleDriveCommands, directory_name="TEST", **fields_to_merge):
         self.test_directory_path = path.join(CustomDocumentGenerator.main_directory_name, directory_name)
