@@ -1,6 +1,6 @@
 from flask_restful import Resource
 from auth.accesscontrol import roles_required, handle_exception_pretty
-from helpers.common import generate_documents
+from tasks.generate_documents_task import generate_documents
 from models.user import AllowedRoles
 from documents_generator.RegisterGenerator import RegisterGenerator, DocumentGenerator
 from models.program import ProgramModel

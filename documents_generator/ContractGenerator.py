@@ -9,7 +9,7 @@ from os import path
 
 class ContractGenerator(DocumentGenerator):
     def prepare_data(self):
-        self._document.merge(
+        self.merge(
             city=self.contract.school.city,
             date=self.date,
             no=self.contract.contract_no,

@@ -51,6 +51,8 @@ def update_finished_documents_meta(documents_no: int):
 
 
 def calculate_progress(current_job):
+    if not current_job:
+        return 0
     meta = current_job.get_meta(refresh=True)
     if meta.get("documents_no") and meta.get("finished_documents_no"):
         return meta.get("finished_documents_no") / meta.get("documents_no") * 100
@@ -124,3 +126,16 @@ async def generate_documents_async(generators_init_data: List[Tuple[Type[Documen
     uploaded_documents.extend(output)
     remove_old_save_new(uploaded_documents, redis_conn)
     return uploaded_documents
+
+
+def generate_documents(gen, **kwargs):
+    generator = gen(**kwargs)
+    try:
+        gen.generate(generator)
+        gen.upload_files_to_remote_drive(generator)
+        gen.export_files_to_pdf(generator)
+        gen.upload_pdf_files_to_remote_drive(generator)
+        remove_old_save_new(generator.generated_documents)
+        return [str(document) for document in generator.generated_documents]
+    except TypeError as e:
+        app_logger.error(f"{gen}: Problem occurred during document generation '{e}'")

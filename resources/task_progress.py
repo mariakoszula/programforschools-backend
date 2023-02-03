@@ -12,18 +12,18 @@ class TaskProgressStatus(Resource):
     def get(cls, task_id):
         with Connection(redis_connection):
             q = Queue()
-            create_delivery_task = q.fetch_job(task_id)
-            progress = calculate_progress(create_delivery_task)
-            if create_delivery_task:
-                if create_delivery_task.is_failed:
+            create_task = q.fetch_job(task_id)
+            progress = calculate_progress(create_task)
+            if create_task:
+                if create_task.is_failed:
                     return {
                                'progress': progress,
                                'message': "Task failed to finish"
                            }, 500
-                if create_delivery_task.is_finished:
+                if create_task.is_finished:
                     return {
                                'progress': progress,
-                               'documents': [str(res) for res in create_delivery_task.result]
+                               'documents': [str(res) for res in create_task.result]
                            }, 200
                 return {
                            'progress': progress
