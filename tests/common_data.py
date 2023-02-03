@@ -14,8 +14,8 @@ program = {
     "school_year": "2022/2023",
     "fruitVeg_price": 1.0,
     "dairy_price": 2.0,
-    "start_date": "2023-02-20",
-    "end_date": "2023-06-20",
+    "start_date": "2023-01-01",
+    "end_date": "2023-12-31",
     "dairy_min_per_week": 2,
     "fruitVeg_min_per_week": 3,
     "dairy_amount": 12,
@@ -26,6 +26,17 @@ school_data = {
     "nick": "My dummy school"
 }
 
+annex_data = {
+    "validity_date": "2023-12-07",
+    "fruitVeg_products": 10,
+    "dairy_products": 1
+}
+
+week_data = {
+    "start_date": "2023-12-01",
+    "end_date": "2023-12-16",
+    "week_no": 1
+}
 
 
 def get_program_data(company_id):

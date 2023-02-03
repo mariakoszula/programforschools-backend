@@ -62,7 +62,9 @@ class ContractModel(db.Model, BaseDatabaseQuery):
             return get_kids_no_by_type(self, product_type)
         else:
             for annex in self.annex:
-                if is_date_in_range(date, annex.validity_date, self.program.end_date):
+                end_date = self.program.end_date if not annex.timed_annex \
+                    else annex.timed_annex[0].validity_date_end
+                if is_date_in_range(date, annex.validity_date, end_date):
                     return get_kids_no_by_type(annex, product_type)
             if is_date_in_range(date, self.validity_date, self.program.end_date):
                 return get_kids_no_by_type(self, product_type)
@@ -86,12 +88,19 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     dairy_products = db.Column(db.Integer, nullable=False)
     __table_args__ = (db.UniqueConstraint('contract_id', 'no'),)
 
-    def __init__(self, contract, validity_date, fruitVeg_products=None, dairy_products=None):
+    def __init__(self, contract, validity_date, *, fruitVeg_products=None, dairy_products=None, validity_date_end=None):
+        if validity_date_end and \
+                DateConverter.convert_to_date(validity_date_end, pattern="%Y-%m-%d") < DateConverter.convert_to_date(
+            validity_date, pattern="%Y-%m-%d"):
+            raise ValueError(f"Failed to create annex {validity_date_end} < {validity_date}")
         self.contract_id = contract.id
         self.validity_date = validity_date
         self.fruitVeg_products = fruitVeg_products if fruitVeg_products else contract.fruitVeg_products
         self.dairy_products = dairy_products if dairy_products else contract.dairy_products
         self.no = len(contract.annex) + 1
+        self.save_to_db()
+        if validity_date_end:
+            TimedAnnexModel(validity_date_end, self.id).save_to_db()
 
     def __str__(self):
         return f"{self.no}: {self.contract.contract_no}_{self.contract.contract_year} - {self.validity_date}"
@@ -111,6 +120,24 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def find_by_date(cls, validity_date, contract_id):
         return cls.query.filter_by(validity_date=validity_date, contract_id=contract_id).first()
+
+
+class TimedAnnexModel(db.Model, BaseDatabaseQuery):
+    __tablename__ = 'timed_annex'
+    id = db.Column(db.Integer, primary_key=True)
+    validity_date_end = db.Column(db.DateTime, nullable=False)
+    annex_id = db.Column(db.Integer, db.ForeignKey('annex.id'), nullable=False)
+    annex = db.relationship('AnnexModel', backref=db.backref('timed_annex', lazy=True))
+    __table_args__ = (db.UniqueConstraint('annex_id'),)
+
+    def __init__(self, validity_date_end, annex_id):
+        self.validity_date_end = validity_date_end
+        self.annex_id = annex_id
+        self.save_to_db()
+
+    @classmethod
+    def find(cls, annex_id):
+        return cls.query.filter_by(annex_id=annex_id).first()
 
 
 class SuspendType(enum.Enum):

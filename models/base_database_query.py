@@ -1,7 +1,7 @@
 from helpers.date_converter import DateConverter
 from helpers.db import db
 from marshmallow import Schema, fields
-
+from typing import List
 
 class ProgramQuerySchema(Schema):
     program_id = fields.Int(required=True)

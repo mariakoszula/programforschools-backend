@@ -9,6 +9,7 @@ class WeightTypeModel(db.Model, BaseDatabaseQuery):
 
     def __init__(self, name):
         self.name = name
+        self.save_to_db()
 
     def json(self):
         return self.name
@@ -24,6 +25,7 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
 
     def __init__(self, name):
         self.name = name
+        self.save_to_db()
 
     def json(self):
         return self.name
@@ -49,6 +51,7 @@ class ProductModel(db.Model, BaseDatabaseQuery):
         self.name = name
         self.type_id = ProductTypeModel.find_one_by_name(name=product_type).id
         self.weight_id = WeightTypeModel.find_one_by_name(name=weight_type).id
+        self.save_to_db()
 
     def json(self):
         return {
@@ -70,6 +73,7 @@ class ProductBoxModel(db.Model, BaseDatabaseQuery):
         product = ProductModel.find_one_by_name(name=name)
         self.product_id = product.id
         self.amount = amount
+        self.save_to_db()
 
     def __str__(self):
         return f"{self.product.name} - {self.amount} szt"
@@ -95,6 +99,7 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
         self.product_id = ProductModel.find_one_by_name(name).id
         self.min_amount = min_amount
         self.weight = weight
+        self.save_to_db()
 
     def is_min_amount_exceeded(self, nick):
         return [record.contract.school.nick for record in self.records].count(nick) >= self.min_amount

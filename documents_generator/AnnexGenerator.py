@@ -24,7 +24,7 @@ class AnnexGenerator(DocumentGenerator):
             dairy_products=self.annex.dairy_products,
             validity_date=DateConverter.convert_date_to_string(self.annex.validity_date),
             annex_no=self.annex.no,
-            validity_date_end="-"
+            validity_date_end=self.get_validity_date_end()
         )
 
     def __init__(self, annex, date):
@@ -45,3 +45,9 @@ class AnnexGenerator(DocumentGenerator):
                                                                self.annex.contract.contract_no,
                                                                self.annex.contract.contract_year,
                                                                self.annex.no))
+
+    def get_validity_date_end(self):
+        if self.annex.timed_annex:
+            timed_annex = self.annex.timed_annex[0]
+            return DateConverter.convert_date_to_string(timed_annex.validity_date_end)
+        return "-"
