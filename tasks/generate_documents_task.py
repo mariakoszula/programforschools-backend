@@ -21,9 +21,14 @@ def measure_time_callback(job, connection, result, *args, **kwargs):
 def queue_task(*, func, request, callback=measure_time_callback, callback_failure=measure_time_callback):
     with Connection(redis_connection):
         q = Queue()
-        req_in = dict(**request.args)
-        if request.is_json:
-            req_in.update(**request.json)
+        req_in = dict()
+        if isinstance(request, dict):
+            req_in = request
+        else:
+            if request.args:
+                req_in.update(**request.args)
+            if request.is_json:
+                req_in.update(**request.json)
         create_task = q.enqueue(func,
                                 result_ttl=60 * 60,
                                 on_success=callback,
@@ -72,7 +77,7 @@ def get_generator(gen, **args):
     except DirectoryCreatorError:
         app_logger.error(f"Failed to create remote directory tree for {gen} with {args}")
     except TypeError as e:
-        app_logger.error(f"{generator}: Problem occurred during document generation '{e}'")
+        app_logger.error(f"Problem occurred during document generation '{e}'")
 
 
 def get_generator_list(generators_init_data: List[tuple]):
