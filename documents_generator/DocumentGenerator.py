@@ -27,8 +27,8 @@ class DocumentGenerator(ABC):
 
         self.file_path = path.join(self.output_directory, self.output_doc_name)
         self.remote_parent_id = self.__prepare_remote_parent()
-        self._document = self.__start_doc_gen()
-        self._fields_to_merge = self._document.get_merge_fields()
+        self.__document = self.__start_doc_gen()
+        self._fields_to_merge = self.__document.get_merge_fields()
         self._given_keys = set()
 
         super(DocumentGenerator, self).__init__()
@@ -57,12 +57,17 @@ class DocumentGenerator(ABC):
 
     def merge(self, **fields):
         self.__prepare_data(fields)
-        self._document.merge(**fields)
+        self.__document.merge(**fields)
 
     def merge_rows(self, anchor, fields):
         for field in fields:
             self.__prepare_data(field)
-        self._document.merge_rows(anchor, fields)
+        self.__document.merge_rows(anchor, fields)
+
+    def merge_pages(self, fields: List):
+        for field in fields:
+            self.__prepare_data(field)
+        self.__document.merge_pages(fields)
 
     def generate(self):
         self.prepare_data()
@@ -100,7 +105,7 @@ class DocumentGenerator(ABC):
             self.__check_for_missing_or_extra_keys()
         except ValueError as e:
             app_logger.debug(e)
-        self._document.write(generated_file)
+        self.__document.write(generated_file)
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
         self.generated_document = FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE,

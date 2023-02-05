@@ -18,7 +18,7 @@ def measure_time_callback(job, connection, result, *args, **kwargs):
         app_logger.debug(f"Delivery job time diff: {job.ended_at - job.started_at}")
 
 
-def queue_task(*, func, request, callback=measure_time_callback):
+def queue_task(*, func, request, callback=measure_time_callback, callback_failure=measure_time_callback):
     with Connection(redis_connection):
         q = Queue()
         req_in = dict(**request.args)
@@ -27,6 +27,7 @@ def queue_task(*, func, request, callback=measure_time_callback):
         create_task = q.enqueue(func,
                                 result_ttl=60 * 60,
                                 on_success=callback,
+                                on_failure=callback_failure,
                                 **req_in)
     return {
                'task_id': create_task.get_id()
@@ -50,12 +51,17 @@ def update_finished_documents_meta(documents_no: int):
     job.save_meta()
 
 
+DECREASE_FACTOR = 1
+
+
 def calculate_progress(current_job):
     if not current_job:
         return 0
+    if current_job.is_finished:
+        return 100
     meta = current_job.get_meta(refresh=True)
     if meta.get("documents_no") and meta.get("finished_documents_no"):
-        return meta.get("finished_documents_no") / meta.get("documents_no") * 100
+        return round(meta.get("finished_documents_no") / meta.get("documents_no") * 100 - DECREASE_FACTOR, 0)
     return 0
 
 
@@ -91,8 +97,8 @@ def stop_threads(threads):
 
 def run_generate_documents(generators: List[DocumentGenerator]):
     threads = []
-    for generator in generators:
-        threads.append(start_thread(DocumentGenerator.generate, generator))
+    for gen in generators:
+        threads.append(start_thread(gen.generate))
     stop_threads(threads)
 
 
