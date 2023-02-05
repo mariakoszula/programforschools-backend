@@ -25,9 +25,10 @@ class TaskProgressStatus(Resource):
                                'progress': progress,
                                'documents': [str(res) for res in create_task.result]
                            }, 200
-                return {
-                           'progress': progress
-                       }, 200
+                else:
+                    return {
+                               'progress': progress
+                           }, 200
         return {
                    'progress': -1,
                    'message': 'Task does not exists or already finished'

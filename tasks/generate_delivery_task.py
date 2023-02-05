@@ -1,6 +1,6 @@
 from operator import attrgetter
 from models.record import RecordModel, RecordState
-from documents_generator.DeliveryGenerator import DeliveryGenerator
+from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator
 from documents_generator.RecordGenerator import RecordGenerator
 from app import create_app
 from models.product import ProductBoxModel
@@ -22,6 +22,7 @@ async def create_delivery_async(**request):
                          'comments': request.get("comments", "")}
         input_docs = [(RecordGenerator, {'record': record}) for record in records]
         input_docs.append((DeliveryGenerator, delivery_args))
+        input_docs.append((DeliveryRecordsGenerator, delivery_args))
         setup_progress_meta(len(input_docs))
         return await generate_documents_async(input_docs)
 
@@ -33,5 +34,15 @@ def on_success_delivery_update(job, connection, result, *args, **kwargs):
         measure_time_callback(job, connection, result, *args, **kwargs)
 
 
+def on_failure_delivery_update(job, connection, exception, *args, **kwargs):
+    with create_app().app_context():
+        for record in RecordModel.get_records(job.kwargs['records']):
+            record.change_state(RecordState.PLANNED)
+
+
 def queue_delivery(request):
-    return queue_task(func=create_delivery_async, callback=on_success_delivery_update, request=request)
+    return queue_task(func=create_delivery_async,
+                      callback=on_success_delivery_update,
+                      request=request,
+                      callback_failure=on_failure_delivery_update)
+
