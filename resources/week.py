@@ -35,7 +35,6 @@ class WeekRegister(Resource):
                    }, 400
         try:
             week = WeekModel(**data)
-            week.save_to_db()
         except ValueError as e:
             return {'error': f'{e}'}, 400
         except Exception as e:

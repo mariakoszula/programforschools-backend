@@ -1,13 +1,6 @@
-from app import app
-from helpers.db import db
+from app import create_app
 
-
-db.init_app(app)
-
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
-
-
-
+app = create_app()
+if __name__ == '__main__':
+    with app.app_context():
+        app.run(debug=True, host="0.0.0.0")

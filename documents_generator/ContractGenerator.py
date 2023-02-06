@@ -1,4 +1,4 @@
-from helpers.common import EMPTY_FILED
+from helpers.common import EMPTY_FILED, get_output_name
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
@@ -9,11 +9,11 @@ from os import path
 
 class ContractGenerator(DocumentGenerator):
     def prepare_data(self):
-        self._document.merge(
+        self.merge(
             city=self.contract.school.city,
             date=self.date,
-            no=str(self.contract.contract_no),
-            year=str(self.contract.contract_year),
+            no=self.contract.contract_no,
+            year=self.contract.contract_year,
             semester=self.contract.program.get_current_semester(),
             name=self.contract.school.name,
             address=self.contract.school.address,
@@ -44,10 +44,10 @@ class ContractGenerator(DocumentGenerator):
                                                                doc_template),
                                    output_directory=path.join(program_dir,
                                                               config_parser.get('Directories', 'contract')),
-                                   output_name=config_parser.get('DocNames', 'contract').format(
-                                       self.contract.school.nick.strip(),
-                                       self.contract.contract_no,
-                                       self.contract.contract_year))
+                                   output_name=get_output_name('contract',
+                                                               self.contract.school.nick.strip(),
+                                                               self.contract.contract_no,
+                                                               self.contract.contract_year))
 
     @staticmethod
     def _prepare_str_from_weeks(weeks):

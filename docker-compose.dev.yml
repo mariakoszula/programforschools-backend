@@ -9,3 +9,9 @@ services:
       PYTHONUNBUFFERED: 1
       DEBUG_MODE: ${DEBUG_MODE}
       GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
+
+  worker:
+    environment:
+      DEBUG_MODE: ${DEBUG_MODE}
+      PYTHONUNBUFFERED: 1
+      GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}

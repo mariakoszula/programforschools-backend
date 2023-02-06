@@ -17,8 +17,14 @@ def get_record_title_mapping(product_type: ProductTypeModel):
 
 
 class RecordGenerator(DocumentGenerator):
+    @staticmethod
+    def get_record_output_name(record: RecordModel):
+        return get_output_name('record', f"{record.contract.school.nick.strip()}",
+                               DateConverter.convert_date_to_string(record.date, pattern="%Y-%m-%d"),
+                               record.product_store.product.type.name[:3])
+
     def prepare_data(self):
-        self._document.merge(**RecordGenerator.prepare_data_to_fill(self.record))
+        self.merge(**RecordGenerator.prepare_data_to_fill(self.record))
 
     def __init__(self, record: RecordModel):
         self.record = record
@@ -30,11 +36,7 @@ class RecordGenerator(DocumentGenerator):
                                                               config_parser.get('Directories', 'school'),
                                                               self.record.contract.school.nick,
                                                               config_parser.get('Directories', 'record')),
-                                   output_name=get_output_name('record',
-                                                               f"{self.record.contract.school.nick.strip()}",
-                                                               DateConverter.convert_date_to_string(self.record.date,
-                                                                                                    pattern="%Y-%m-%d"),
-                                                               self.record.product_store.product.type.name[:3]))
+                                   output_name=self.get_record_output_name(self.record))
 
     @staticmethod
     def prepare_data_to_fill(record):
@@ -46,7 +48,7 @@ class RecordGenerator(DocumentGenerator):
             'nip': record.contract.school.nip,
             'regon': record.contract.school.regon,
             'email': record.contract.school.email,
-            'kids_no': str(record.delivered_kids_no),
+            'kids_no': record.delivered_kids_no,
             'product_name': record.product_store.product.name,
             'record_title': get_record_title_mapping(record.product_store.product.type)
         }

@@ -5,7 +5,7 @@ setup:
 build:
   docker:
     web: ./Dockerfile
-    worker: ./worker/Dockerfile
+    worker: ./Dockerfile
 run:
   web: uwsgi --ini uwsgi.ini
   worker: python worker.py
