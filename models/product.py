@@ -17,7 +17,7 @@ class WeightTypeModel(db.Model, BaseDatabaseQuery):
 
 class ProductTypeModel(db.Model, BaseDatabaseQuery):
     DAIRY_TYPE = "nabiał"
-    FRUIT_VEG_TYPE = "owocowo-warzywny"
+    FRUIT_VEG_TYPE = "owoce-warzywa"
 
     __tablename__ = 'product_type'
     id = db.Column(db.Integer, primary_key=True)
