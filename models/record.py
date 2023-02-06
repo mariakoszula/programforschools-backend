@@ -11,6 +11,7 @@ class RecordState(enum.Enum):
     PLANNED = 1
     GENERATED = 2
     DELIVERED = 3
+    GENERATION_IN_PROGRESS = 4
 
 
 class RecordModel(db.Model, BaseDatabaseQuery):
@@ -65,10 +66,15 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         return data
 
     def change_state(self, state, **kwargs):
-        if state == RecordState.GENERATED:
+        if state == RecordState.GENERATION_IN_PROGRESS:
             self.delivery_date = DateConverter.convert_to_date(kwargs["date"])
+        if state == RecordState.GENERATED:
             self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
                                                                date=self.date)
 
         self.state = state
         self.update_db()
+
+    @classmethod
+    def get_records(cls, ids):
+        return [cls.find_by_id(_id) for _id in ids]

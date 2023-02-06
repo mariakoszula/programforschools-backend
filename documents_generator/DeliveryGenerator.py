@@ -1,5 +1,5 @@
 from os import path
-from typing import List, Dict
+from typing import List
 
 from documents_generator.DocumentGenerator import DocumentGenerator
 from documents_generator.RecordGenerator import RecordGenerator
@@ -14,25 +14,22 @@ from models.record import RecordModel
 class DeliveryGenerator(DocumentGenerator):
     DAY_NAMES = ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"]
 
+    @staticmethod
+    def get_delivery_output_name(delivery_date, driver):
+        return get_output_name('delivery', delivery_date, driver)
+
     def prepare_data(self):
         self.__schools_delivery_info()
-        self._document.merge_rows("school_nick", self.schools_delivery_rows)
+        self.merge_rows("school_nick", self.schools_delivery_rows)
         self.__product_summarize_info()
-        self._document.merge_rows("product", self.product_summarize_rows)
-        self._document.merge(
+        self.merge_rows("product", self.product_summarize_rows)
+        self.merge(
             driver=self.driver.upper(),
             delivery_date=self.delivery_date,
             delivery_day=DeliveryGenerator.DAY_NAMES[DateConverter.get_day(self.delivery_date)].upper(),
             comments=self.comments,
             boxes='' if not len(self.boxes) else f'Opakowania: {",".join([str(box) for box in self.boxes])}'
         )
-
-    def generate(self) -> None:
-        super().generate()
-        delivered_records = DeliveryRecordsGenerator(self.records, self.get_output_dir(),
-                                                     self.delivery_date, self.driver)
-        delivered_records.generate()
-        self.generated_documents.extend(delivered_records.generated_documents)
 
     def __init__(self, records: List[RecordModel], date, driver, boxes: List[ProductBoxModel], comments=None):
         if not len(records):
@@ -46,8 +43,8 @@ class DeliveryGenerator(DocumentGenerator):
         self.product_summarize_rows = []
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'delivery'),
-                                   output_directory=self.get_output_dir(),
-                                   output_name=get_output_name('delivery', self.delivery_date, self.driver))
+                                   output_directory=self.get_output_dir(self.records[0], self.delivery_date),
+                                   output_name=self.get_delivery_output_name(self.delivery_date, self.driver))
 
     @staticmethod
     def __dict_from_list(data, get_key_fun):
@@ -105,10 +102,11 @@ class DeliveryGenerator(DocumentGenerator):
         except StopIteration:
             return ""
 
-    def get_output_dir(self):
-        program_dir = DirectoryCreator.get_main_dir(school_year=self.records[0].contract.program.school_year,
-                                                    semester_no=self.records[0].contract.program.semester_no)
-        return path.join(program_dir, config_parser.get('Directories', 'record'), self.delivery_date)
+    @staticmethod
+    def get_output_dir(record, delivery_date):
+        program_dir = DirectoryCreator.get_main_dir(school_year=record.contract.program.school_year,
+                                                    semester_no=record.contract.program.semester_no)
+        return path.join(program_dir, config_parser.get('Directories', 'record'), delivery_date)
 
     @staticmethod
     def __sum_products(records):
@@ -121,11 +119,12 @@ class DeliveryGenerator(DocumentGenerator):
 
 class DeliveryRecordsGenerator(DocumentGenerator):
     def prepare_data(self):
-        self._document.merge_pages([RecordGenerator.prepare_data_to_fill(record) for record in self.records])
+        self.merge_pages([RecordGenerator.prepare_data_to_fill(record) for record in self.records])
 
-    def __init__(self, records, output_directory, delivery_date, driver):
+    def __init__(self, records, date, driver, **_):
         self.records = records
+        output_directory = DeliveryGenerator.get_output_dir(self.records[0], date)
         DocumentGenerator.__init__(self,
                                    template_document=RecordGenerator.get_template(),
                                    output_directory=output_directory,
-                                   output_name=get_output_name('record_all', delivery_date, driver))
+                                   output_name=get_output_name('record_all', date, driver))

@@ -1,19 +1,15 @@
 import enum
 from typing import List
-
 from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
-from operator import attrgetter
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
-from documents_generator.DeliveryGenerator import DeliveryGenerator
-from documents_generator.RecordGenerator import RecordGenerator
-from helpers.common import generate_documents
 from models.base_database_query import program_schema, DateQuerySchema
 from models.contracts import ContractModel
-from models.product import ProductStoreModel, ProductBoxModel
+from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
+from tasks.generate_delivery_task import queue_delivery
 
 
 def must_not_be_empty(data):
@@ -182,7 +178,8 @@ def validate_record(record: RecordModel, program_id):
     return True
 
 
-class RecordDeliveryResource(Resource):
+class RecordDeliveryCreate(Resource):
+
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
@@ -191,20 +188,11 @@ class RecordDeliveryResource(Resource):
         body_errors = CreateRecordBodySchema().validate(request.json)
         if errors or body_errors:
             return {"message": f"url: {errors} body: {body_errors}"}, 400
-        records = [RecordModel.find_by_id(_id) for _id in request.json["records"]]
-        records.sort(key=attrgetter('contract_id', 'date'))
-        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.json.get("boxes", [])]
-        delivery_date = request.args["date"]
-        for record in records:
-            record.change_state(RecordState.GENERATED, date=delivery_date)
-        uploaded_documents = []
-        for record in records:
-            uploaded_documents.extend(generate_documents(gen=RecordGenerator, record=record))
-        uploaded_documents.extend(generate_documents(gen=DeliveryGenerator,
-                                                     records=records,
-                                                     **request.args,
-                                                     boxes=boxes,
-                                                     comments=request.json.get("comments", "")))
-        return {
-                   'documents': uploaded_documents
-               }, 200
+        records_ids = request.json["records"]
+        records = RecordModel.get_records(records_ids)
+        if any(record.state == RecordState.GENERATION_IN_PROGRESS for record in records):
+            return {
+                       "message": f"One of the records is already added to other delivery, wait after it is finished",
+                       "records": [record.json() for record in records]
+                   }, 400
+        return queue_delivery(request)

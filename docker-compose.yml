@@ -1,5 +1,14 @@
 version: '2'
 services:
+  test_db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: rykosystem_test
+      POSTGRES_PASSWORD: rykosystem_password_test
+    ports:
+      - "5433:5432"
+
   db:
     image: postgres
     restart: always
@@ -9,10 +18,28 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
   web:
+    build: .
+    image: rykosystem
+    container_name: rykosystem
     depends_on:
       - db
-    build: .
-    container_name: rykosystem
+      - redis
     ports:
     - "5000:5000"
+    volumes:
+      - .:/app
+
+  worker:
+    image: rykosystem
+    command: python worker.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
