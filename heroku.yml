@@ -1,8 +1,11 @@
 setup:
  addons:
    - plan: heroku-postgresql
+   - plan: heroku-redis
 build:
   docker:
     web: ./Dockerfile
+    worker: ./worker/Dockerfile
 run:
   web: uwsgi --ini uwsgi.ini
+  worker: python worker.py

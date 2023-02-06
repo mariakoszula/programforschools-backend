@@ -12,7 +12,18 @@ services:
   web:
     depends_on:
       - db
+      - redis
     build: .
     container_name: rykosystem
     ports:
     - "5000:5000"
+    volumes:
+      - .:/app
+
+  worker:
+    image: rykosystem
+    command: python worker/worker.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
