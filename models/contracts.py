@@ -111,6 +111,10 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     def json(self):
         data: {} = super().json()
         DateConverter.replace_date_to_converted(data, "validity_date")
+        if len(self.timed_annex) == 1:
+            data['validity_date_end'] = self.timed_annex[0].json()["validity_date_end"]
+        else:
+            data['validity_date_end'] = None
         return data
 
     @classmethod
@@ -144,6 +148,11 @@ class TimedAnnexModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def find(cls, annex_id):
         return cls.query.filter_by(annex_id=annex_id).first()
+
+    def json(self):
+        data: {} = super().json()
+        DateConverter.replace_date_to_converted(data, "validity_date_end")
+        return data
 
 
 class SuspendType(enum.Enum):
