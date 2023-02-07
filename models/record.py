@@ -3,7 +3,7 @@ import enum
 from helpers.date_converter import DateConverter
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from models.product import ProductModel
+from models.product import ProductModel, ProductTypeModel
 from models.week import WeekModel
 
 
@@ -63,6 +63,8 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         DateConverter.replace_date_to_converted(data, "delivery_date")
         if data["state"]:
             data["state"] = RecordState(data["state"]).name
+        data["product_type"] = ProductTypeModel.find_by_id(data["product_type_id"]).json()
+        del data["product_type_id"]
         return data
 
     def change_state(self, state, **kwargs):
