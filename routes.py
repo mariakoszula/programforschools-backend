@@ -1,5 +1,4 @@
 from auth.accesscontrol import roles_required, AllowedRoles
-from models.user import UserModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
@@ -16,7 +15,6 @@ from helpers.json_encoder import to_json
 from resources.week import WeekResource, WeekRegister, WeeksResource
 from helpers.logger import app_logger
 
-from flask_jwt_extended import JWTManager
 from flask_restful import Api
 from flask_cors import CORS
 
@@ -24,17 +22,6 @@ from flask_cors import CORS
 def create_routes(app):
     api = Api(app)
     CORS(app)
-    jwt = JWTManager(app)
-
-    @jwt.additional_claims_loader
-    def add_role_claims_to_access_token(identity):
-        user = UserModel.find_by_id(identity)
-        if user:
-            return {'role': user.role.json()}
-
-    @jwt.token_in_blocklist_loader
-    def token_in_blocklist_callback(_, jwt_payload: dict):
-        return jwt_payload['jti'] in UserLogout.BLACKLIST
 
     api.add_resource(UserResource, '/register')
     api.add_resource(User, '/user/<int:user_id>')

@@ -1,3 +1,4 @@
+import sqlalchemy.exc
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
 from helpers.date_converter import DateConverter
@@ -30,9 +31,16 @@ class WeekModel(db.Model, BaseDatabaseQuery):
         DateConverter.replace_date_to_converted(data, "end_date")
         return data
 
+    def __str__(self):
+        return f"{self.week_no}: {self.start_date} - {self.end_date}"
+
     @classmethod
     def find_by_date(cls, date):
-        return cls.query.filter(WeekModel.start_date <= date).filter(date <= WeekModel.end_date).one()
+        try:
+            res = cls.query.filter(WeekModel.start_date <= date).filter(date <= WeekModel.end_date).one()
+        except sqlalchemy.exc.MultipleResultsFound:
+            raise ValueError(f"More than one week found for date: {date}. Weeks should never overlap.")
+        return res
 
     @classmethod
     def find(cls, week_no, program_id):

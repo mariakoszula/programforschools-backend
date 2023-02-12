@@ -1,9 +1,10 @@
 from flask_restful import Resource, reqparse, request
-
+from sqlalchemy.exc import SQLAlchemyError
 from auth.accesscontrol import roles_required, AllowedRoles
 from models.week import WeekModel
 from helpers.date_converter import DateConverter
 from models.base_database_query import program_schema
+from helpers.logger import app_logger
 
 
 class WeekRegister(Resource):
@@ -68,12 +69,16 @@ class WeekResource(Resource):
         return week.json()
 
     @classmethod
-    @roles_required([AllowedRoles.admin.name])
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def delete(cls, week_id):
         program = WeekModel.find_by_id(week_id)
         if not program:
             return {'message': f'Week {week_id} does not exists'}, 404
-        program.delete_from_db()
+        try:
+            program.delete_from_db()
+        except SQLAlchemyError as e:
+            app_logger.error(f"Error deleting week {week_id} from database: {e}")
+            return {'message': f"Cannot remove this week, it is possible records belong already to this week"}, 400
         return {'deleted_week': week_id}, 200
 
     @classmethod
