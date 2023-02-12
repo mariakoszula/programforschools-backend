@@ -19,9 +19,13 @@ class ProductQuerySchema(NameQuerySchema):
     weight_type = fields.Str(required=True)
 
 
-class ProductStoreQuerySchema(ProgramQuerySchema, NameQuerySchema):
+class ProductStoreQuerySchema(Schema):
     weight = fields.Float(required=False)
     min_amount = fields.Int(required=True)
+
+
+class ProductStoreQueryPostSchema(ProgramQuerySchema, NameQuerySchema, ProductStoreQuerySchema):
+    pass
 
 
 class ProductStoreByTypeQuerySchema(ProgramQuerySchema):
@@ -31,20 +35,28 @@ class ProductStoreByTypeQuerySchema(ProgramQuerySchema):
 name_query = NameQuerySchema()
 
 
-def simple_post(model, *args, validator=name_query):
+def validate_body(validator):
     errors = validator.validate(request.json)
     if errors:
         return {'message': f"{errors}"}, 400
+
+
+def successful_response(model, data):
+    return {
+               model.__tablename__: data.json()
+           }, 200
+
+
+def simple_post(model, *args, validator=name_query):
+    if err := validate_body(validator):
+        return err
     filter_data = {'name': request.json["name"]}
     for arg in args:
         filter_data[arg] = request.json[arg]
     found = model.find_by(**filter_data)
     if found:
         return {'message': f"{model.__tablename__} {request.json['name']} already exists"}, 400
-    new = model(**request.json)
-    return {
-               model.__tablename__: new.json()
-           }, 200
+    return successful_response(model, model(**request.json))
 
 
 def simple_get_all(model):
@@ -98,7 +110,7 @@ class ProductStoreResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(ProductStoreModel, "program_id", validator=ProductStoreQuerySchema())
+        return simple_post(ProductStoreModel, "program_id", validator=ProductStoreQueryPostSchema())
 
     @classmethod
     @handle_exception_pretty
@@ -111,6 +123,21 @@ class ProductStoreResource(Resource):
                    'products': [r.json() for r in ProductStoreModel.find(program_id=request.args["program_id"],
                                                                          product_type=request.args["product_type"])]
                }, 200
+
+
+class ProductStoreUpdateResource(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def put(cls, product_id):
+        if err := validate_body(ProductStoreQuerySchema()):
+            return err
+        try:
+            product = ProductStoreModel.find_by_id(product_id)
+            product.update_db(**request.json)
+            return successful_response(ProductStoreModel, product)
+        except ValueError as e:
+            return {'message': f'{e}'}, 400
 
 
 class ProductBoxResource(Resource):

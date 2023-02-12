@@ -3,7 +3,7 @@ from resources.company import CompanyResource, CompaniesResource, CompanyRegiste
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
 from resources.product import WeightTypeResource, ProductTypeResource, \
-    ProductResource, ProductStoreResource, ProductBoxResource
+    ProductResource, ProductStoreResource, ProductBoxResource, ProductStoreUpdateResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
 from resources.record import RecordsAllResource, RecordResource, RecordDeliveryCreate
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
@@ -57,6 +57,7 @@ def create_routes(app):
     api.add_resource(ProductTypeResource, '/product_type')
     api.add_resource(ProductResource, '/product')
     api.add_resource(ProductStoreResource, '/product_store')
+    api.add_resource(ProductStoreUpdateResource, '/product_store/<int:product_id>')
     api.add_resource(ProductBoxResource, '/product_box')
 
     api.add_resource(RecordsAllResource, '/records')
