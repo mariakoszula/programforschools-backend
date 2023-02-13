@@ -12,6 +12,9 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
       - image: cimg/python:3.9.13
+        environment:
+          DEBUG_MODE: ${DEBUG_MODE}
+          GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
