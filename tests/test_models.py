@@ -50,7 +50,14 @@ def test_week(week):
         WeekModel(week_no=2, start_date="2023-01-11", end_date="2022-12-12", program_id=week.program_id)
 
 
-@pytest.fixture(scope="module" )
+def test_week_overlap_throws_value_error(week):
+    WeekModel(week_no=2, start_date=week_data["start_date"], end_date=week_data["end_date"],
+              program_id=week.program_id)
+    with pytest.raises(ValueError):
+        WeekModel.find_by_date(week_data["start_date"])
+
+
+@pytest.fixture(scope="module")
 def product_store(initial_program_setup):
     WeightTypeModel("L")
     ProductTypeModel(ProductTypeModel.DAIRY_TYPE)
