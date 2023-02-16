@@ -3,7 +3,9 @@ from models.user import UserModel, Role, AllowedRoles
 from flask_jwt_extended import create_access_token, create_refresh_token, \
     jwt_required, get_jwt, get_jwt_identity
 from auth.accesscontrol import roles_required, handle_exception_pretty
+from helpers.redis_commands import conn as redis_connection
 import copy
+from helpers.jwt_manager import TOKEN_ACCESS_EXPIRES, jwt
 
 _user_parser = reqparse.RequestParser()
 _user_parser.add_argument('email',
@@ -88,16 +90,28 @@ class RefreshToken(Resource):
         return {'access_token': new_token}, 200
 
 
+@jwt.additional_claims_loader
+def add_role_claims_to_access_token(identity):
+    user = UserModel.find_by_id(identity)
+    if user:
+        return {'role': user.role.json()}
+
+
+@jwt.token_in_blocklist_loader
+def token_in_blocklist_callback(_, jwt_payload: dict):
+    jti = jwt_payload['jti']
+    token_in_black_list = redis_connection.get(jti)
+    return token_in_black_list is not None
+
+
 class UserLogout(Resource):
-    BLACKLIST = set()  # TODO Change this to using redis database https://flask-jwt-extended.readthedocs.io/en/stable/blocklist_and_token_revoking/
 
     @classmethod
     @jwt_required(verify_type=False)
     def delete(cls):
         token = get_jwt()
-        token_type = token["type"]
-        UserLogout.BLACKLIST.add(token["jti"])
-        return {'message': f'User logged out, {token_type.capitalize()} token revoked'}, 401
+        redis_connection.set(token["jti"], "", ex=TOKEN_ACCESS_EXPIRES)
+        return {'message': f'User logged out, {token["type"].capitalize()} token revoked'}, 401
 
 
 class Users(Resource):

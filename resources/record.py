@@ -10,7 +10,7 @@ from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
 from tasks.generate_delivery_task import queue_delivery
-
+from helpers.logger import app_logger
 
 def must_not_be_empty(data):
     if not data:
@@ -88,10 +88,14 @@ def try_to_insert_record(program_id, date, record_response) -> RecordResponse:
         elif product_store.is_min_amount_exceeded(record_response.nick):
             record_response.result = RecordAdditionResult.MIN_AMOUNT_EXCEED
         else:
-            rc = RecordModel(date=date, contract_id=contract.id, product_store=product_store)
-            rc.save_to_db()
-            record_response.result = RecordAdditionResult.SUCCESS
-            record_response.record_id = rc.id
+            try:
+                rc = RecordModel(date=date, contract_id=contract.id, product_store=product_store)
+                rc.save_to_db()
+                record_response.result = RecordAdditionResult.SUCCESS
+                record_response.record_id = rc.id
+            except ValueError as e:
+                record_response.result = RecordAdditionResult.FAILED_WITH_OTHER_REASON
+                app_logger.error(f"Failed to insert new Record due to {e}")
     return record_response
 
 
