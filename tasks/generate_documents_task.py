@@ -33,6 +33,7 @@ def queue_task(*, func, request, callback=measure_time_callback, callback_failur
                                 result_ttl=60 * 60,
                                 on_success=callback,
                                 on_failure=callback_failure,
+                                job_timeout=10 * 60,
                                 **req_in)
     return {
                'task_id': create_task.get_id()
