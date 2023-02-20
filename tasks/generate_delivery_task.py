@@ -20,9 +20,7 @@ async def create_delivery_async(**request):
                          'driver': request["driver"],
                          'boxes': boxes,
                          'comments': request.get("comments", "")}
-        input_docs = [(RecordGenerator, {'record': record}) for record in records]
-        input_docs.append((DeliveryGenerator, delivery_args))
-        input_docs.append((DeliveryRecordsGenerator, delivery_args))
+        input_docs = [(DeliveryGenerator, delivery_args), (DeliveryRecordsGenerator, delivery_args)]
         setup_progress_meta(len(input_docs))
         return await generate_documents_async(input_docs)
 
