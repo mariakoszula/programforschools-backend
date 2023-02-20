@@ -1,4 +1,7 @@
 from auth.accesscontrol import roles_required, AllowedRoles
+from helpers.file_folder_creator import DirectoryCreator
+from models.directory_tree import DirectoryTreeModel
+from models.program import ProgramModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
@@ -70,6 +73,7 @@ def create_routes(app):
     def main_page():
         return {'message': "You've entered home page"}, 200
 
+
     @app.route("/remote_folders_list/<string:google_id>")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def remote_folders_list(google_id: str):
@@ -88,6 +92,24 @@ def create_routes(app):
         except ValueError as e:
             return {'message': f'{e}'}, 400
         return {'message': f'Removed {google_id} from google drive'}, 200
+
+    @app.route("/create_remote_directory_tree/<int:program_id>")
+    @roles_required([AllowedRoles.admin.name])
+    def create_remote_directory_tree(program_id: int):
+        program = ProgramModel.find_by_id(program_id)
+        if not program:
+            return {'error': f'Program with {program_id} not found'}, 500
+        main_directory = DirectoryCreator.create_main_directory_tree(program)
+        if not main_directory:
+            return {'error': f'Main directory on google drive was not created see the logs'}, 500
+        main_directory.save_to_db()
+        for directory in DirectoryCreator.create_directory_tree(program, main_directory):
+            directory.save_to_db()
+        return {
+                   'program': program.json(),
+                   'directory_tree': [directory.json() for directory in
+                                      DirectoryTreeModel.all_filtered_by_program(program_id=program.id)],
+               }, 201
 
     @app.route("/show_logs")
     @roles_required([AllowedRoles.admin.name])
