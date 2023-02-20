@@ -70,9 +70,11 @@ class RecordModel(db.Model, BaseDatabaseQuery):
     def change_state(self, state, **kwargs):
         if state == RecordState.GENERATION_IN_PROGRESS:
             self.delivery_date = DateConverter.convert_to_date(kwargs["date"])
-        if state == RecordState.GENERATED:
             self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
                                                                date=self.date)
+        elif state == RecordState.PLANNED:
+            self.delivery_date = None
+            self.delivered_kids_no = None
 
         self.state = state
         self.update_db()
