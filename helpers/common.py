@@ -1,3 +1,6 @@
+import time
+from helpers.logger import app_logger
+
 from helpers.config_parser import config_parser
 from typing import List
 
@@ -54,3 +57,15 @@ def get_parent_and_children_directories(path_to_file, skip_last=False):
     if skip_last:
         children = children[1:]
     return parent_directory_name, children[::-1]
+
+
+class TimeMeasure:
+    def __init__(self, timer_name):
+        self.timer_name = timer_name
+
+    def __enter__(self):
+        self.start = time.time()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = time.time()
+        app_logger.debug(f"Timer {self.timer_name} elapsed: {self.end - self.start} seconds")
