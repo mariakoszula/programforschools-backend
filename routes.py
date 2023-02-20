@@ -13,8 +13,8 @@ from resources.register import RegisterResource
 from helpers.google_drive import GoogleDriveCommands
 from helpers.json_encoder import to_json
 from resources.week import WeekResource, WeekRegister, WeeksResource
-from helpers.logger import app_logger
-
+from helpers.logger import app_logger, LOG_FILE
+from helpers.common import get_mime_type, DOCX_MIME_TYPE, PDF_MIME_TYPE
 from flask_restful import Api
 from flask_cors import CORS
 
@@ -74,13 +74,26 @@ def create_routes(app):
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def remote_folders_list(google_id: str):
         res = to_json(GoogleDriveCommands.search(parent_id=google_id))
+        res.append(to_json(GoogleDriveCommands.search(parent_id=google_id,
+                                                      mime_type_query=get_mime_type(DOCX_MIME_TYPE))))
+        res.append(to_json(GoogleDriveCommands.search(parent_id=google_id,
+                                                      mime_type_query=get_mime_type(PDF_MIME_TYPE))))
         return {'remote_folders': res}, 200
+
+    @app.route("/remove_from_google_drive/<string:google_id>")
+    @roles_required([AllowedRoles.admin.name])
+    def remove_from_google_drive(google_id: str):
+        try:
+            GoogleDriveCommands.remove(google_id)
+        except ValueError as e:
+            return {'message': f'{e}'}, 400
+        return {'message': f'Removed {google_id} from google drive'}, 200
 
     @app.route("/show_logs")
     @roles_required([AllowedRoles.admin.name])
     def show_logs():
         log_res = ""
-        with open("rykosystem.log", 'r+') as log_file:
+        with open(LOG_FILE, 'r+') as log_file:
             log_res = log_file.read()
             if log_res:
                 app_logger.info(f"{log_res}")

@@ -170,6 +170,7 @@ class GoogleDriveCommands(DriveCommands):
             google_service.files().delete(fileId=google_id).execute()
         except HttpError as error:
             app_logger.error(f"Error during removing directory '{google_id}': {error}")
+            raise ValueError(f"'{google_id}' failed to remove")
 
     @staticmethod
     @setup_google_drive_service
