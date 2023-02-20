@@ -5,7 +5,7 @@ from documents_generator.DocumentGenerator import DocumentGenerator, DirectoryCr
 from helpers.google_drive import GoogleDriveCommandsAsync
 from helpers.logger import app_logger
 from helpers.redis_commands import remove_old_save_new
-from helpers.common import FileData
+from helpers.common import FileData, TimeMeasure
 from helpers.redis_commands import conn as redis_connection
 from rq import Queue, Connection
 from app import create_app
@@ -123,19 +123,25 @@ async def generate_documents_async(generators_init_data: List[Tuple[Type[Documen
     :param redis_conn: Extracted for testing purpose, by default will use url from config.ini: [Redis.url]
     :return: List[FileData] - List of all generated files with information about name, and google id
     """
-    produced_generators = get_generator_list(generators_init_data)
-    run_generate_documents(produced_generators)
+    with TimeMeasure("get_generator_list"):
+        produced_generators = get_generator_list(generators_init_data)
+    with TimeMeasure("run_generate_documents"):
+        run_generate_documents(produced_generators)
     generator: DocumentGenerator
     uploaded_documents = []
     docx_files_to_upload = [generator.generated_document for generator in produced_generators if
                             generator.generated_document]
     update_finished_documents_meta(len(docx_files_to_upload))
-    output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, docx_files_to_upload)
-    uploaded_documents.extend(output)
-    output = await upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output)
-    output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)
-    uploaded_documents.extend(output)
-    remove_old_save_new(uploaded_documents, redis_conn)
+    with TimeMeasure("upload_and_update_meta"):
+        output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, docx_files_to_upload)
+        uploaded_documents.extend(output)
+    with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output"):
+        output = await upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output)
+    with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)"):
+        output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)
+        uploaded_documents.extend(output)
+    with TimeMeasure("remove_old_save_new"):
+        remove_old_save_new(uploaded_documents, redis_conn)
     return uploaded_documents
 
 
