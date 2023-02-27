@@ -15,7 +15,7 @@ jobs:
         environment:
           DEBUG_MODE: 1
           GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
-      - image: cimg/postgres:latest
+      - image: cimg/postgres:15.1
         # environment:
         #   DATABASE_URL: "postgres://rykosystem_test@localhost:5433/rykosystem_test"
       - image:  cimg/redis:6.2.6
