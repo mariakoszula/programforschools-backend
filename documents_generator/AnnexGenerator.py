@@ -24,8 +24,13 @@ class AnnexGenerator(DocumentGenerator):
             dairy_products=self.annex.dairy_products,
             validity_date=DateConverter.convert_date_to_string(self.annex.validity_date),
             annex_no=self.annex.no,
-            validity_date_end=self.annex.get_validity_date_end()
+            validity_date_end=self.__get_validity_date_end_info()
         )
+
+    def __get_validity_date_end_info(self):
+        if end_date := self.annex.get_validity_date_end():
+            return config_parser.get('DocTemplates', 'validity_annex_end_info').format(end_date)
+        return ""
 
     def __init__(self, annex, date):
         self.date = date
@@ -42,6 +47,6 @@ class AnnexGenerator(DocumentGenerator):
                                                               config_parser.get('Directories', 'annex')),
                                    output_name=get_output_name('annex',
                                                                self.annex.contract.school.nick.strip(),
-                                                               self.annex.contract.contract_no,
+                                                               self.annex.no,
                                                                self.annex.contract.contract_year,
-                                                               self.annex.no))
+                                                               self.annex.contract.contract_no))

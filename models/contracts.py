@@ -125,7 +125,7 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     def find_by_date(cls, validity_date, contract_id):
         return cls.query.filter_by(validity_date=validity_date, contract_id=contract_id).first()
 
-    def get_validity_date_end(self, empty="-"):
+    def get_validity_date_end(self, empty=""):
         if self.timed_annex:
             timed_annex = self.timed_annex[0]
             return DateConverter.convert_date_to_string(timed_annex.validity_date_end)
