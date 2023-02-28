@@ -16,6 +16,7 @@ jobs:
           POSTGRES_PASSWORD: ''
           POSTGRES_HOST: localhost
       - image:  cimg/redis:6.2.6
+    working_directory: ~/tests
     steps:
       - checkout
       - run: 
@@ -31,11 +32,10 @@ jobs:
           command: pip install --user pytest-html
       - run:
           name: Run unit tests
-          command: cd tests | 
-                   pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+          command: pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Save logs
-          command: find . -name ../rykosystem.log 
+          command: find . -name ../rykosystem.log && cat ../rykosystem.log | head
       - store_test_results:
           path: test-results
       - store_artifacts:
