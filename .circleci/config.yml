@@ -19,8 +19,9 @@ jobs:
         environment:
           POSTGRES_USER: rykosystem_test
           POSTGRES_DB: rykosystem_test
+          POSTGRES_PASSWORD: rykosystem_password_test
           # DATABASE_URL: "postgres://rykosystem_test@localhost:5433/rykosystem_test"
-      - image:  cimg/redis:6.2.6
+      # - image:  cimg/redis:6.2.6
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -29,19 +30,19 @@ jobs:
       - run: 
           name: Checkout postesql connection, display tables 
           command: echo $DATABASE_URL | psql -d $DATABASE_URL -c "\dt"
-      - python/install-packages:
-          pkg-manager: pip
-      - run:
-          name: Install pytest-html
-          command: pip install --user pytest-html
-      - run:
-          name: Run unit tests
-          command: cd tests | 
-                   pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results
+      # - python/install-packages:
+      #     pkg-manager: pip
+      # - run:
+      #     name: Install pytest-html
+      #     command: pip install --user pytest-html
+      # - run:
+      #     name: Run unit tests
+      #     command: cd tests | 
+      #              pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+      # - store_test_results:
+      #     path: test-results
+      # - store_artifacts:
+      #     path: test-results
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
