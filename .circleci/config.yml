@@ -33,6 +33,9 @@ jobs:
           name: Run unit tests
           command: cd tests | 
                    pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+      - run:
+          name: Save logs
+          command: find . -name ../rykosystem.log 
       - store_test_results:
           path: test-results
       - store_artifacts:
