@@ -19,7 +19,7 @@ jobs:
         environment:
           POSTGRES_USER: rykosystem_test
           POSTGRES_DB: rykosystem_test
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: rykosystem_password_test
           POSTGRES_HOST: localhost
       # - image:  cimg/redis:6.2.6
     # Add steps to the job
@@ -30,7 +30,7 @@ jobs:
           name: Checkout postesql connection, display tables 
           environment: 
             DATABASE_URL: "postgres://rykosystem_test@localhost:5432/rykosystem_test"
-          command: echo $DATABASE_URL && psql -d postgres://rykosystem_test@localhost/rykosystem_test -c "\dt"
+          command: echo $DATABASE_URL && psql -d postgres://rykosystem_test:rykosystem_password_test@localhost/rykosystem_test -c "\dt"
          
       # - python/install-packages:
       #     pkg-manager: pip
