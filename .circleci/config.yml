@@ -24,15 +24,18 @@ jobs:
     steps:
       - checkout
       - run: whoami
-      # - run: | 
-      #     psql \ 
-      #     -d $DATABASE_URL 
-      #     -c "\dt"
+      - run: 
+          name: Checkout postesql connection, display tables 
+          command: psql -d $DATABASE_URL -c "\dt"
       - python/install-packages:
           pkg-manager: pip
       - run:
+          name: Install pytest-html
+          command: pip install --user pytest-html
+      - run:
           name: Run unit tests
-          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+          command: cd tests | 
+                   pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - store_test_results:
           path: test-results
       - store_artifacts:
