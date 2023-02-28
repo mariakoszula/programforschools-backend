@@ -1,15 +1,9 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
 orbs:
   python: circleci/python@2.1.1
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   build-and-test:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
       - image: cimg/python:3.9.13
         environment:
@@ -22,8 +16,6 @@ jobs:
           POSTGRES_PASSWORD: rykosystem_password_test
           POSTGRES_HOST: localhost
       - image:  cimg/redis:6.2.6
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
       - run: 
@@ -31,23 +23,21 @@ jobs:
           environment: 
             DATABASE_URL: postgres://rykosystem_test:rykosystem_password_test@localhost/rykosystem_test
           command: psql -d ${DATABASE_URL} -c "\dt"
-         
-      # - python/install-packages:
-      #     pkg-manager: pip
-      # - run:
-      #     name: Install pytest-html
-      #     command: pip install --user pytest-html
-      # - run:
-      #     name: Run unit tests
-      #     command: cd tests | 
-      #              pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
-      # - store_test_results:
-      #     path: test-results
-      # - store_artifacts:
-      #     path: test-results
+                   
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install pytest-html
+          command: pip install --user pytest-html
+      - run:
+          name: Run unit tests
+          command: cd tests | 
+                   pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   build-workflow:
     jobs:
