@@ -35,7 +35,7 @@ jobs:
           command: pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Upload Failed Logs
-          command: find . -name ../rykosystem.log && cat ../rykosystem.log | head
+          command: cp ../rykosystem.log test-results 
           when: on_fail
       - store_test_results:
           path: test-results
