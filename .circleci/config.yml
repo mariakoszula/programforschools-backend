@@ -34,8 +34,9 @@ jobs:
           name: Run unit tests
           command: pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
-          name: Save logs
+          name: Get logs if failed
           command: find . -name ../rykosystem.log && cat ../rykosystem.log | head
+          when: on_fail
       - store_test_results:
           path: test-results
       - store_artifacts:
