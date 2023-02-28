@@ -16,7 +16,7 @@ jobs:
           POSTGRES_PASSWORD: ''
           POSTGRES_HOST: localhost
       - image:  cimg/redis:6.2.6
-    working_directory: ~/tests
+    working_directory: ~/tests/tests
     steps:
       - checkout
       - run: 
