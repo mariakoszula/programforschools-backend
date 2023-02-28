@@ -31,8 +31,12 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run:
-          name: Run unittests
-          command: cd tests && pytest
+          name: Run unit tests
+          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
