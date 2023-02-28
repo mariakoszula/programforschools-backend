@@ -28,7 +28,7 @@ jobs:
       - run: whoami
       - run: 
           name: Checkout postesql connection, display tables 
-          command: psql -d $DATABASE_URL -c "\dt"
+          command: echo $DATABASE_URL | psql -d $DATABASE_URL -c "\dt"
       - python/install-packages:
           pkg-manager: pip
       - run:
