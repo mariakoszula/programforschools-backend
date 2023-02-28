@@ -33,14 +33,14 @@ jobs:
           command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Upload Failed Logs
-          command: mkdir logs && cp ../rykosystem.log logs/
+          command: cd tests && mkdir logs && cp rykosystem.log logs/
           when: on_fail
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
       - store_artifacts:
-          path: logs
+          path: tests/logs
 workflows:
   build-workflow:
     jobs:
