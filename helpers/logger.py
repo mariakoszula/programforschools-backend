@@ -5,7 +5,9 @@ app_logger = logging.getLogger("app")
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 handler = logging.handlers.RotatingFileHandler('../rykosystem.log', maxBytes=10 * 1024 * 1024, backupCount=1)
 
+print(f"Debug mode: {getenv('DEBUG_MODE', 0)}")
 if int(getenv("DEBUG_MODE", 0)):
+    print(f"Enabled debug mode")
     app_logger.setLevel(logging.DEBUG)
     handlerStream = logging.StreamHandler()
     handlerStream.setLevel(logging.DEBUG)

@@ -11,7 +11,7 @@ from helpers.common import DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
 from tasks.generate_documents_task import generate_documents
 from models.directory_tree import DirectoryTreeModel
 import pytest
-from helpers.logger import app_logger
+
 
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join(config_parser.get('DocTemplates', 'directory'),
