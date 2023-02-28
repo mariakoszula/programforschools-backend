@@ -29,9 +29,8 @@ jobs:
           name: Checkout postesql connection, display tables 
           environment: 
             DATABASE_URL: "postgres://rykosystem_test@localhost:5432/rykosystem_test"
-          # command: | echo $DATABASE_URL | psql -d postgres://rykosystem_test@localhost:5432/rykosystem_test -c "\dt"
-          command: echo $DATABASE_URL
-
+          command: echo $DATABASE_URL && psql -d postgres://rykosystem_test@localhost:5432/rykosystem_test -c "\dt"
+         
       # - python/install-packages:
       #     pkg-manager: pip
       # - run:
