@@ -28,8 +28,8 @@ jobs:
       - checkout
       - run: 
           name: Checkout postesql connection, display tables 
-          # command: | echo $DATABASE_URL | psql -d $DATABASE_URL -c "\dt"
-          command: echo $DATABASE_URL
+          # command: | echo $DATABASE_URL | psql -d postgres://rykosystem_test@localhost:5432/rykosystem_test -c "\dt"
+          command: echo DATABASE_URL
       # - python/install-packages:
       #     pkg-manager: pip
       # - run:
