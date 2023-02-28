@@ -26,10 +26,10 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
-      - run: whoami
       - run: 
           name: Checkout postesql connection, display tables 
-          command: echo $DATABASE_URL | psql -d $DATABASE_URL -c "\dt"
+          # command: | echo $DATABASE_URL | psql -d $DATABASE_URL -c "\dt"
+          command: echo $DATABASE_URL
       # - python/install-packages:
       #     pkg-manager: pip
       # - run:
