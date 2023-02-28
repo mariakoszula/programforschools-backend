@@ -16,7 +16,6 @@ jobs:
           POSTGRES_PASSWORD: ''
           POSTGRES_HOST: localhost
       - image:  cimg/redis:6.2.6
-    working_directory: ~/tests/tests
     steps:
       - checkout
       - run: 
@@ -24,7 +23,6 @@ jobs:
           environment: 
             DATABASE_URL: postgres://rykosystem_test@localhost/rykosystem_test
           command: psql -d ${DATABASE_URL} -c "\dt"
-
       - python/install-packages:
           pkg-manager: pip
       - run:
@@ -32,16 +30,17 @@ jobs:
           command: pip install --user pytest-html
       - run:
           name: Run unit tests
-          command: pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Upload Failed Logs
-          command: cp ../rykosystem.log test-results/
+          command: mkdir logs && cp ../rykosystem.log logs/
           when: on_fail
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
-
+      - store_artifacts:
+          path: logs
 workflows:
   build-workflow:
     jobs:
