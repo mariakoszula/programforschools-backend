@@ -12,6 +12,7 @@ from models.school import SchoolModel
 from tasks.generate_delivery_task import queue_delivery
 from helpers.logger import app_logger
 
+
 def must_not_be_empty(data):
     if not data:
         raise ValidationError("Must not be empty")
@@ -19,6 +20,7 @@ def must_not_be_empty(data):
 
 class RecordStateSchema(Schema):
     state = fields.Int(required=True, validate=validate.Range(RecordState.PLANNED.value, RecordState.DELIVERED.value))
+    product_store_id = fields.Int(required=False)
 
 
 class SchoolNickSchema(Schema):
@@ -158,7 +160,11 @@ class RecordResource(Resource):
         record: RecordModel = RecordModel.find_by_id(record_id)
         if not record:
             return {"message": f"Record with id {record_id} not found"}, 404
-        record.update_db(state=RecordState(request.json['state']))
+        try:
+            record.change_state(**request.json)
+        except ValueError as e:
+            app_logger.warn(f"Failed to change state of record {record_id} due to {e}")
+            return {"message": f"{e}"}, 400
         return {
             "record": record.json()
         }
