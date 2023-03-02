@@ -3,7 +3,7 @@ import enum
 from helpers.date_converter import DateConverter
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
-from models.product import ProductModel, ProductTypeModel
+from models.product import ProductModel, ProductTypeModel, ProductStoreModel
 from models.week import WeekModel
 
 
@@ -68,6 +68,8 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         return data
 
     def change_state(self, state, **kwargs):
+        if isinstance(state, int):
+            state = RecordState(state)
         if state == RecordState.GENERATION_IN_PROGRESS:
             self.delivery_date = DateConverter.convert_to_date(kwargs["date"])
             self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
@@ -75,6 +77,12 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         elif state == RecordState.PLANNED:
             self.delivery_date = None
             self.delivered_kids_no = None
+            if "product_store_id" in kwargs:
+                _store_id = kwargs["product_store_id"]
+                product_store: ProductStoreModel = ProductStoreModel.find_by_id(_store_id)
+                if product_store.product.type_id != self.product_type_id:
+                    raise ValueError("Product type mismatch")
+                self.product_store_id = _store_id
 
         self.state = state
         self.update_db()
