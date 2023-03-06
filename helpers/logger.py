@@ -1,9 +1,9 @@
 import logging.handlers
-from os import getenv
+from os import getenv, path, getcwd
 
 app_logger = logging.getLogger("app")
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-handler = logging.handlers.RotatingFileHandler('../rykosystem.log', maxBytes=10 * 1024 * 1024, backupCount=1)
+handler = logging.handlers.RotatingFileHandler(path.join(getcwd(), "programforschools.log"), maxBytes=10 * 1024 * 1024, backupCount=1)
 
 if int(getenv("DEBUG_MODE", 0)):
     app_logger.setLevel(logging.DEBUG)

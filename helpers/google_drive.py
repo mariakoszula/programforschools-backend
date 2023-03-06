@@ -27,6 +27,8 @@ def validate_google_env_setup():
         app_logger.error(
             f"Google Drive won't work properly, need to setup 'GOOGLE_DRIVE_AUTH' variable with service account info")
         raise Exception(f"Setup 'GOOGLE_DRIVE_AUTH' variable")
+    else:
+        app_logger.info(getenv('GOOGLE_DRIVE_AUTH'))
 
 
 validate_google_env_setup()
