@@ -17,8 +17,7 @@ pytest_plugins = ('pytest_asyncio',)
 
 @pytest.fixture(scope='session')
 def database(request):
-    _host = environ.get('POSTGRES_HOST', config_parser.get("Database", "host"))
-    print(_host)
+    _host = environ.get('DB_HOST', config_parser.get("Database", "host"))
     conn = psycopg2.connect(dbname=config_parser.get("Database", "user"),
                             user=config_parser.get("Database", "user"),
                             password=config_parser.get("Database", "password"),
