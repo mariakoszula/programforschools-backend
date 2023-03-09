@@ -15,7 +15,7 @@ jobs:
           POSTGRES_USER: programforschools_test
           POSTGRES_DB: programforschools_test
           POSTGRES_PASSWORD: ''
-          POSTGRES_HOST: localhost
+          POSTGRES_HOST: 127.0.0.1
       - image:  cimg/redis:6.2.6
     steps:
       - checkout
