@@ -1,0 +1,63 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.1.1
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/python:3.9.13
+        name:
+        environment:
+          DEBUG_MODE: 1
+          GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
+          REDIS_URL: redis://localhost:6379
+      - image: cimg/postgres:15.1
+        environment:
+          POSTGRES_USER: programforschools_test
+          POSTGRES_DB: programforschools_test
+          POSTGRES_PASSWORD: ''
+          POSTGRES_HOST: 127.0.0.1
+      - image:  cimg/redis:6.2.6
+    steps:
+      - checkout
+      - run:
+          name: googole env auth
+          command: echo ${GOOGLE_DRIVE_AUTH}
+      - run:
+          name: install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.3.0
+      - run:
+          name: Wait for db
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run:
+          name: Wait for redis
+          command: dockerize -wait tcp://localhost:6379 -timeout 1m
+      - run: 
+          name: Confirm database connection is working
+          environment: 
+            DATABASE_URL: postgres://programforschools_test@localhost/programforschools_test
+          command: psql -d ${DATABASE_URL} -c "\dt"
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install pytest-html
+          command: pip install --user pytest-html
+      - run:
+          name: Run unit tests
+          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
+      - run:
+          name: Upload Failed Logs
+          command: cd tests && mkdir logs && cp programforschools.log logs/
+          when: on_fail
+      - store_test_results:
+          path: tests/test-results
+      - store_artifacts:
+          path: tests/test-results
+      - store_artifacts:
+          path: tests/logs
+workflows:
+  build-workflow:
+    jobs:
+      - build-and-test

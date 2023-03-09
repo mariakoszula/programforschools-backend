@@ -3,8 +3,7 @@ from os import getenv, path, getcwd
 
 app_logger = logging.getLogger("app")
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-
-LOG_FILE = path.join(getcwd(), "rykosystem.log")
+LOG_FILE = path.join(getcwd(), "programforschools.log")
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=1)
 
 if int(getenv("DEBUG_MODE", 0)):
