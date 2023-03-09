@@ -11,7 +11,6 @@ jobs:
           DEBUG_MODE: 1
           GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
           REDIS_URL: redis://localhost:6379
-          DB_HOST: localhost
       - image: cimg/postgres:15.1
         environment:
           POSTGRES_USER: programforschools_test
@@ -47,20 +46,17 @@ jobs:
           command: pip install --user pytest-html
       - run:
           name: Run unit tests
-          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html -o log_cli=True --capture=no
-      - run:
-          name: Current Dir
-          command: pwd
+          command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Upload Failed Logs
-          command: mkdir logs && cp programforschools.log logs/
+          command: cd tests && mkdir logs && cp programforschools.log logs/
           when: on_fail
       - store_test_results:
-          path: test-results
+          path: tests/test-results
       - store_artifacts:
-          path: test-results
+          path: tests/test-results
       - store_artifacts:
-          path: logs
+          path: tests/logs
 workflows:
   build-workflow:
     jobs:
