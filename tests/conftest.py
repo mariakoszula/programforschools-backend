@@ -2,7 +2,7 @@ import pytest
 import sqlalchemy.exc
 
 from helpers.db import db
-
+from os import environ
 from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
@@ -17,10 +17,11 @@ pytest_plugins = ('pytest_asyncio',)
 
 @pytest.fixture(scope='session')
 def database(request):
+    _host = environ.get('POSTGRES_HOST', config_parser.get("Database", "host"))
     conn = psycopg2.connect(dbname=config_parser.get("Database", "user"),
                             user=config_parser.get("Database", "user"),
                             password=config_parser.get("Database", "password"),
-                            host=config_parser.get("Database", "host"),
+                            host=_host,
                             port=config_parser.get("Database", "port"))
 
     @request.addfinalizer

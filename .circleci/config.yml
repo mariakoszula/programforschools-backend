@@ -6,6 +6,7 @@ jobs:
   build-and-test:
     docker:
       - image: cimg/python:3.9.13
+        name:
         environment:
           DEBUG_MODE: 1
           GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
