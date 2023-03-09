@@ -44,6 +44,8 @@ def get_parent_and_children_directories(path_to_file, skip_last=False):
     from os import path
     children = list()
     parent_directory_name = None
+    if "\\" in path_to_file:
+        path_to_file = path_to_file.replace("\\", "/")
     while not parent_directory_name:
         (directories, current) = path.split(path_to_file)
         if not directories or directories in ["/", "\\"]:

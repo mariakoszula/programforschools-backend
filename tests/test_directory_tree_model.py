@@ -12,7 +12,8 @@ SECOND_DUMMY_GOOGLE_ID = "55sdf3r3qsdf"
 THIRD_DUMMY_GOOGLE_ID = "55sddddf3r3qsdf"
 
 
-def test_get_children_and_parent(db_session):
+@pytest.fixture
+def setup_base_data(db_session):
     company = CompanyModel(**company_data)
     company.save_to_db()
     program = ProgramModel(**get_program_data(company.id))
@@ -38,7 +39,16 @@ def test_get_children_and_parent(db_session):
         program_id=program.id
     )
     third_directory.save_to_db()
+    yield main_directory_tree, second_directory, third_directory
+    third_directory.delete_from_db()
+    second_directory.delete_from_db()
+    main_directory_tree.delete_from_db()
+    program.delete_from_db()
+    company.delete_from_db()
 
+
+def test_get_children_and_parent(setup_base_data):
+    main_directory_tree, second_directory, third_directory = setup_base_data
     path_to_file = path.join(main_directory_tree.name, second_directory.name, third_directory.name)
     (parent, children) = DirectoryTreeModel.get_children_and_parent(path_to_file, contains_file_name=True)
     assert parent is main_directory_tree

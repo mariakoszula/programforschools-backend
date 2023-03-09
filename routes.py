@@ -92,7 +92,7 @@ def create_routes(app):
     @roles_required([AllowedRoles.admin.name])
     def show_logs():
         log_res = ""
-        with open("rykosystem.log", 'r+') as log_file:
+        with open("programforschools.log", 'r+') as log_file:
             log_res = log_file.read()
             if log_res:
                 app_logger.info(f"{log_res}")

@@ -47,19 +47,32 @@ def app(database):
         db.drop_all()
         db.create_all()
         yield app
-    GoogleDriveCommands.clean_main_directory()
 
 
 class InitialSetupError(BaseException):
     pass
 
 
+class Filter:
+    def __init__(self, **kwargs):
+        self.filter = kwargs
+
+
+def create_if_not_exists(model, custom_filter: Filter, **kwargs):
+    found = model.find_by(**custom_filter.filter)
+    if not found:
+        res = model(**kwargs)
+        res.save_to_db()
+        return res
+    return found
+
+
 @pytest.fixture(scope="module")
 def initial_program_setup(_db):
-    company = CompanyModel(**common_data.company)
-    company.save_to_db()
-    program = ProgramModel(**common_data.get_program_data(company.id))
-    program.save_to_db()
+    company = create_if_not_exists(CompanyModel, Filter(name=common_data.company["name"]), **common_data.company)
+    program = create_if_not_exists(ProgramModel, Filter(semester_no=common_data.program["semester_no"],
+                                                        school_year=common_data.program["school_year"]),
+                                   **common_data.get_program_data(company.id))
     main_directory = None
     try:
         main_directory = DirectoryCreator.create_main_directory_tree(program)
@@ -68,3 +81,4 @@ def initial_program_setup(_db):
         print(e)
         raise InitialSetupError(main_directory)
     yield program
+    GoogleDriveCommands.clean_main_directory()

@@ -50,7 +50,7 @@ def test_week(week):
         WeekModel(week_no=2, start_date="2023-01-11", end_date="2022-12-12", program_id=week.program_id)
 
 
-@pytest.fixture(scope="module" )
+@pytest.fixture(scope="module")
 def product_store(initial_program_setup):
     WeightTypeModel("L")
     ProductTypeModel(ProductTypeModel.DAIRY_TYPE)
@@ -67,7 +67,6 @@ def test_product(product_store):
 
 @pytest.fixture
 def setup_record_test_init(contract_for_school, product_store, week):
-    print("test")
     contract_for_school.update_db(dairy_products=5)  # 2023-01-01
     AnnexModel(contract_for_school, **annex_data)  # 2023-12-07
     AnnexModel(contract_for_school, validity_date="2023-12-08", dairy_products=11,
@@ -75,7 +74,6 @@ def setup_record_test_init(contract_for_school, product_store, week):
     AnnexModel(contract_for_school, validity_date="2023-12-09", dairy_products=22,
                validity_date_end="2023-12-13")
     yield contract_for_school.id, product_store
-    print("ddd")
 
 
 @pytest.mark.parametrize("date,expected_kids_no,expected_min_amount", [("01.12.2023", 5, False),

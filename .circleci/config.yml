@@ -11,8 +11,8 @@ jobs:
           GOOGLE_DRIVE_AUTH: ${GOOGLE_DRIVE_AUTH}
       - image: cimg/postgres:15.1
         environment:
-          POSTGRES_USER: rykosystem_test
-          POSTGRES_DB: rykosystem_test
+          POSTGRES_USER: programforschools_test
+          POSTGRES_DB: programforschools_test
           POSTGRES_PASSWORD: ''
           POSTGRES_HOST: localhost
       - image:  cimg/redis:6.2.6
@@ -35,7 +35,7 @@ jobs:
       - run: 
           name: Confirm database connection is working
           environment: 
-            DATABASE_URL: postgres://rykosystem_test@localhost/rykosystem_test
+            DATABASE_URL: postgres://programforschools_test@localhost/programforschools_test
           command: psql -d ${DATABASE_URL} -c "\dt"
       - python/install-packages:
           pkg-manager: pip
@@ -47,7 +47,7 @@ jobs:
           command: cd tests && pytest --junitxml=test-results/junit.xml --html=test-results/pytest_report.html --self-contained-html
       - run:
           name: Upload Failed Logs
-          command: cd tests && mkdir logs && cp rykosystem.log logs/
+          command: cd tests && mkdir logs && cp ../programforschools_backend.log logs/
           when: on_fail
       - store_test_results:
           path: test-results

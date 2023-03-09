@@ -12,6 +12,7 @@ UPLOADED_FILES_DICT = "uploadedFilesDict"
 
 redis_url = environ.get('REDIS_URL', config_parser.get('Redis', 'url'))
 conn = redis.from_url(redis_url)
+app_logger.error(f"Redis url {redis_url}")
 
 
 def save_uploaded_files(files: List[FileData], redis_connection=conn):
