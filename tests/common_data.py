@@ -1,5 +1,3 @@
-import datetime
-
 company = {
     "name": "Dummy company name",
     "nip": "123-123-123",
