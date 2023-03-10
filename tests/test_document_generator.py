@@ -47,7 +47,7 @@ valid_fields = {'dummy_data_no': 125, 'dummy_data': "Testing document generation
 
 
 @pytest.mark.parametrize('document_generator', [valid_fields], indirect=["document_generator"])
-def test_successful_generation(initial_program_setup, document_generator):
+def test_successful_generation(initial_app_setup, document_generator):
     document_generator.generate()
     assert isinstance(document_generator, CustomDocumentGenerator)
     assert len(document_generator.generated_documents) == 1
@@ -57,7 +57,7 @@ def test_successful_generation(initial_program_setup, document_generator):
 
 
 @pytest.mark.parametrize('document_generator', [valid_fields], indirect=["document_generator"])
-def test_successful_remote_upload(initial_program_setup, document_generator):
+def test_successful_remote_upload(initial_app_setup, document_generator):
     document_generator.generate()
     document_generator.upload_files_to_remote_drive()
     assert len([gen.web_view_link for gen in document_generator.generated_documents if gen.web_view_link]) == 1
@@ -116,7 +116,7 @@ def __validate_successful_generation_test(res, no_of_items):
     assert (results_str.count("https://docs.google.com/document") == no_of_items)
 
 
-def test_successful_generate_documents(initial_program_setup, remove_created_resources):
+def test_successful_generate_documents(initial_app_setup, remove_created_resources):
     for item in prepare_generate_documents_data(loop_size=1, drive_tool=GoogleDriveCommands):
         results = generate_documents(item[0], **item[1])
         __validate_successful_generation_test(results, 1)
@@ -129,7 +129,7 @@ redis_external = factories.redisdb('redis_nooproc')
 
 
 @pytest.mark.asyncio
-async def test_successful_generate_documents_async(initial_program_setup, remove_created_resources, redis_external):
+async def test_successful_generate_documents_async(initial_app_setup, remove_created_resources, redis_external):
     from tasks.generate_documents_task import generate_documents_async
     loop_size = 2
     test_documents = prepare_generate_documents_data(loop_size, drive_tool=DriveCommands)

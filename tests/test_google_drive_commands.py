@@ -5,9 +5,11 @@ import time
 import pytest
 from os import path
 from shutil import copy
-
+import time
 
 def test_google_drive_has_one_directory():
+    GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, "DUMMY_DIR_NAME")
+    time.sleep(5)
     result = GoogleDriveCommands.search()
     assert len(result) == 1
 
@@ -65,7 +67,7 @@ def test_convert_to_pdf():
 @pytest.mark.asyncio
 async def test_google_drive_has_one_directory_async():
     result = await GoogleDriveCommandsAsync.search()
-    assert "DEV_PROGRAM_2022_2023_SEMESTR_1" in [item.name for item in result]
+    assert "DUMMY_DIR_NAME" in [item.name for item in result]
 
 
 @pytest.mark.asyncio
