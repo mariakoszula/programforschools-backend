@@ -68,11 +68,17 @@ def create_if_not_exists(model, custom_filter: Filter, **kwargs):
 
 
 @pytest.fixture(scope="module")
-def initial_program_setup(_db):
+def program_setup(_db):
     company = create_if_not_exists(CompanyModel, Filter(name=common_data.company["name"]), **common_data.company)
     program = create_if_not_exists(ProgramModel, Filter(semester_no=common_data.program["semester_no"],
                                                         school_year=common_data.program["school_year"]),
                                    **common_data.get_program_data(company.id))
+    yield program
+
+
+@pytest.fixture(scope="module")
+def initial_app_setup(program_setup):
+    program = program_setup
     main_directory = None
     try:
         main_directory = DirectoryCreator.create_main_directory_tree(program)

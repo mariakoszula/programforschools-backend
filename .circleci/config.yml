@@ -34,9 +34,9 @@ jobs:
       - run:
           name: Wait for redis
           command: dockerize -wait tcp://localhost:6379 -timeout 1m
-      - run: 
+      - run:
           name: Confirm database connection is working
-          environment: 
+          environment:
             DATABASE_URL: postgres://programforschools_test@localhost/programforschools_test
           command: psql -d ${DATABASE_URL} -c "\dt"
       - python/install-packages:
