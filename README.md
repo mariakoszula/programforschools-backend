@@ -28,5 +28,4 @@
 
 ### Postman collection in JSON
 ```shell
-
 ```
