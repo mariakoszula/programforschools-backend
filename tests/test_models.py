@@ -1,4 +1,6 @@
 import pytest
+
+from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
 from models.school import SchoolModel
 from models.contracts import ContractModel, AnnexModel
 from models.week import WeekModel
@@ -99,3 +101,18 @@ def test_week_overlap_throws_value_error(week):
               program_id=week.program_id)
     with pytest.raises(ValueError):
         WeekModel.find_by_date(week_data["start_date"])
+
+
+def test_invoice_model(product_store):
+    supplier = SupplierModel("Long name for supplier", "supplier nickname")
+    assert str(supplier) == "Long name for supplier <supplier nickname>"
+    assert supplier.id is not None
+    invoice = InvoiceModel("RL 123z", "30.12.2022", supplier.id, product_store.program_id)
+    assert str(invoice) == "Invoice 'RL 123z' from 'supplier nickname' on 30.12.2022"
+    assert invoice.id is not None
+    second_invoice = InvoiceModel("TH new", "2023-01-08", supplier.id, product_store.program_id)
+    assert str(second_invoice) == "Invoice 'TH new' from 'supplier nickname' on 08.01.2023"
+
+    product = InvoiceProductModel(invoice.id, product_store.id, 500)
+    assert str(product) == "InvoiceNo RL 123z: milk 500L"
+    assert product.id is not None

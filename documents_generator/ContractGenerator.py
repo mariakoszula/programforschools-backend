@@ -51,5 +51,5 @@ class ContractGenerator(DocumentGenerator):
 
     @staticmethod
     def _prepare_str_from_weeks(weeks):
-        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date, "%d.%m"),
+        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date),
                                           DateConverter.convert_date_to_string(week.end_date)) for week in weeks])
