@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 
+
 def is_date_in_range(_date, _start_date, _end_date):
     date = DateConverter.convert_to_date(_date)
     start_date = DateConverter.convert_to_date(_start_date)
@@ -15,7 +16,6 @@ class DateConverter:
         r'\d\d.\d\d.\d\d\d\d': COMMON_VIEW_DATE_PATTERN,
         r'\d\d\d\d-\d\d-\d\d': DATABASE_DATE_PATTERN
     }
-
 
     @staticmethod
     def get_day(date):
@@ -32,8 +32,8 @@ class DateConverter:
 
     @staticmethod
     def convert_to_date(date: str):
-        pattern = DateConverter.get_matching_pattern(date)
         if isinstance(date, str):
+            pattern = DateConverter.get_matching_pattern(date)
             return datetime.strptime(date, pattern)
         return date
 
