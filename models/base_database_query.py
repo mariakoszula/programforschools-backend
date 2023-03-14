@@ -1,17 +1,5 @@
 from helpers.date_converter import DateConverter
 from helpers.db import db
-from marshmallow import Schema, fields
-
-
-class ProgramQuerySchema(Schema):
-    program_id = fields.Int(required=True)
-
-
-class DateQuerySchema(Schema):
-    date = fields.DateTime(format=DateConverter.COMMON_VIEW_DATE_PATTERN, required=True)
-
-
-program_schema = ProgramQuerySchema()
 
 
 class BaseDatabaseQuery:
@@ -32,6 +20,8 @@ class BaseDatabaseQuery:
 
     def update_db(self, **update_patch):
         for name, changed_value in update_patch.items():
+            if "date" in name and isinstance(changed_value, str):
+                changed_value = DateConverter.convert_to_date(changed_value)
             if changed_value and hasattr(self, name):
                 setattr(self, name, changed_value)
         db.session.commit()

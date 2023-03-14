@@ -114,5 +114,5 @@ def test_invoice_model(product_store):
     assert str(second_invoice) == "Invoice 'TH new' from 'supplier nickname' on 08.01.2023"
 
     product = InvoiceProductModel(invoice.id, product_store.id, 500)
-    assert str(product) == "InvoiceNo RL 123z: milk 500L"
+    assert str(product) == "InvoiceNo RL 123z: milk 500.0L"
     assert product.id is not None

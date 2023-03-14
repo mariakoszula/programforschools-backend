@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from auth.accesscontrol import roles_required, AllowedRoles
 from models.week import WeekModel
 from helpers.date_converter import DateConverter
-from models.base_database_query import program_schema
+from helpers.schema_validators import program_schema
 from helpers.logger import app_logger
 
 

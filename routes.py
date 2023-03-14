@@ -5,6 +5,8 @@ from models.program import ProgramModel
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
+from resources.invoice import SupplierResource, SupplierRegister, SuppliersResource, InvoiceResource, InvoiceRegister, \
+    InvoiceProductsResource, InvoiceProductResource, InvoiceProductRegister, InvoicesResource
 from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource, ProductBoxResource, ProductStoreUpdateResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
@@ -68,11 +70,22 @@ def create_routes(app):
     api.add_resource(RecordDeliveryCreate, '/create_delivery')
     api.add_resource(TaskProgressStatus, '/task_progress/<string:task_id>')
 
+    api.add_resource(SupplierResource, '/supplier/<int:supplier_id>')
+    api.add_resource(SupplierRegister, '/supplier')
+    api.add_resource(SuppliersResource, '/supplier/all')
+
+    api.add_resource(InvoiceResource, '/invoice/<int:invoice_id>')
+    api.add_resource(InvoiceRegister, '/invoice')
+    api.add_resource(InvoicesResource, '/invoice/all')
+
+    api.add_resource(InvoiceProductResource, '/invoice_product/<int:invoice_product_id>')
+    api.add_resource(InvoiceProductRegister, '/invoice_product')
+    api.add_resource(InvoiceProductsResource, '/invoice_product/all')
+
     @app.route("/")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def main_page():
         return {'message': "You've entered home page"}, 200
-
 
     @app.route("/remote_folders_list/<string:google_id>")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
