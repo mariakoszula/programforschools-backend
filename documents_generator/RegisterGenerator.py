@@ -3,7 +3,7 @@ from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.config_parser import config_parser
 from helpers.date_converter import DateConverter
 from helpers.common import get_output_name
-from models.contracts import ContractModel, AnnexModel
+from models.contract import ContractModel, AnnexModel
 from models.program import ProgramModel
 from helpers.file_folder_creator import DirectoryCreator
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT

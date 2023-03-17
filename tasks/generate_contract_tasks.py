@@ -1,7 +1,7 @@
 from typing import List
 from helpers.logger import app_logger
 from app import create_app
-from models.contracts import ContractModel
+from models.contract import ContractModel
 from tasks.generate_documents_task import generate_documents_async, queue_task, setup_progress_meta
 from documents_generator.ContractGenerator import ContractGenerator
 from sqlalchemy.exc import SQLAlchemyError

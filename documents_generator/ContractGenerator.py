@@ -2,7 +2,7 @@ from helpers.common import EMPTY_FILED, get_output_name
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
-from models.contracts import ContractModel
+from models.contract import ContractModel
 from helpers.config_parser import config_parser
 from os import path
 

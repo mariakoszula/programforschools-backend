@@ -5,7 +5,7 @@ from auth.accesscontrol import roles_required, handle_exception_pretty
 from documents_generator.AnnexGenerator import AnnexGenerator
 from tasks.generate_documents_task import generate_documents
 from helpers.schema_validators import ProgramQuerySchema, DateQuerySchema
-from models.contracts import ContractModel, AnnexModel
+from models.contract import ContractModel, AnnexModel
 from models.user import AllowedRoles
 from helpers.date_converter import DateConverter
 from helpers.logger import app_logger

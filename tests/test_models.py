@@ -1,8 +1,9 @@
 import pytest
 
+from models.application import ApplicationModel, ApplicationType
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
 from models.school import SchoolModel
-from models.contracts import ContractModel, AnnexModel
+from models.contract import ContractModel, AnnexModel
 from models.week import WeekModel
 from models.product import ProductModel, WeightTypeModel, ProductTypeModel, ProductStoreModel
 from models.record import RecordModel, RecordState
@@ -75,7 +76,7 @@ def setup_record_test_init(contract_for_school, product_store, week):
                validity_date_end="2023-12-12")
     AnnexModel(contract_for_school, validity_date="2023-12-09", dairy_products=22,
                validity_date_end="2023-12-13")
-    yield contract_for_school.id, product_store
+    yield contract_for_school, product_store, week
     RecordModel.query.delete()
     WeekModel.query.delete()
 
@@ -86,8 +87,8 @@ def setup_record_test_init(contract_for_school, product_store, week):
                                                                        ("12.12.2023", 22, False),
                                                                        ("15.12.2023", 1, True)])
 def test_record_model(date, expected_kids_no, expected_min_amount, setup_record_test_init):
-    contract_id, product_store = setup_record_test_init
-    r = RecordModel(date, contract_id, product_store)
+    contract, product_store, _ = setup_record_test_init
+    r = RecordModel(date, contract.id, product_store)
     r.save_to_db()
     r.change_state(RecordState.PLANNED)
     r.change_state(RecordState.GENERATION_IN_PROGRESS, date=date)
@@ -116,3 +117,19 @@ def test_invoice_model(product_store):
     product = InvoiceProductModel(invoice.id, product_store.id, 500)
     assert str(product) == "InvoiceNo RL 123z: milk 500.0L"
     assert product.id is not None
+
+
+def test_application_setup(setup_record_test_init):
+    contract, _, week = setup_record_test_init
+    weeks = [week, WeekModel(week_no=2, start_date="2023-12-17", end_date="2023-12-22", program_id=week.program_id)]
+    assert ApplicationModel.possible_types(week.program_id) == [ApplicationType.FULL, ApplicationType.DAIRY,
+                                                                ApplicationType.FRUIT_VEG]
+    application = ApplicationModel(week.program_id, [contract], weeks, ApplicationType.FULL)
+    assert ApplicationModel.possible_types(week.program_id) == [ApplicationType.FULL]
+    assert str(application) == "2/1/2022/2023"
+    with pytest.raises(ValueError):
+        ApplicationModel(week.program_id, [contract], weeks, ApplicationType.DAIRY)
+    application_other = ApplicationModel(week.program_id, [contract], weeks, ApplicationType.FULL)
+    assert str(application_other) == "2/2/2022/2023"
+    application_other.delete_from_db()
+    application.delete_from_db()
