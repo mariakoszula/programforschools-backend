@@ -1,6 +1,7 @@
 from flask_restful import Resource
 from auth.accesscontrol import roles_required, AllowedRoles, handle_exception_pretty
-from helpers.resource import simple_post, simple_put, simple_get, simple_delete, simple_get_all
+from helpers.resource import simple_post, simple_put, simple_get, simple_delete, simple_get_all, \
+    simple_get_all_by_program
 from helpers.schema_validators import InvoiceQuerySchema, NickWithNameQuery, NickWithNameOptQuery, \
     InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
@@ -11,7 +12,7 @@ class SupplierRegister(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(SupplierModel, validator=NickWithNameQuery())
+        return simple_post(SupplierModel, "name", validator=NickWithNameQuery())
 
 
 class SupplierResource(Resource):
@@ -47,7 +48,7 @@ class InvoiceRegister(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(InvoiceModel, validator=InvoiceQuerySchema())
+        return simple_post(InvoiceModel, "name", validator=InvoiceQuerySchema())
 
 
 class InvoiceResource(Resource):
@@ -75,7 +76,7 @@ class InvoicesResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls):
-        return simple_get_all(InvoiceModel)
+        return simple_get_all_by_program(InvoiceModel)
 
 
 class InvoiceProductRegister(Resource):
@@ -111,4 +112,4 @@ class InvoiceProductsResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls):
-        return simple_get_all(InvoiceProductModel)
+        return simple_get_all_by_program(InvoiceProductModel)

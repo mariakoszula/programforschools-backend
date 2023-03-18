@@ -4,6 +4,8 @@ from helpers.logger import app_logger
 from helpers.config_parser import config_parser
 from typing import List
 
+from models.program import ProgramModel
+
 EMPTY_FILED = "................................................................"
 DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
 PDF_MIME_TYPE = 'application/pdf'
@@ -71,3 +73,13 @@ class TimeMeasure:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.end = time.time()
         app_logger.debug(f"Timer {self.timer_name} elapsed: {self.end - self.start} seconds")
+
+
+def get_template(program: ProgramModel, doc_template):
+    from helpers.file_folder_creator import DirectoryCreator
+    from os import path
+    return path.join(config_parser.get('DocTemplates', 'directory'),
+                     DirectoryCreator.get_part_with_year_and_sem(
+                         school_year=program.school_year,
+                         semester_no=program.semester_no),
+                     doc_template)

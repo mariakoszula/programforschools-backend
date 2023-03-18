@@ -2,10 +2,12 @@ from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
 from sqlalchemy import Enum
 import enum
-
+from os import path
+from helpers.config_parser import config_parser
 from models.contract import ContractModel
 from typing import List
 
+from models.product import ProductTypeModel
 from models.week import WeekModel
 
 
@@ -13,6 +15,15 @@ class ApplicationType(enum.Enum):
     FULL = 0
     DAIRY = 1
     FRUIT_VEG = 2
+
+    @staticmethod
+    def convert_to_str(name):
+        if ApplicationType.FULL == name:
+            return f"{ProductTypeModel.DAIRY_TYPE} i {ProductTypeModel.fruit_veg_name()}"
+        elif ApplicationType.DAIRY == name:
+            return ProductTypeModel.DAIRY_TYPE
+        elif ApplicationType.FRUIT_VEG == name:
+            return ProductTypeModel.fruit_veg_name()
 
 
 application_contract = db.Table('application_contract',
@@ -33,21 +44,27 @@ class ApplicationModel(db.Model, BaseDatabaseQuery):
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
     program = db.relationship('ProgramModel',
                               backref=db.backref('applications', lazy=True))
-    applications = db.relationship('ContractModel', secondary=application_contract, backref='applications')
+    contracts = db.relationship('ContractModel', secondary=application_contract, backref='applications')
     weeks = db.relationship('WeekModel', secondary=application_week, backref='applications')
 
     def __init__(self, program_id, contracts: List[ContractModel], weeks: List[WeekModel],
                  app_type: ApplicationType):
+        app_type = ApplicationType(app_type)
         ApplicationModel.validate_type(program_id, app_type)
         self.no = ApplicationModel.get_next_no(program_id)
         self.program_id = program_id
         self.type = app_type
-        self.applications = contracts
+        self.contracts = contracts
         self.weeks = weeks
         self.save_to_db()
 
     def __str__(self):
-        return "{0}/{1}/{2}".format(self.program.semester_no, self.no, self.program.school_year)
+        return f"{self.program.semester_no}/{self.no}/{self.program.school_year}"
+
+    def get_dir(self):
+        main = config_parser.get("Directories", "application")
+        return path.join(main,
+                         f"{self.program.semester_no}_{self.no}_{self.program.school_year.replace('/', '_')}_{ApplicationType.convert_to_str(self.type)}")
 
     @staticmethod
     def possible_types(program_id):
@@ -66,3 +83,10 @@ class ApplicationModel(db.Model, BaseDatabaseQuery):
     @staticmethod
     def get_next_no(program_id):
         return ApplicationModel.all_filtered_by_program(program_id).count() + 1
+
+    def json(self):
+        data: {} = super().json()
+        data["type"] = ApplicationType.convert_to_str(self.type)
+        data["contracts"] = [contract.json() for contract in self.contracts]
+        data["weeks"] = [week.json() for week in self.weeks]
+        return data

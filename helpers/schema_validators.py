@@ -1,5 +1,6 @@
 from marshmallow import Schema, fields, validate
 from helpers.date_converter import DateConverter
+from models.application import ApplicationType
 
 
 class ProgramQuerySchema(Schema):
@@ -61,6 +62,18 @@ class ProductStoreQueryPostSchema(ProgramQuerySchema, NameQuerySchema, ProductSt
 
 class ProductStoreByTypeQuerySchema(ProgramQuerySchema):
     product_type = fields.Str(required=True)
+
+
+class ApplicationSchema(ProgramQuerySchema):
+    app_type = fields.Int(required=True,
+                          validate=validate.Range(ApplicationType.FULL.value, ApplicationType.FRUIT_VEG.value))
+    contracts = fields.List(fields.Int(required=True))
+    weeks = fields.List(fields.Int(required=True))
+
+
+class ApplicationUpdateSchema(Schema):
+    contracts = fields.List(fields.Int(required=False))
+    weeks = fields.List(fields.Int(required=False))
 
 
 program_schema = ProgramQuerySchema()

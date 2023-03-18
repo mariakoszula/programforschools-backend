@@ -39,7 +39,7 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
 
     @staticmethod
     def fruit_veg_name():
-        return f"{ProductTypeModel.FRUIT_TYPE}-{ProductTypeModel.VEGETABLE_TYPE}"
+        return f"{ProductTypeModel.VEGETABLE_TYPE}-{ProductTypeModel.FRUIT_TYPE}"
 
 
 class ProductModel(db.Model, BaseDatabaseQuery):

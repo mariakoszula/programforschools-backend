@@ -1,6 +1,8 @@
 from documents_generator.DocumentGenerator import DocumentGenerator
-from models.application import ApplicationType
+from helpers.file_folder_creator import DirectoryCreator
+from models.application import ApplicationType, ApplicationModel
 from models.product import ProductTypeModel
+from os import path
 
 
 def template_postfix(name):
@@ -9,5 +11,23 @@ def template_postfix(name):
     return f"_{ProductTypeModel.DAIRY_TYPE if name == ApplicationType.DAIRY else ProductTypeModel.fruit_veg_name()}"
 
 
+def get_application_dir(application: ApplicationModel):
+    program_dir = DirectoryCreator.get_main_dir(school_year=application.program.school_year,
+                                                semester_no=application.program.semester_no)
+    return path.join(program_dir, application.get_dir())
+
+
+class ApplicationDiaryGenerator(DocumentGenerator):
+    def prepare_data(self):
+        pass
+
+
+class ApplicationFruitVegGenerator(DocumentGenerator):
+    def prepare_data(self):
+        pass
+
+
+# TODO for FULL application support
 class ApplicationGenerator(DocumentGenerator):
-    pass
+    def prepare_data(self):
+        pass

@@ -6,7 +6,7 @@ from shutil import rmtree
 from typing import List
 from helpers.file_folder_creator import DirectoryCreator
 from tests.common_data import program as program_data
-from helpers.google_drive import FileData, GoogleDriveCommands, GoogleDriveCommandsAsync, DriveCommands
+from helpers.google_drive import FileData, GoogleDriveCommands, GoogleDriveCommandsAsync
 from helpers.common import DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
 from tasks.generate_documents_task import generate_documents
 from models.directory_tree import DirectoryTreeModel
@@ -14,7 +14,7 @@ import pytest
 
 
 class CustomDocumentGenerator(DocumentGenerator):
-    template_document = path.join(config_parser.get('DocTemplates', 'directory'),
+    template_document = path.join("helper_files",
                                   config_parser.get('DocTemplates', 'test').format(""))
     main_directory_name = DirectoryCreator.get_main_dir(school_year=program_data["school_year"],
                                                         semester_no=program_data["semester_no"])
@@ -97,12 +97,11 @@ def remove_created_resources():
     remove_local_directory()
 
 
-def prepare_generate_documents_data(loop_size, drive_tool):
+def prepare_generate_documents_data(loop_size):
     test_data = []
     for i in range(loop_size):
         args = valid_fields.copy()
         args["directory_name"] = f"TEST_{i}"
-        args["drive_tool"] = drive_tool
         test_data.append((CustomDocumentGenerator, args))
     return test_data
 
@@ -117,7 +116,7 @@ def __validate_successful_generation_test(res, no_of_items):
 
 
 def test_successful_generate_documents(initial_app_setup, remove_created_resources):
-    for item in prepare_generate_documents_data(loop_size=1, drive_tool=GoogleDriveCommands):
+    for item in prepare_generate_documents_data(loop_size=1):
         results = generate_documents(item[0], **item[1])
         __validate_successful_generation_test(results, 1)
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
@@ -132,7 +131,7 @@ redis_external = factories.redisdb('redis_nooproc')
 async def test_successful_generate_documents_async(initial_app_setup, remove_created_resources, redis_external):
     from tasks.generate_documents_task import generate_documents_async
     loop_size = 2
-    test_documents = prepare_generate_documents_data(loop_size, drive_tool=DriveCommands)
+    test_documents = prepare_generate_documents_data(loop_size)
     first: List[FileData] = await generate_documents_async(test_documents, redis_conn=redis_external)
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])

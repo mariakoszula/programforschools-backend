@@ -1,4 +1,3 @@
-from helpers.file_folder_creator import DirectoryCreator
 from helpers.logger import app_logger
 from mailmerge import MailMerge
 from abc import ABC, abstractmethod
@@ -8,10 +7,6 @@ from typing import List
 from helpers.google_drive import GoogleDriveCommands
 from helpers.common import DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData, DOCX_EXT, PDF_EXT
 from models.directory_tree import DirectoryTreeModel
-
-
-class DirectoryCreatorError(Exception):
-    pass
 
 
 class DocumentGenerator(ABC):
@@ -26,21 +21,12 @@ class DocumentGenerator(ABC):
         self.template_document = template_document
 
         self.file_path = path.join(self.output_directory, self.output_doc_name)
-        self.remote_parent_id = self.__prepare_remote_parent()
+        self.remote_parent: DirectoryTreeModel = drive_tool.prepare_remote_parent(self.output_directory, self.file_path)
         self.__document = self.__start_doc_gen()
         self._fields_to_merge = self.__document.get_merge_fields()
         self._given_keys = set()
 
         super(DocumentGenerator, self).__init__()
-
-    # TODO create uploading async and move this to create many dir async
-    def __prepare_remote_parent(self):
-        try:
-            DirectoryCreator.create_remote_tree(self.output_directory)
-            return DirectoryTreeModel.get_google_parent_directory(self.file_path)
-        except Exception as e:
-            app_logger.error(f"During creation of directory tree{e}")
-            raise DirectoryCreatorError()
 
     def __check_for_missing_or_extra_keys(self):
         missing_fields = [key for key in self._fields_to_merge if key not in self._given_keys]
@@ -109,7 +95,7 @@ class DocumentGenerator(ABC):
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
         self.generated_document = FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE,
-                                           _parent_id=self.remote_parent_id.google_id)
+                                           _parent_id=self.remote_parent.google_id)
         self.generated_documents.append(self.generated_document)
         app_logger.debug("[%s] Created new output file: %s", __class__.__name__, generated_file, )
 
@@ -127,10 +113,10 @@ class DocumentGenerator(ABC):
                 self.generated_documents[index].web_view_link = web_link
                 app_logger.info(
                     f"File '{file_data.name}' successfully uploaded with id {uploaded_file_id} to "
-                    f"{self.remote_parent_id}")
+                    f"{self.remote_parent}")
 
             else:
-                app_logger.error(f"Failed to upload file '{file_data.name}' to {self.remote_parent_id}")
+                app_logger.error(f"Failed to upload file '{file_data.name}' to {self.remote_parent}")
         return self
 
     def upload_pdf_files_to_remote_drive(self):
@@ -145,7 +131,7 @@ class DocumentGenerator(ABC):
                                                                source_file_id=file_data.id,
                                                                drive_tool=self.drive_tool),
                          _mime_type=PDF_MIME_TYPE,
-                         _parent_id=self.remote_parent_id.google_id))
+                         _parent_id=self.remote_parent.google_id))
         return self
 
     @staticmethod

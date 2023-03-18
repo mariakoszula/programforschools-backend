@@ -49,8 +49,8 @@ class RecordGenerator(DocumentGenerator):
             'regon': record.contract.school.regon,
             'email': record.contract.school.email,
             'kids_no': record.delivered_kids_no,
-            'product_name': record.product_store.product.name,
-            'record_title': get_record_title_mapping(record.product_store.product.type)
+            'product_name': record.product_store_diary.product.name,
+            'record_title': get_record_title_mapping(record.product_store_diary.product.type)
         }
 
     @staticmethod

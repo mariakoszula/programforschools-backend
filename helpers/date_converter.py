@@ -52,3 +52,11 @@ class DateConverter:
     def get_year():
         now = datetime.now()
         return now.year
+
+    @staticmethod
+    def two_digits(date_part):
+        date_part_len = len(str(date_part))
+        if date_part_len == 2:
+            return "{}".format(date_part)
+        elif date_part_len == 1:
+            return "0{}".format(date_part)

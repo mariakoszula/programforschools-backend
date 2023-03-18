@@ -45,3 +45,8 @@ class WeekModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def find(cls, week_no, program_id):
         return cls.query.filter_by(week_no=week_no, program_id=program_id).first()
+
+    @staticmethod
+    def prepare_str_from_weeks(weeks):
+        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date),
+                                          DateConverter.convert_date_to_string(week.end_date)) for week in weeks])

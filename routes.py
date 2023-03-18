@@ -2,6 +2,8 @@ from auth.accesscontrol import roles_required, AllowedRoles
 from helpers.file_folder_creator import DirectoryCreator
 from models.directory_tree import DirectoryTreeModel
 from models.program import ProgramModel
+from resources.application import ApplicationRegister, ApplicationResource, ApplicationsResource, \
+    ApplicationTypeResource
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
@@ -68,7 +70,6 @@ def create_routes(app):
     api.add_resource(RecordsAllResource, '/records')
     api.add_resource(RecordResource, '/record/<int:record_id>')
     api.add_resource(RecordDeliveryCreate, '/create_delivery')
-    api.add_resource(TaskProgressStatus, '/task_progress/<string:task_id>')
 
     api.add_resource(SupplierResource, '/supplier/<int:supplier_id>')
     api.add_resource(SupplierRegister, '/supplier')
@@ -81,6 +82,13 @@ def create_routes(app):
     api.add_resource(InvoiceProductResource, '/invoice_product/<int:invoice_product_id>')
     api.add_resource(InvoiceProductRegister, '/invoice_product')
     api.add_resource(InvoiceProductsResource, '/invoice_product/all')
+
+    api.add_resource(ApplicationRegister, '/application')
+    api.add_resource(ApplicationTypeResource, '/application/type')
+    api.add_resource(ApplicationResource, '/application/<int:application_id>')
+    api.add_resource(ApplicationsResource, '/application/all')
+
+    api.add_resource(TaskProgressStatus, '/task_progress/<string:task_id>')
 
     @app.route("/")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])

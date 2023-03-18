@@ -1,10 +1,12 @@
-from helpers.common import EMPTY_FILED, get_output_name
+from helpers.common import EMPTY_FILED, get_output_name, get_template
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
 from helpers.file_folder_creator import DirectoryCreator
 from models.contract import ContractModel
 from helpers.config_parser import config_parser
 from os import path
+
+from models.week import WeekModel
 
 
 class ContractGenerator(DocumentGenerator):
@@ -26,7 +28,7 @@ class ContractGenerator(DocumentGenerator):
             nip_additional=self.contract.school.representative_nip if self.contract.school.representative_nip else "-",
             name_additional=self.contract.school.representative if self.contract.school.representative else "-",
             regon_additional=self.contract.school.representative_regon if self.contract.school.representative_regon else "-",
-            giving_weeks=ContractGenerator._prepare_str_from_weeks(self.contract.program.weeks))
+            giving_weeks=WeekModel.prepare_str_from_weeks(self.contract.program.weeks))
 
     def __init__(self, contract: ContractModel, date, omit_representative=False, empty=False):
         self.contract = contract
@@ -37,11 +39,7 @@ class ContractGenerator(DocumentGenerator):
         doc_template = config_parser.get('DocTemplates', 'contract') if not empty else config_parser.get('DocTemplates',
                                                                                                          'contract_empty')
         DocumentGenerator.__init__(self,
-                                   template_document=path.join(config_parser.get('DocTemplates', 'directory'),
-                                                               DirectoryCreator.get_part_with_year_and_sem(
-                                                                   school_year=self.contract.program.school_year,
-                                                                   semester_no=self.contract.program.semester_no),
-                                                               doc_template),
+                                   template_document=get_template(self.contract.program, doc_template),
                                    output_directory=path.join(program_dir,
                                                               config_parser.get('Directories', 'contract')),
                                    output_name=get_output_name('contract',
@@ -49,7 +47,3 @@ class ContractGenerator(DocumentGenerator):
                                                                self.contract.contract_no,
                                                                self.contract.contract_year))
 
-    @staticmethod
-    def _prepare_str_from_weeks(weeks):
-        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date),
-                                          DateConverter.convert_date_to_string(week.end_date)) for week in weeks])

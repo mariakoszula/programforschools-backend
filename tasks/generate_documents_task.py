@@ -1,7 +1,8 @@
 from typing import List, Type, Tuple, Dict
 from threading import Thread
 from rq import get_current_job
-from documents_generator.DocumentGenerator import DocumentGenerator, DirectoryCreatorError
+from documents_generator.DocumentGenerator import DocumentGenerator
+from helpers.file_folder_creator import DirectoryCreatorError
 from helpers.google_drive import GoogleDriveCommandsAsync
 from helpers.logger import app_logger
 from helpers.redis_commands import remove_old_save_new

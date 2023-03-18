@@ -67,6 +67,10 @@ class InvoiceProductModel(db.Model, BaseDatabaseQuery):
         self.amount = amount
         self.save_to_db()
 
+    @classmethod
+    def all_filtered_by_program(cls, program_id):
+        return cls.query.join(cls.invoice).filter_by(program_id=program_id)
+
     def __str__(self):
         return f"InvoiceNo {self.invoice.name}: " \
                f"{self.product_store.product.name} {self.amount}{self.product_store.product.weight.name}"

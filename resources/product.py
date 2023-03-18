@@ -12,7 +12,7 @@ class WeightTypeResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(WeightTypeModel)
+        return simple_post(WeightTypeModel, "name")
 
     @classmethod
     @handle_exception_pretty
@@ -26,7 +26,7 @@ class ProductTypeResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(ProductTypeModel)
+        return simple_post(ProductTypeModel, "name")
 
     @classmethod
     @handle_exception_pretty
@@ -40,7 +40,7 @@ class ProductResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(ProductModel, validator=ProductQuerySchema())
+        return simple_post(ProductModel, "name", validator=ProductQuerySchema())
 
     @classmethod
     @handle_exception_pretty
