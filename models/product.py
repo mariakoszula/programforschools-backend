@@ -65,7 +65,7 @@ class ProductModel(db.Model, BaseDatabaseQuery):
                            backref=db.backref('product', lazy=True))
     weight_id = db.Column(db.Integer, db.ForeignKey('weight_type.id'), nullable=False)
     weight = db.relationship('WeightTypeModel')
-    template_name = db.Column(db.String(80), unique=True, default="to_setup")
+    template_name = db.Column(db.String(80), unique=True, nullable=True)
 
     def __init__(self, name, product_type, weight_type):
         self.name = name
