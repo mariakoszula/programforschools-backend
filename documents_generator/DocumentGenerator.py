@@ -28,8 +28,11 @@ class DocumentGenerator(ABC):
 
         super(DocumentGenerator, self).__init__()
 
+    def get_missing_keys(self):
+        return [key for key in self._fields_to_merge if key not in self._given_keys]
+
     def __check_for_missing_or_extra_keys(self):
-        missing_fields = [key for key in self._fields_to_merge if key not in self._given_keys]
+        missing_fields = self.get_missing_keys()
         if len(missing_fields):
             raise ValueError(f"Missing fields from template {missing_fields}")
         extra_fields = [key for key in self._given_keys if key not in self._fields_to_merge]

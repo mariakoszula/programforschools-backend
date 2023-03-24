@@ -158,12 +158,14 @@ def weight_type_kg():
 @pytest.fixture(scope="module")
 def product_store_fruit(program_setup, weight_type_kg):
     ProductTypeModel(ProductTypeModel.FRUIT_TYPE)
-    ProductModel("apple", ProductTypeModel.FRUIT_TYPE, "KG")
+    product = ProductModel("apple", ProductTypeModel.FRUIT_TYPE, "KG")
+    product.update_db(template_name="apple")
     yield ProductStoreModel(program_setup.id, "apple", 1, 0.25)
 
 
 @pytest.fixture(scope="module")
 def product_store_vegetable(program_setup, weight_type_kg):
     ProductTypeModel(ProductTypeModel.VEGETABLE_TYPE)
-    ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG")
+    product = ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG")
+    product.update_db(template_name="carrot")
     yield ProductStoreModel(program_setup.id, "carrot", 4, 0.10, vat=8)

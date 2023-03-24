@@ -38,8 +38,22 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
         return self.name == ProductTypeModel.FRUIT_TYPE or self.name == ProductTypeModel.VEGETABLE_TYPE
 
     @staticmethod
+    def dairy_name():
+        return ProductTypeModel.DAIRY_TYPE.replace("ł", "l")
+
+    @staticmethod
     def fruit_veg_name():
         return f"{ProductTypeModel.VEGETABLE_TYPE}-{ProductTypeModel.FRUIT_TYPE}"
+
+    def template_name(self):
+        base = ""
+        if self.name == ProductTypeModel.DAIRY_TYPE:
+            base = "dairy"
+        if self.name == ProductTypeModel.FRUIT_TYPE:
+            base = "fruit"
+        if self.name == ProductTypeModel.VEGETABLE_TYPE:
+            base = "veg"
+        return f"{base}all"
 
 
 class ProductModel(db.Model, BaseDatabaseQuery):
@@ -51,6 +65,7 @@ class ProductModel(db.Model, BaseDatabaseQuery):
                            backref=db.backref('product', lazy=True))
     weight_id = db.Column(db.Integer, db.ForeignKey('weight_type.id'), nullable=False)
     weight = db.relationship('WeightTypeModel')
+    template_name = db.Column(db.String(80), unique=True, default="to_setup")
 
     def __init__(self, name, product_type, weight_type):
         self.name = name

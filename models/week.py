@@ -48,5 +48,10 @@ class WeekModel(db.Model, BaseDatabaseQuery):
 
     @staticmethod
     def prepare_str_from_weeks(weeks):
-        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date),
+        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date, "%d.%m"),
                                           DateConverter.convert_date_to_string(week.end_date)) for week in weeks])
+
+    def str_for_docs(self):
+        return "{0}-{1}\n{2}".format(DateConverter.convert_date_to_string(self.start_date, "%d.%m"),
+                                     DateConverter.convert_date_to_string(self.end_date, "%d.%m"),
+                                     DateConverter.convert_date_to_string(self.end_date, "%Y"))

@@ -21,7 +21,7 @@ class ApplicationType(enum.Enum):
         if ApplicationType.FULL == name:
             return f"{ProductTypeModel.DAIRY_TYPE} i {ProductTypeModel.fruit_veg_name()}"
         elif ApplicationType.DAIRY == name:
-            return ProductTypeModel.DAIRY_TYPE
+            return ProductTypeModel.dairy_name()
         elif ApplicationType.FRUIT_VEG == name:
             return ProductTypeModel.fruit_veg_name()
 
