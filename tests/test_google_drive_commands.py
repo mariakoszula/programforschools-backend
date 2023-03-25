@@ -10,7 +10,7 @@ import time
 
 def test_google_drive_has_one_directory():
     GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, "DUMMY_DIR_NAME")
-    time.sleep(5)
+    time.sleep(15)
     result = GoogleDriveCommands.search()
     assert len(result) == 1
 
