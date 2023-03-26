@@ -61,10 +61,12 @@ class ApplicationModel(db.Model, BaseDatabaseQuery):
     def __str__(self):
         return f"{self.program.semester_no}/{self.no}/{self.program.school_year}"
 
+    def get_str_name(self):
+        return f"{self.program.semester_no}_{self.no}_{self.program.school_year.replace('/', '_')}_{ApplicationType.convert_to_str(self.type)}"
+
     def get_dir(self):
         main = config_parser.get("Directories", "application")
-        return path.join(main,
-                         f"{self.program.semester_no}_{self.no}_{self.program.school_year.replace('/', '_')}_{ApplicationType.convert_to_str(self.type)}")
+        return path.join(main, self.get_str_name())
 
     @staticmethod
     def possible_types(program_id):

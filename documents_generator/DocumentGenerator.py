@@ -3,7 +3,7 @@ from mailmerge import MailMerge
 from abc import ABC, abstractmethod
 from shutil import copy
 from os import path, makedirs, remove, rename
-from typing import List
+from typing import List, Dict
 from helpers.google_drive import GoogleDriveCommands
 from helpers.common import DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData, DOCX_EXT, PDF_EXT
 from models.directory_tree import DirectoryTreeModel
@@ -28,11 +28,16 @@ class DocumentGenerator(ABC):
 
         super(DocumentGenerator, self).__init__()
 
-    def get_missing_keys(self):
-        return [key for key in self._fields_to_merge if key not in self._given_keys]
+    def __get_missing_keys(self):
+        return set([key for key in self._fields_to_merge if key not in self._given_keys])
+
+    def get_missing_keys(self, keys_to_merge: Dict):
+        keys_in_template = self.__get_missing_keys()
+        keys_to_merge = set(keys_to_merge.keys())
+        return keys_in_template.difference(keys_to_merge)
 
     def __check_for_missing_or_extra_keys(self):
-        missing_fields = self.get_missing_keys()
+        missing_fields = self.__get_missing_keys()
         if len(missing_fields):
             raise ValueError(f"Missing fields from template {missing_fields}")
         extra_fields = [key for key in self._given_keys if key not in self._fields_to_merge]

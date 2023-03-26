@@ -66,11 +66,13 @@ class ProductModel(db.Model, BaseDatabaseQuery):
     weight_id = db.Column(db.Integer, db.ForeignKey('weight_type.id'), nullable=False)
     weight = db.relationship('WeightTypeModel')
     template_name = db.Column(db.String(80), unique=True, nullable=True)
+    vat = db.Column(db.Float, nullable=False, default=0)
 
-    def __init__(self, name, product_type, weight_type):
+    def __init__(self, name, product_type, weight_type, vat=0):
         self.name = name
         self.type_id = ProductTypeModel.find_one_by_name(name=product_type).id
         self.weight_id = WeightTypeModel.find_one_by_name(name=weight_type).id
+        self.vat = vat
         self.save_to_db()
 
     def json(self):
@@ -114,15 +116,14 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
                               backref=db.backref('product_store', lazy=True))
     weight = db.Column(db.Float, nullable=True)
     min_amount = db.Column(db.Integer, nullable=False)
-    vat = db.Column(db.Float, nullable=False, default=0)
+
     __table_args__ = (db.UniqueConstraint('program_id', 'product_id'),)
 
-    def __init__(self, program_id, name, min_amount, weight=0, vat=0):
+    def __init__(self, program_id, name, min_amount, weight=0):
         self.program_id = program_id
         self.product_id = ProductModel.find_one_by_name(name).id
         self.min_amount = min_amount
         self.weight = weight
-        self.vat = vat
         self.save_to_db()
 
     def is_min_amount_exceeded(self, nick):

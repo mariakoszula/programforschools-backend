@@ -6,13 +6,12 @@ from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
 from models.company import CompanyModel
-from models.contract import ContractModel, AnnexModel
+from models.contract import ContractModel
 from models.product import ProductTypeModel, WeightTypeModel, ProductStoreModel, ProductModel
 from models.program import ProgramModel
 import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
-from models.record import RecordModel
 from models.school import SchoolModel
 from models.week import WeekModel
 from tests.common import clear_tables
@@ -166,6 +165,6 @@ def product_store_fruit(program_setup, weight_type_kg):
 @pytest.fixture(scope="module")
 def product_store_vegetable(program_setup, weight_type_kg):
     ProductTypeModel(ProductTypeModel.VEGETABLE_TYPE)
-    product = ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG")
+    product = ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG", vat=8)
     product.update_db(template_name="carrot")
-    yield ProductStoreModel(program_setup.id, "carrot", 4, 0.10, vat=8)
+    yield ProductStoreModel(program_setup.id, "carrot", 4, 0.10)
