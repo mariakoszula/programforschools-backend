@@ -1,6 +1,7 @@
 from helpers.db import db
 from models.base_database_query import BaseDatabaseQuery
 from helpers.date_converter import DateConverter
+from helpers.config_parser import config_parser
 
 
 class ProgramModel(db.Model, BaseDatabaseQuery):
@@ -57,3 +58,14 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
         elif self.semester_no == 2:
             return "II"
         raise ValueError(f"Not supported semester number {self.semester_no}")
+
+    def get_main_dir(self):
+        return f"{config_parser.get('Directories', 'main_dir_program_part')}_" \
+               f"{self.get_part_with_year_and_sem()}"
+
+    def get_part_with_year_and_sem(self):
+        school_year = self.school_year
+        if "/" in self.school_year:
+            school_year = self.school_year.replace("/", "_")
+        return f"{school_year}_" \
+               f"{config_parser.get('Directories', 'main_sem_dir_part')}_{self.semester_no}"

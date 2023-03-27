@@ -1,8 +1,8 @@
 from typing import List
 from helpers.logger import app_logger
 from app import create_app
-from models.contracts import ContractModel
-from tasks.generate_documents_task import generate_documents_async, queue_task, setup_progress_meta
+from models.contract import ContractModel
+from tasks.generate_documents_task import create_generator_and_run, queue_task, setup_progress_meta
 from documents_generator.ContractGenerator import ContractGenerator
 from sqlalchemy.exc import SQLAlchemyError
 from models.program import ProgramModel
@@ -48,7 +48,7 @@ async def create_contracts_async(**request):
 
         input_docs = [(ContractGenerator, {'contract': contract, 'date': request['date']}) for contract in contracts]
         setup_progress_meta(len(input_docs))
-        return await generate_documents_async(input_docs)
+        return await create_generator_and_run(input_docs)
 
 
 def queue_contracts(request):

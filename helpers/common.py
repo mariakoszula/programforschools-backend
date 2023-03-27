@@ -1,11 +1,12 @@
 import time
 from helpers.logger import app_logger
-
 from helpers.config_parser import config_parser
 from typing import List
 
+
 EMPTY_FILED = "................................................................"
-DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
+DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+DOC_GOOGLE_MIME_TYPE = 'application/vnd.google-apps.document'
 PDF_MIME_TYPE = 'application/pdf'
 DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
 GOOGLE_DRIVE_ID = config_parser.get("GoogleDriveConfig", "google_drive_id")
@@ -18,7 +19,7 @@ def get_mime_type(mime_type):
 
 
 class FileData:
-    def __init__(self, _name, _mime_type=get_mime_type(DOCX_MIME_TYPE), _id=None, _parent_id=GOOGLE_DRIVE_ID,
+    def __init__(self, _name, _mime_type=get_mime_type(DOC_GOOGLE_MIME_TYPE), _id=None, _parent_id=GOOGLE_DRIVE_ID,
                  _webViewLink=None):
         self.name = _name
         self.mime_type = _mime_type
@@ -47,6 +48,8 @@ def get_parent_and_children_directories(path_to_file, skip_last=False):
     from os import path
     children = list()
     parent_directory_name = None
+    if "\\" in path_to_file:
+        path_to_file = path_to_file.replace("\\", "/")
     while not parent_directory_name:
         (directories, current) = path.split(path_to_file)
         if not directories or directories in ["/", "\\"]:
@@ -69,3 +72,5 @@ class TimeMeasure:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.end = time.time()
         app_logger.debug(f"Timer {self.timer_name} elapsed: {self.end - self.start} seconds")
+
+

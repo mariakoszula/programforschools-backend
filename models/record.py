@@ -2,7 +2,9 @@ import enum
 
 from helpers.date_converter import DateConverter
 from helpers.db import db
+from models.application import ApplicationType, ApplicationModel
 from models.base_database_query import BaseDatabaseQuery
+from models.contract import ContractModel
 from models.product import ProductModel, ProductTypeModel, ProductStoreModel
 from models.week import WeekModel
 
@@ -90,3 +92,24 @@ class RecordModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def get_records(cls, ids):
         return [cls.find_by_id(_id) for _id in ids]
+
+    @classmethod
+    def filter_records(cls, application: ApplicationModel, state=RecordState.DELIVERED):
+        weeks = [week.id for week in application.weeks]
+        contracts = [contract.id for contract in application.contracts]
+        product_types = []
+        if application.type == ApplicationType.DAIRY:
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.DAIRY_TYPE).id)
+        elif application.type == ApplicationType.FRUIT_VEG:
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.FRUIT_TYPE).id)
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.VEGETABLE_TYPE).id)
+        return cls.query.filter(cls.state == state,
+                                cls.week_id.in_(weeks),
+                                cls.contract_id.in_(contracts),
+                                cls.product_type_id.in_(product_types)).order_by(RecordModel.date).all()
+
+    @classmethod
+    def filter_records_by_contract(cls, application: ApplicationModel, contract: ContractModel,
+                                   state=RecordState.DELIVERED):
+        records = cls.filter_records(application, state)
+        return [record for record in records if record.contract_id == contract.id]

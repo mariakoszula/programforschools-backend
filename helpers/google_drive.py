@@ -21,6 +21,8 @@ from asynctempfile import NamedTemporaryFile
 import asyncio
 from shutil import copy
 
+from models.directory_tree import DirectoryTreeModel
+
 
 def validate_google_env_setup():
     if not getenv('GOOGLE_DRIVE_AUTH'):
@@ -81,8 +83,23 @@ class DriveCommands(ABC):
     def create_directory(parent_directory_id, directory_name):
         pass
 
+    @staticmethod
+    @abstractmethod
+    def prepare_remote_parent(output_directory, file_path):
+        pass
+
 
 class GoogleDriveCommands(DriveCommands):
+    @staticmethod
+    def prepare_remote_parent(output_directory, file_path):
+        from helpers.file_folder_creator import DirectoryCreator, DirectoryCreatorError
+        try:
+            DirectoryCreator.create_remote_tree(output_directory)
+            return DirectoryTreeModel.get_google_parent_directory(file_path)
+        except Exception as e:
+            app_logger.error(f"During creation of directory tree{e}")
+            raise DirectoryCreatorError()
+
     @staticmethod
     @setup_google_drive_service
     def create_directory(parent_directory_id, directory_name):
@@ -205,8 +222,12 @@ async def schedule(func, list_of_items, limit=30):
 
 class GoogleDriveCommandsAsync(DriveCommands):
     @staticmethod
+    def prepare_remote_parent(output_directory, file_path):
+        return GoogleDriveCommands.prepare_remote_parent(output_directory, file_path)
+
+    @staticmethod
     def create_directory(parent_directory_id, directory_name):
-        raise NotImplementedError(f"Need to be implemented so far problems with aiogoogle how to setup this")
+        return GoogleDriveCommands.create_directory(parent_directory_id, directory_name)
 
     tmp_pdf_dir = path.join(getcwd(), "tmp")
     if not path.isdir(tmp_pdf_dir):

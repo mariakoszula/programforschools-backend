@@ -4,8 +4,8 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: rykosystem_test
-      POSTGRES_PASSWORD: rykosystem_password_test
+      POSTGRES_USER: programforschools_test
+      POSTGRES_PASSWORD: programforschools_password_test
     ports:
       - "5433:5432"
 
@@ -13,8 +13,8 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: rykosystem
-      POSTGRES_PASSWORD: rykosystem_password
+      POSTGRES_USER: programforschools
+      POSTGRES_PASSWORD: programforschools_password
     ports:
       - "5432:5432"
 
@@ -26,8 +26,8 @@ services:
 
   web:
     build: .
-    image: rykosystem
-    container_name: rykosystem
+    image: programforschools
+    container_name: programforschools
     depends_on:
       - db
       - redis
@@ -37,7 +37,7 @@ services:
       - .:/app
 
   worker:
-    image: rykosystem
+    image: programforschools
     command: python worker.py
     depends_on:
       - redis

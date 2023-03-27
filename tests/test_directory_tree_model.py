@@ -12,33 +12,37 @@ SECOND_DUMMY_GOOGLE_ID = "55sdf3r3qsdf"
 THIRD_DUMMY_GOOGLE_ID = "55sddddf3r3qsdf"
 
 
-def test_get_children_and_parent(db_session):
-    company = CompanyModel(**company_data)
-    company.save_to_db()
-    program = ProgramModel(**get_program_data(company.id))
-    program.save_to_db()
+@pytest.fixture(scope="function")
+def setup_base_data(program_setup):
     main_directory_tree = DirectoryTreeModel(
         name="main_dir",
         google_id=DUMMY_GOOGLE_ID,
         parent_id=None,
-        program_id=program.id
+        program_id=program_setup.id
     )
     main_directory_tree.save_to_db()
     second_directory = DirectoryTreeModel(
         name="second_dir",
         google_id=SECOND_DUMMY_GOOGLE_ID,
         parent_id=main_directory_tree.id,
-        program_id=program.id
+        program_id=program_setup.id
     )
     second_directory.save_to_db()
     third_directory = DirectoryTreeModel(
         name="third_dir",
         google_id=THIRD_DUMMY_GOOGLE_ID,
         parent_id=second_directory.id,
-        program_id=program.id
+        program_id=program_setup.id
     )
     third_directory.save_to_db()
+    yield main_directory_tree, second_directory, third_directory
+    third_directory.delete_from_db()
+    second_directory.delete_from_db()
+    main_directory_tree.delete_from_db()
 
+
+def test_get_children_and_parent(setup_base_data):
+    main_directory_tree, second_directory, third_directory = setup_base_data
     path_to_file = path.join(main_directory_tree.name, second_directory.name, third_directory.name)
     (parent, children) = DirectoryTreeModel.get_children_and_parent(path_to_file, contains_file_name=True)
     assert parent is main_directory_tree

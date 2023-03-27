@@ -2,9 +2,13 @@ from auth.accesscontrol import roles_required, AllowedRoles
 from helpers.file_folder_creator import DirectoryCreator
 from models.directory_tree import DirectoryTreeModel
 from models.program import ProgramModel
+from resources.application import ApplicationRegister, ApplicationResource, ApplicationsResource, \
+    ApplicationTypeResource, validate_application_impl, create_application_impl
 from resources.company import CompanyResource, CompaniesResource, CompanyRegister
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
+from resources.invoice import SupplierResource, SupplierRegister, SuppliersResource, InvoiceResource, InvoiceRegister, \
+    InvoiceProductsResource, InvoiceProductResource, InvoiceProductRegister, InvoicesResource
 from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource, ProductBoxResource, ProductStoreUpdateResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
@@ -66,13 +70,40 @@ def create_routes(app):
     api.add_resource(RecordsAllResource, '/records')
     api.add_resource(RecordResource, '/record/<int:record_id>')
     api.add_resource(RecordDeliveryCreate, '/create_delivery')
+
+    api.add_resource(SupplierResource, '/supplier/<int:supplier_id>')
+    api.add_resource(SupplierRegister, '/supplier')
+    api.add_resource(SuppliersResource, '/supplier/all')
+
+    api.add_resource(InvoiceResource, '/invoice/<int:invoice_id>')
+    api.add_resource(InvoiceRegister, '/invoice')
+    api.add_resource(InvoicesResource, '/invoice/all')
+
+    api.add_resource(InvoiceProductResource, '/invoice_product/<int:invoice_product_id>')
+    api.add_resource(InvoiceProductRegister, '/invoice_product')
+    api.add_resource(InvoiceProductsResource, '/invoice_product/all')
+
+    api.add_resource(ApplicationRegister, '/application')
+    api.add_resource(ApplicationTypeResource, '/application/type')
+    api.add_resource(ApplicationResource, '/application/<int:application_id>')
+    api.add_resource(ApplicationsResource, '/application/all')
+
     api.add_resource(TaskProgressStatus, '/task_progress/<string:task_id>')
+
+    @app.route("/validate_application/<int:application_id>")
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def validate_application(application_id):
+        return validate_application_impl(application_id)
+
+    @app.route("/create_application/<int:application_id>")
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def create_application(application_id):
+        return create_application_impl(application_id)
 
     @app.route("/")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def main_page():
         return {'message': "You've entered home page"}, 200
-
 
     @app.route("/remote_folders_list/<string:google_id>")
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
