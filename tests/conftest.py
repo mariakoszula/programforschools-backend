@@ -104,7 +104,7 @@ def contract_for_school(program_setup):
     clear_tables_schools()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def second_contract_for_school(program_setup):
     school = SchoolModel(nick="SecondSchool")
     school.save_to_db()
@@ -115,7 +115,7 @@ def second_contract_for_school(program_setup):
     clear_tables_schools()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def contract_for_school_no_dairy(program_setup):
     school = SchoolModel(nick="NoDairyContractSchool",
                          city="City",

@@ -27,10 +27,10 @@ class ApplicationType(enum.Enum):
 
 
 application_contract = db.Table('application_contract',
-                                db.Column('application_id', db.Integer, db.ForeignKey('application.id')),
+                                db.Column('application_id', db.Integer, db.ForeignKey('application.id', ondelete='CASCADE')),
                                 db.Column('contract_id', db.Integer, db.ForeignKey('contract.id')))
 application_week = db.Table('application_week',
-                            db.Column('application_id', db.Integer, db.ForeignKey('application.id')),
+                            db.Column('application_id', db.Integer, db.ForeignKey('application.id', ondelete='CASCADE')),
                             db.Column('week_id', db.Integer, db.ForeignKey('week.id')))
 
 

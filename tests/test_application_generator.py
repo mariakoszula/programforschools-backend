@@ -131,6 +131,8 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
     assert_value(application_generator.data["app_school_no"], 2)
     assert_value(application_generator.data["weeks_no"], 3)
     assert_value(application_generator.data["income"], 527.22, precision=2)
+    RecordModel.query.delete()
+    AnnexModel.query.delete()
     application.delete_from_db()
 
 
@@ -148,7 +150,7 @@ def test_consistency_check(contract_for_school_no_dairy, second_contract_for_sch
     assert str(results[0].message) == f"17.12.2023: apple  3 -> 100"
     annex.delete_from_db()
 
-    add_record("02.12.2023", second_contract_for_school.id, product_store_apple) # 2 kids no
+    add_record("02.12.2023", second_contract_for_school.id, product_store_apple)  # 2 kids no
     results = ApplicationGenerator.check_record_consistency(application)
     assert results[0].school == second_contract_for_school.school
     assert str(results[0].message) == f"2: 17.12.2023 - 22.12.2023"

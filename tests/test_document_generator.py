@@ -4,10 +4,8 @@ from os import path, remove
 from tests.common import all_fields_to_marge_are_in_file
 from shutil import rmtree
 from typing import List
-from helpers.file_folder_creator import DirectoryCreator
-from tests.common_data import program as program_data
 from helpers.google_drive import FileData, GoogleDriveCommands, GoogleDriveCommandsAsync
-from helpers.common import DOCX_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
+from helpers.common import DOC_GOOGLE_MIME_TYPE, DOCX_EXT, PDF_EXT, get_mime_type
 from tasks.generate_documents_task import generate_documents
 from models.directory_tree import DirectoryTreeModel
 import pytest
@@ -140,4 +138,4 @@ async def test_successful_generate_documents_async(initial_app_setup, remove_cre
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
     __validate_successful_generation_test([str(res) for res in second], no_of_items=loop_size)
     assert len(await GoogleDriveCommandsAsync.search(first[0].parent_id,
-                                                     mime_type_query=get_mime_type(DOCX_MIME_TYPE))) == 1
+                                                     mime_type_query=get_mime_type(DOC_GOOGLE_MIME_TYPE))) == 1
