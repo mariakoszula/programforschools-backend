@@ -17,7 +17,8 @@ class WeightTypeModel(db.Model, BaseDatabaseQuery):
 
 class ProductTypeModel(db.Model, BaseDatabaseQuery):
     DAIRY_TYPE = "nabiał"
-    FRUIT_VEG_TYPE = "owoce-warzywa"
+    FRUIT_TYPE = "owoce"
+    VEGETABLE_TYPE = "warzywa"
 
     __tablename__ = 'product_type'
     id = db.Column(db.Integer, primary_key=True)
@@ -34,7 +35,27 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
         return self.name == ProductTypeModel.DAIRY_TYPE
 
     def is_fruit_veg(self):
-        return self.name == ProductTypeModel.FRUIT_VEG_TYPE
+        return self.name == ProductTypeModel.FRUIT_TYPE or self.name == ProductTypeModel.VEGETABLE_TYPE
+
+    @staticmethod
+    def dairy_name(replace=False):
+        if replace:
+            return ProductTypeModel.DAIRY_TYPE.replace("ł", "l")
+        return  ProductTypeModel.DAIRY_TYPE
+
+    @staticmethod
+    def fruit_veg_name():
+        return f"{ProductTypeModel.VEGETABLE_TYPE}-{ProductTypeModel.FRUIT_TYPE}"
+
+    def template_name(self):
+        base = ""
+        if self.name == ProductTypeModel.DAIRY_TYPE:
+            base = "dairy"
+        if self.name == ProductTypeModel.FRUIT_TYPE:
+            base = "fruit"
+        if self.name == ProductTypeModel.VEGETABLE_TYPE:
+            base = "veg"
+        return f"{base}all"
 
 
 class ProductModel(db.Model, BaseDatabaseQuery):
@@ -46,11 +67,14 @@ class ProductModel(db.Model, BaseDatabaseQuery):
                            backref=db.backref('product', lazy=True))
     weight_id = db.Column(db.Integer, db.ForeignKey('weight_type.id'), nullable=False)
     weight = db.relationship('WeightTypeModel')
+    template_name = db.Column(db.String(80), unique=True, nullable=True)
+    vat = db.Column(db.Float, nullable=False, default=0)
 
-    def __init__(self, name, product_type, weight_type):
+    def __init__(self, name, product_type, weight_type, vat=0):
         self.name = name
         self.type_id = ProductTypeModel.find_one_by_name(name=product_type).id
         self.weight_id = WeightTypeModel.find_one_by_name(name=weight_type).id
+        self.vat = vat
         self.save_to_db()
 
     def json(self):
@@ -85,6 +109,8 @@ class ProductBoxModel(db.Model, BaseDatabaseQuery):
 
 class ProductStoreModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'product_store'
+    __table_args__ = {'extend_existing': True}
+
     id = db.Column(db.Integer, primary_key=True)
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
@@ -92,6 +118,7 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
                               backref=db.backref('product_store', lazy=True))
     weight = db.Column(db.Float, nullable=True)
     min_amount = db.Column(db.Integer, nullable=False)
+
     __table_args__ = (db.UniqueConstraint('program_id', 'product_id'),)
 
     def __init__(self, program_id, name, min_amount, weight=0):
@@ -110,8 +137,16 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def find(cls, program_id, product_type):
-        product_type_id = ProductTypeModel.find_one_by_name(product_type).id
-        return cls.query.filter_by(program_id=program_id).join(cls.product).filter_by(type_id=product_type_id)
+        product_types = []
+        if product_type == ProductTypeModel.fruit_veg_name():
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.FRUIT_TYPE).id)
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.VEGETABLE_TYPE).id)
+        else:
+            product_types.append(ProductTypeModel.find_one_by_name(product_type).id)
+        results = []
+        for type_id in product_types:
+            results.extend(cls.query.filter_by(program_id=program_id).join(cls.product).filter_by(type_id=type_id).all())
+        return results
 
     def json(self):
         data: {} = super().json()

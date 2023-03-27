@@ -4,8 +4,8 @@ from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
-from models.base_database_query import program_schema, DateQuerySchema
-from models.contracts import ContractModel
+from helpers.schema_validators import program_schema, DateQuerySchema
+from models.contract import ContractModel
 from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel

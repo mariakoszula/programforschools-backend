@@ -1,9 +1,10 @@
 from flask_restful import Resource, reqparse, request
 from sqlalchemy.exc import SQLAlchemyError
 from auth.accesscontrol import roles_required, AllowedRoles
+from helpers.resource import simple_get_all_by_program
 from models.week import WeekModel
 from helpers.date_converter import DateConverter
-from models.base_database_query import program_schema
+from helpers.schema_validators import program_schema
 from helpers.logger import app_logger
 
 
@@ -98,10 +99,4 @@ class WeekResource(Resource):
 class WeeksResource(Resource):
     @classmethod
     def get(cls):
-        errors = program_schema.validate(request.args)
-        if errors:
-            return {'weeks': [],
-                    "message": f"{errors}"}, 400
-        program_id = request.args["program_id"]
-        weeks = WeekModel.all_filtered_by_program(program_id).order_by(WeekModel.start_date)
-        return {'weeks': [week.json() for week in weeks]}, 200
+        return simple_get_all_by_program(WeekModel, _order=WeekModel.start_date)

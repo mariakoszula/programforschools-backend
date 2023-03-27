@@ -89,10 +89,11 @@ class AnnexModel(db.Model, BaseDatabaseQuery):
     __table_args__ = (db.UniqueConstraint('contract_id', 'no'),)
 
     def __init__(self, contract, validity_date, *, fruitVeg_products=None, dairy_products=None, validity_date_end=None):
-        if validity_date_end and \
-                DateConverter.convert_to_date(validity_date_end, pattern="%Y-%m-%d") < DateConverter.convert_to_date(
-            validity_date, pattern="%Y-%m-%d"):
-            raise ValueError(f"Failed to create annex {validity_date_end} < {validity_date}")
+        validity_date = DateConverter.convert_to_date(validity_date)
+        if validity_date_end:
+            validity_date_end = DateConverter.convert_to_date(validity_date_end)
+            if validity_date_end < validity_date:
+                raise ValueError(f"Failed to create annex {validity_date_end} < {validity_date}")
         self.contract_id = contract.id
         self.validity_date = validity_date
         self.fruitVeg_products = fruitVeg_products if fruitVeg_products else contract.fruitVeg_products

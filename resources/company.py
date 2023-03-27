@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 
 from auth.accesscontrol import roles_required, AllowedRoles
+from helpers.resource import simple_delete, simple_get_all
 from models.company import CompanyModel
 
 
@@ -59,12 +60,12 @@ class CompanyResource(Resource):
             return {'message': f'Company {company_id} does not exists'}, 404
         return company.json()
 
+    @classmethod
+    def delete(cls, company_id):
+        return simple_delete(CompanyModel, company_id)
+
 
 class CompaniesResource(Resource):
     @classmethod
     def get(cls):
-        companies = CompanyModel.all()
-        if not companies:
-            return {'companies': [],
-                    'message': 'No companies found'}, 200
-        return {'companies': [company.json() for company in companies]}, 200
+        return simple_get_all(CompanyModel)

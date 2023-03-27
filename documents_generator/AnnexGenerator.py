@@ -35,8 +35,7 @@ class AnnexGenerator(DocumentGenerator):
     def __init__(self, annex, date):
         self.date = date
         self.annex = annex
-        program_dir = DirectoryCreator.get_main_dir(school_year=self.annex.contract.program.school_year,
-                                                    semester_no=self.annex.contract.program.semester_no)
+        program_dir = self.annex.contract.program.get_main_dir()
 
         _template_document = config_parser.get('DocTemplates', 'annex')
         _output_directory = path.join(program_dir,

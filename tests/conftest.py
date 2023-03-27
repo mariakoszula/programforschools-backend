@@ -2,15 +2,19 @@ import pytest
 import sqlalchemy.exc
 
 from helpers.db import db
-from os import environ
 from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
 from models.company import CompanyModel
+from models.contract import ContractModel
+from models.product import ProductTypeModel, WeightTypeModel, ProductStoreModel, ProductModel
 from models.program import ProgramModel
 import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
+from models.school import SchoolModel
+from models.week import WeekModel
+from tests.common import clear_tables_schools, clear_tables_common
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -88,3 +92,125 @@ def initial_app_setup(program_setup):
         raise InitialSetupError(main_directory)
     yield program
     GoogleDriveCommands.clean_main_directory()
+
+
+@pytest.fixture(scope="module")
+def contract_for_school(program_setup):
+    school = SchoolModel(**common_data.school_data)
+    school.save_to_db()
+    contract = ContractModel(school.id, program_setup)
+    contract.save_to_db()
+    yield contract
+    clear_tables_schools()
+
+
+@pytest.fixture(scope="module")
+def second_contract_for_school(program_setup):
+    school = SchoolModel(nick="SecondSchool")
+    school.save_to_db()
+    contract = ContractModel(school.id, program_setup)
+    contract.save_to_db()
+    contract.update_db(dairy_products=1, fruitVeg_products=2)
+    yield contract
+    clear_tables_schools()
+
+
+@pytest.fixture(scope="module")
+def contract_for_school_no_dairy(program_setup):
+    school = SchoolModel(nick="NoDairyContractSchool",
+                         city="City",
+                         name="NoDairyContractSchool",
+                         nip="1234567890",
+                         regon="123456789",
+                         address="street 123")
+    school.save_to_db()
+    contract = ContractModel(school.id, program_setup)
+    contract.save_to_db()
+    contract.update_db(dairy_products=0, fruitVeg_products=3)
+    yield contract
+    clear_tables_schools()
+
+
+@pytest.fixture(scope="module")
+def week(program_setup):
+    yield WeekModel(**common_data.week_data, program_id=program_setup.id)
+    clear_tables_schools()
+
+
+@pytest.fixture(scope="module")
+def second_week(program_setup):
+    yield WeekModel(week_no=2, start_date="2023-12-17", end_date="2023-12-22", program_id=program_setup.id)
+    clear_tables_common()
+
+
+@pytest.fixture(scope="module")
+def third_week(program_setup):
+    yield WeekModel(week_no=3, start_date="2023-12-23", end_date="2023-12-30", program_id=program_setup.id)
+    clear_tables_common()
+
+
+@pytest.fixture(scope="module")
+def weight_type_kg():
+    yield WeightTypeModel("KG")
+
+
+@pytest.fixture(scope="module")
+def weight_type_liter():
+    yield WeightTypeModel("L")
+
+
+@pytest.fixture(scope="module")
+def fruit():
+    yield ProductTypeModel(ProductTypeModel.FRUIT_TYPE)
+
+
+@pytest.fixture(scope="module")
+def vegetable():
+    yield ProductTypeModel(ProductTypeModel.VEGETABLE_TYPE)
+
+
+@pytest.fixture(scope="module")
+def dairy():
+    yield ProductTypeModel(ProductTypeModel.DAIRY_TYPE)
+
+
+@pytest.fixture(scope="module")
+def product_store_apple(program_setup, weight_type_kg, fruit):
+    product = ProductModel("apple", ProductTypeModel.FRUIT_TYPE, "KG")
+    product.update_db(template_name="apple")
+    yield ProductStoreModel(program_setup.id, "apple", 1, 0.25)
+
+
+@pytest.fixture(scope="module")
+def product_store_juice(program_setup, weight_type_liter, fruit):
+    product = ProductModel("juice", ProductTypeModel.FRUIT_TYPE, "L", vat=3)
+    product.update_db(template_name="juice")
+    yield ProductStoreModel(program_setup.id, "juice", 1, 0.25)
+
+
+@pytest.fixture(scope="module")
+def product_store_carrot(program_setup, weight_type_kg, vegetable):
+    product = ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG", vat=8)
+    product.update_db(template_name="carrot")
+    yield ProductStoreModel(program_setup.id, "carrot", 4, 0.10)
+
+
+@pytest.fixture(scope="module")
+def product_store_kohlrabi(program_setup, weight_type_kg, vegetable):
+    product = ProductModel("kohlrabi", ProductTypeModel.VEGETABLE_TYPE, "KG")
+    product.update_db(template_name="kohlrabi")
+    yield ProductStoreModel(program_setup.id, "kohlrabi", 4, 0.09)
+
+
+@pytest.fixture(scope="module")
+def product_store_milk(program_setup, weight_type_liter, dairy):
+    product = ProductModel("milk", ProductTypeModel.DAIRY_TYPE, "L")
+    product.update_db(template_name="milk")
+    yield ProductStoreModel(program_setup.id, "milk", 5, 0.25)
+
+
+@pytest.fixture(scope="module")
+def product_store_yoghurt(program_setup, weight_type_liter, dairy):
+    product = ProductModel("yoghurt", ProductTypeModel.DAIRY_TYPE, "KG", vat=2)
+    product.update_db(template_name="yoghurt")
+    yield ProductStoreModel(program_setup.id, "yoghurt", 2, 0.15)

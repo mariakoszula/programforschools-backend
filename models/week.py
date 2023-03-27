@@ -32,7 +32,8 @@ class WeekModel(db.Model, BaseDatabaseQuery):
         return data
 
     def __str__(self):
-        return f"{self.week_no}: {self.start_date} - {self.end_date}"
+        return f"{self.week_no}: {DateConverter.convert_date_to_string(self.start_date)} " \
+               f"- {DateConverter.convert_date_to_string(self.end_date)}"
 
     @classmethod
     def find_by_date(cls, date):
@@ -45,3 +46,13 @@ class WeekModel(db.Model, BaseDatabaseQuery):
     @classmethod
     def find(cls, week_no, program_id):
         return cls.query.filter_by(week_no=week_no, program_id=program_id).first()
+
+    @staticmethod
+    def prepare_str_from_weeks(weeks):
+        return ",".join(["{0}-{1}".format(DateConverter.convert_date_to_string(week.start_date, "%d.%m"),
+                                          DateConverter.convert_date_to_string(week.end_date)) for week in weeks])
+
+    def str_for_docs(self):
+        return "{0}-{1}\n{2}".format(DateConverter.convert_date_to_string(self.start_date, "%d.%m"),
+                                     DateConverter.convert_date_to_string(self.end_date, "%d.%m"),
+                                     DateConverter.convert_date_to_string(self.end_date, "%Y"))

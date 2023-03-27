@@ -10,7 +10,7 @@ import time
 
 def test_google_drive_has_one_directory():
     GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, "DUMMY_DIR_NAME")
-    time.sleep(5)
+    time.sleep(15)
     result = GoogleDriveCommands.search()
     assert len(result) == 1
 
@@ -19,7 +19,7 @@ def test_create_and_remove_directory_successful():
     dummy_directory = "DUMMY_NAME"
     directory_id = GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, dummy_directory)
     assert directory_id
-    time.sleep(3)
+    time.sleep(15)
     assert dummy_directory in [item.name for item in GoogleDriveCommands.search()]
     GoogleDriveCommands.remove(directory_id)
 
@@ -28,7 +28,7 @@ loop_size = 2
 
 
 def get_file_to_upload(file_no) -> FileData:
-    helper_files_dir = config_parser.get('DocTemplates', 'directory')
+    helper_files_dir = "helper_files"
     file_name = path.join(helper_files_dir,
                           config_parser.get('DocTemplates', 'test').format(file_no))
     if not path.exists(file_name):

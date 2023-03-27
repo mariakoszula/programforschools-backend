@@ -29,3 +29,4 @@ class SchoolModel(db.Model, BaseDatabaseQuery):
 
     def fill_responsible_person(self):
         return self.responsible_person if self.responsible_person else EMPTY_FILED
+
