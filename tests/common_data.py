@@ -11,7 +11,7 @@ program = {
     "semester_no": 2,
     "school_year": "2022/2023",
     "fruitVeg_price": 1.5,
-    "dairy_price": 2.0,
+    "dairy_price": 2.00,
     "start_date": "2023-01-01",
     "end_date": "2023-12-31",
     "dairy_min_per_week": 2,

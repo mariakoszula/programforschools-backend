@@ -32,7 +32,8 @@ class WeekModel(db.Model, BaseDatabaseQuery):
         return data
 
     def __str__(self):
-        return f"{self.week_no}: {self.start_date} - {self.end_date}"
+        return f"{self.week_no}: {DateConverter.convert_date_to_string(self.start_date)} " \
+               f"- {DateConverter.convert_date_to_string(self.end_date)}"
 
     @classmethod
     def find_by_date(cls, date):

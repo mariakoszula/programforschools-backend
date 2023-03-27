@@ -10,10 +10,11 @@ from helpers.date_converter import DateConverter
 from helpers.google_drive import GoogleDriveCommands
 from models.application import ApplicationModel, ApplicationType
 from models.contract import ContractModel
-from models.record import RecordModel
+from models.record import RecordModel, RecordState
 from models.school import SchoolModel
 from models.week import WeekModel
 from decimal import ROUND_HALF_UP, getcontext, Decimal
+from collections import namedtuple
 
 getcontext().rounding = ROUND_HALF_UP
 round_number = Decimal('.01')
@@ -216,13 +217,76 @@ def statement_factory(application: ApplicationModel, records: List[RecordModel],
     return StatementGenerator(sbd, _drive_tool=_drive_tool)
 
 
+InconsistencyError = namedtuple("InconsistencyError", ["school", "message"])
+
+
+class KidsInconsistencyError:
+    def __init__(self, record: RecordModel, expected_kids_no):
+        self.record = record
+        self.expected_kids_no = expected_kids_no
+
+    def __str__(self):
+        return f"{DateConverter.convert_date_to_string(self.record.date)}: {self.record} -> {self.expected_kids_no}"
+
+
+class StateInconsistencyError:
+    def __init__(self, record: RecordModel):
+        self.record = record
+
+    def __str__(self):
+        return f"{DateConverter.convert_date_to_string(self.record.date)}: {self.record} != RecordState.DELIVERED"
+
+
+class WeekInconsistencyError:
+    def __init__(self, week: WeekModel):
+        self.week = week
+
+    def __str__(self):
+        return f"{self.week}"
+
+
 class ApplicationGenerator(DocumentGenerator):
 
     @staticmethod
     def check_record_consistency(application: ApplicationModel):
-        # todo check annex, contract vs kids no in records
-        # todo check if all records are marked as DELIVERED
-        pass
+        errors: List[InconsistencyError] = []
+        for contract in application.contracts:
+            records = ApplicationGenerator.__get_records_all(application, contract)
+            for record in records:
+                ApplicationGenerator.__check_kids_inconsistency(contract, errors, record)
+                ApplicationGenerator.__check_state_inconsistency(contract, errors, record)
+            ApplicationGenerator.__check_week_inconsistency(contract, errors, records, application.weeks)
+        return errors
+
+    @staticmethod
+    def __get_records_all(application: ApplicationModel, contract):
+        records = RecordModel.filter_records_by_contract(application, contract)
+        records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.PLANNED))
+        records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATED))
+        records.extend(
+            RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATION_IN_PROGRESS))
+        return records
+
+    @staticmethod
+    def __check_state_inconsistency(contract, errors, record):
+        if record.state != RecordState.DELIVERED:
+            errors.append(InconsistencyError(contract.school,
+                                             StateInconsistencyError(record)))
+
+    @staticmethod
+    def __check_kids_inconsistency(contract, errors, record):
+        expected = record.contract.get_kids_no(product_type=record.product_store.product.type,
+                                               date=record.date)
+        if record.delivered_kids_no != expected:
+            errors.append(InconsistencyError(contract.school,
+                                             KidsInconsistencyError(record, expected)))
+
+    @staticmethod
+    def __check_week_inconsistency(contract, errors, records, weeks):
+        for week in weeks:
+            if not any(filter(lambda r: r.week_id == week.id, records)):
+                errors.append(InconsistencyError(contract.school,
+                                                 WeekInconsistencyError(week)))
 
     def prepare_data(self):
         ApplicationCommonData.add_application_no(self.data, self.application)
@@ -315,10 +379,13 @@ def application_factory(application: ApplicationModel, date, start_week, is_last
                         _output_dir=None, _drive_tool=GoogleDriveCommands):
     records_summary = []
     statements = []
-    for contract in application.contracts:
-        records = RecordModel.filter_records_by_contract(application, contract)
-        records_summary.append(
-            RecordsSummaryGenerator(application, records, date, _output_dir=_output_dir, _drive_tool=_drive_tool))
-        statements.append(statement_factory(application, records, date, start_week, _output_dir=_output_dir,
-                                            _drive_tool=_drive_tool))
+    try:
+        for contract in application.contracts:
+            records = RecordModel.filter_records_by_contract(application, contract)
+            records_summary.append(
+                RecordsSummaryGenerator(application, records, date, _output_dir=_output_dir, _drive_tool=_drive_tool))
+            statements.append(statement_factory(application, records, date, start_week, _output_dir=_output_dir,
+                                                _drive_tool=_drive_tool))
+    except ValueError as e:
+        raise ValueError(f"Error while creating application for {application.get_str_name()}: {e}")
     return ApplicationGenerator(application, records_summary, statements, is_last, _output_dir, _drive_tool)

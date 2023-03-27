@@ -155,16 +155,62 @@ def weight_type_kg():
 
 
 @pytest.fixture(scope="module")
-def product_store_fruit(program_setup, weight_type_kg):
-    ProductTypeModel(ProductTypeModel.FRUIT_TYPE)
+def weight_type_liter():
+    yield WeightTypeModel("L")
+
+
+@pytest.fixture(scope="module")
+def fruit():
+    yield ProductTypeModel(ProductTypeModel.FRUIT_TYPE)
+
+
+@pytest.fixture(scope="module")
+def vegetable():
+    yield ProductTypeModel(ProductTypeModel.VEGETABLE_TYPE)
+
+
+@pytest.fixture(scope="module")
+def dairy():
+    yield ProductTypeModel(ProductTypeModel.DAIRY_TYPE)
+
+
+@pytest.fixture(scope="module")
+def product_store_apple(program_setup, weight_type_kg, fruit):
     product = ProductModel("apple", ProductTypeModel.FRUIT_TYPE, "KG")
     product.update_db(template_name="apple")
     yield ProductStoreModel(program_setup.id, "apple", 1, 0.25)
 
 
 @pytest.fixture(scope="module")
-def product_store_vegetable(program_setup, weight_type_kg):
-    ProductTypeModel(ProductTypeModel.VEGETABLE_TYPE)
+def product_store_juice(program_setup, weight_type_liter, fruit):
+    product = ProductModel("juice", ProductTypeModel.FRUIT_TYPE, "L", vat=3)
+    product.update_db(template_name="juice")
+    yield ProductStoreModel(program_setup.id, "juice", 1, 0.25)
+
+
+@pytest.fixture(scope="module")
+def product_store_carrot(program_setup, weight_type_kg, vegetable):
     product = ProductModel("carrot", ProductTypeModel.VEGETABLE_TYPE, "KG", vat=8)
     product.update_db(template_name="carrot")
     yield ProductStoreModel(program_setup.id, "carrot", 4, 0.10)
+
+
+@pytest.fixture(scope="module")
+def product_store_kohlrabi(program_setup, weight_type_kg, vegetable):
+    product = ProductModel("kohlrabi", ProductTypeModel.VEGETABLE_TYPE, "KG")
+    product.update_db(template_name="kohlrabi")
+    yield ProductStoreModel(program_setup.id, "kohlrabi", 4, 0.09)
+
+
+@pytest.fixture(scope="module")
+def product_store_milk(program_setup, weight_type_liter, dairy):
+    product = ProductModel("milk", ProductTypeModel.DAIRY_TYPE, "L")
+    product.update_db(template_name="milk")
+    yield ProductStoreModel(program_setup.id, "milk", 5, 0.25)
+
+
+@pytest.fixture(scope="module")
+def product_store_yoghurt(program_setup, weight_type_liter, dairy):
+    product = ProductModel("yoghurt", ProductTypeModel.DAIRY_TYPE, "KG", vat=2)
+    product.update_db(template_name="yoghurt")
+    yield ProductStoreModel(program_setup.id, "yoghurt", 2, 0.15)

@@ -38,30 +38,22 @@ def test_week(week):
         WeekModel(week_no=2, start_date="2023-01-11", end_date="2022-12-12", program_id=week.program_id)
 
 
-@pytest.fixture(scope="module")
-def product_store_dairy(program_setup):
-    WeightTypeModel("L")
-    ProductTypeModel(ProductTypeModel.DAIRY_TYPE)
-    ProductModel("milk", ProductTypeModel.DAIRY_TYPE, "L")
-    yield ProductStoreModel(program_setup.id, "milk", 5, 0.25)
-
-
-def test_product(product_store_dairy):
-    store = ProductStoreModel.find(product_store_dairy.program_id, ProductTypeModel.DAIRY_TYPE).one()
+def test_product(product_store_milk):
+    store = ProductStoreModel.find(product_store_milk.program_id, ProductTypeModel.DAIRY_TYPE).one()
     assert store is not None and store.product.name == "milk"
-    store_find_by_name = ProductStoreModel.find_by(product_store_dairy.program_id, "milk")
+    store_find_by_name = ProductStoreModel.find_by(product_store_milk.program_id, "milk")
     assert store_find_by_name is not None and store_find_by_name.min_amount == 5
 
 
 @pytest.fixture(scope="class")
-def setup_record_test_init(contract_for_school, product_store_dairy, week):
+def setup_record_test_init(contract_for_school, product_store_milk, week):
     contract_for_school.update_db(dairy_products=5, fruitVeg_products=10)  # 2023-01-01
     AnnexModel(contract_for_school, **annex_data)  # 2023-12-07
     AnnexModel(contract_for_school, validity_date="2023-12-08", dairy_products=11, fruitVeg_products=12,
                validity_date_end="2023-12-12")
     AnnexModel(contract_for_school, validity_date="2023-12-09", dairy_products=22, fruitVeg_products=23,
                validity_date_end="2023-12-13")
-    yield contract_for_school, product_store_dairy, week
+    yield contract_for_school, product_store_milk, week
     RecordModel.query.delete()
 
 
@@ -89,17 +81,17 @@ def test_week_overlap_throws_value_error(week):
     week_two.delete_from_db()
 
 
-def test_invoice_model(product_store_dairy):
+def test_invoice_model(product_store_milk):
     supplier = SupplierModel("Long name for supplier", "supplier nickname")
     assert str(supplier) == "Long name for supplier <supplier nickname>"
     assert supplier.id is not None
-    invoice = InvoiceModel("RL 123z", "30.12.2022", supplier.id, product_store_dairy.program_id)
+    invoice = InvoiceModel("RL 123z", "30.12.2022", supplier.id, product_store_milk.program_id)
     assert str(invoice) == "Invoice 'RL 123z' from 'supplier nickname' on 30.12.2022"
     assert invoice.id is not None
-    second_invoice = InvoiceModel("TH new", "2023-01-08", supplier.id, product_store_dairy.program_id)
+    second_invoice = InvoiceModel("TH new", "2023-01-08", supplier.id, product_store_milk.program_id)
     assert str(second_invoice) == "Invoice 'TH new' from 'supplier nickname' on 08.01.2023"
 
-    product = InvoiceProductModel(invoice.id, product_store_dairy.id, 500)
+    product = InvoiceProductModel(invoice.id, product_store_milk.id, 500)
     assert str(product) == "InvoiceNo RL 123z: milk 500.0L"
     assert product.id is not None
 
@@ -121,7 +113,7 @@ def test_application_setup(setup_record_test_init, second_week):
 
 
 def test_filter_records(setup_record_test_init, second_week, third_week,
-                        product_store_fruit, product_store_vegetable,
+                        product_store_apple, product_store_carrot,
                         second_contract_for_school, contract_for_school_no_dairy):
     first_contract, product_store_dairy, week = setup_record_test_init
     application_dairy = ApplicationModel(week.program_id,
@@ -134,11 +126,11 @@ def test_filter_records(setup_record_test_init, second_week, third_week,
                                                 [second_contract_for_school, contract_for_school_no_dairy],
                                                 [third_week], ApplicationType.DAIRY)
     first_contract_dairy_week_1 = add_record("01.12.2023", first_contract.id, product_store_dairy)
-    first_contract_fruit_week_2 = add_record("17.12.2023", first_contract.id, product_store_fruit)
-    contract_for_school_no_dairy_week_2 = add_record("17.12.2023", contract_for_school_no_dairy.id, product_store_fruit)
+    first_contract_fruit_week_2 = add_record("17.12.2023", first_contract.id, product_store_apple)
+    contract_for_school_no_dairy_week_2 = add_record("17.12.2023", contract_for_school_no_dairy.id, product_store_apple)
     contract_for_school_no_dairy_veg_week_2 = add_record("18.12.2023", contract_for_school_no_dairy.id,
-                                                         product_store_vegetable)
-    add_record("01.12.2023", second_contract_for_school.id, product_store_fruit)
+                                                         product_store_carrot)
+    add_record("01.12.2023", second_contract_for_school.id, product_store_apple)
 
     first_contract_dairy_week_1_generated = add_record("02.12.2023", first_contract.id, product_store_dairy,
                                                        RecordState.GENERATED)

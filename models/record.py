@@ -1,5 +1,4 @@
 import enum
-from typing import List
 
 from helpers.date_converter import DateConverter
 from helpers.db import db
@@ -110,6 +109,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
                                 cls.product_type_id.in_(product_types)).order_by(RecordModel.date).all()
 
     @classmethod
-    def filter_records_by_contract(cls, application: ApplicationModel, contract: ContractModel):
-        records = cls.filter_records(application)
+    def filter_records_by_contract(cls, application: ApplicationModel, contract: ContractModel,
+                                   state=RecordState.DELIVERED):
+        records = cls.filter_records(application, state)
         return [record for record in records if record.contract_id == contract.id]
