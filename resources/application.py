@@ -42,6 +42,12 @@ class ApplicationResource(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls, application_id):
+        return {'messge': "to impelment"}, 200
+
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def put(cls, application_id):
         if err := validate_body(ApplicationUpdateSchema()):
             return err
@@ -62,3 +68,12 @@ class ApplicationsResource(Resource):
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls):
         return simple_get_all_by_program(ApplicationModel)
+
+
+def validate_application_impl(application_id):
+    return {'message': f"validate App {application_id}"}, 200
+
+
+def create_application_impl(application_id):
+    return {'message': f"create application App {application_id}",
+            'application_id': application_id}, 200

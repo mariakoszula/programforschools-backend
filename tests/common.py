@@ -25,12 +25,16 @@ def add_record(date, contract_id, product_store, final_state=RecordState.DELIVER
     return record
 
 
-def clear_tables():
+def clear_tables_schools():
     RecordModel.query.delete()
     TimedAnnexModel.query.delete()
     AnnexModel.query.delete()
     ContractModel.query.delete()
     SchoolModel.query.delete()
+
+
+def clear_tables_common():
+    clear_tables_schools()
     WeekModel.query.delete()
     InvoiceProductModel.query.delete()
     InvoiceModel.query.delete()

@@ -14,7 +14,7 @@ from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
 from models.school import SchoolModel
 from models.week import WeekModel
-from tests.common import clear_tables
+from tests.common import clear_tables_schools, clear_tables_common
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -101,10 +101,10 @@ def contract_for_school(program_setup):
     contract = ContractModel(school.id, program_setup)
     contract.save_to_db()
     yield contract
-    clear_tables()
+    clear_tables_schools()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def second_contract_for_school(program_setup):
     school = SchoolModel(nick="SecondSchool")
     school.save_to_db()
@@ -112,10 +112,10 @@ def second_contract_for_school(program_setup):
     contract.save_to_db()
     contract.update_db(dairy_products=1, fruitVeg_products=2)
     yield contract
-    clear_tables()
+    clear_tables_schools()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def contract_for_school_no_dairy(program_setup):
     school = SchoolModel(nick="NoDairyContractSchool",
                          city="City",
@@ -128,25 +128,25 @@ def contract_for_school_no_dairy(program_setup):
     contract.save_to_db()
     contract.update_db(dairy_products=0, fruitVeg_products=3)
     yield contract
-    clear_tables()
+    clear_tables_schools()
 
 
 @pytest.fixture(scope="module")
 def week(program_setup):
     yield WeekModel(**common_data.week_data, program_id=program_setup.id)
-    clear_tables()
+    clear_tables_schools()
 
 
 @pytest.fixture(scope="module")
 def second_week(program_setup):
     yield WeekModel(week_no=2, start_date="2023-12-17", end_date="2023-12-22", program_id=program_setup.id)
-    clear_tables()
+    clear_tables_common()
 
 
 @pytest.fixture(scope="module")
 def third_week(program_setup):
     yield WeekModel(week_no=3, start_date="2023-12-23", end_date="2023-12-30", program_id=program_setup.id)
-    clear_tables()
+    clear_tables_common()
 
 
 @pytest.fixture(scope="module")
