@@ -2,8 +2,9 @@ from flask import request
 from flask_restful import Resource
 
 from auth.accesscontrol import handle_exception_pretty, roles_required, AllowedRoles
+from documents_generator.ApplicationGenerator import ApplicationGenerator
 from helpers.resource import simple_get_all_by_program, replace_ids_with_models, validate_body, \
-    successful_response, put_action, simple_delete
+    successful_response, put_action, simple_delete, simple_get
 from helpers.schema_validators import ApplicationSchema, program_schema, ApplicationUpdateSchema
 from models.application import ApplicationModel, ApplicationType
 from models.contract import ContractModel
@@ -43,7 +44,7 @@ class ApplicationResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls, application_id):
-        return {'messge': "to impelment"}, 200
+        return simple_get(ApplicationModel, application_id)
 
     @classmethod
     @handle_exception_pretty
@@ -71,7 +72,12 @@ class ApplicationsResource(Resource):
 
 
 def validate_application_impl(application_id):
-    return {'message': f"validate App {application_id}"}, 200
+    application = ApplicationModel.find_by_id(application_id)
+    results = []
+    for r in ApplicationGenerator.check_record_consistency(application):
+        results.append({"school": r.school.nick, "type": r.message.__class__.__name__, "message": str(r.message)})
+    return {"application": application.json(),
+            "errors": results}, 200
 
 
 def create_application_impl(application_id):
