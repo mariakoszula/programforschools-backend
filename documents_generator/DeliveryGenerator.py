@@ -6,7 +6,6 @@ from documents_generator.RecordGenerator import RecordGenerator
 from helpers.common import get_output_name
 from helpers.config_parser import config_parser
 from helpers.date_converter import DateConverter
-from helpers.file_folder_creator import DirectoryCreator
 from models.product import ProductBoxModel
 from models.record import RecordModel
 
@@ -74,14 +73,14 @@ class DeliveryGenerator(DocumentGenerator):
         records = filter(lambda record: record.contract.school.nick == nick, self.records)
         results = []
         for product, records in self.__dict_from_list(records,
-                                                      lambda record: record.product_store_diary.product.name).items():
+                                                      lambda record: record.product_store.product.name).items():
             sum_res = DeliveryGenerator.__sum_products(records)
             results.append(f"{product}: {self.__get_amount_by_boxes(product, sum_res)}")
         return ", ".join(results)
 
     def __product_summarize_info(self):
         for product, records in self.__dict_from_list(self.records,
-                                                      lambda record: record.product_store_diary.product.name).items():
+                                                      lambda record: record.product_store.product.name).items():
             self.product_summarize_rows.append(self.__prepare_product_summarize(product, records))
 
     def __prepare_product_summarize(self, product, records: List[RecordModel]):
