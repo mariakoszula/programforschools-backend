@@ -62,7 +62,7 @@ def test_successful_remote_upload(initial_app_setup, document_generator):
 
 @pytest.fixture
 def uploaded_file():
-    file_data = FileData(_name=CustomDocumentGenerator.template_document, _mime_type=DOCX_MIME_TYPE)
+    file_data = FileData(_name=CustomDocumentGenerator.template_document, _mime_type=DOC_GOOGLE_MIME_TYPE)
     (file_id, _) = GoogleDriveCommands.upload_file(file_data)
     yield file_id
     remove_created_pdf()
