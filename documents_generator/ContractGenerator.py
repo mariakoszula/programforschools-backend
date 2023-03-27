@@ -1,7 +1,6 @@
-from helpers.common import EMPTY_FILED, get_output_name, get_template
+from helpers.common import EMPTY_FILED, get_output_name
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.date_converter import DateConverter
-from helpers.file_folder_creator import DirectoryCreator
 from models.contract import ContractModel
 from helpers.config_parser import config_parser
 from os import path
@@ -34,12 +33,11 @@ class ContractGenerator(DocumentGenerator):
         self.contract = contract
         self.omit_representative = omit_representative
         self.date = date
-        program_dir = DirectoryCreator.get_main_dir(school_year=self.contract.program.school_year,
-                                                    semester_no=self.contract.program.semester_no)
+        program_dir = self.contract.program.get_main_dir()
         doc_template = config_parser.get('DocTemplates', 'contract') if not empty else config_parser.get('DocTemplates',
                                                                                                          'contract_empty')
         DocumentGenerator.__init__(self,
-                                   template_document=get_template(self.contract.program, doc_template),
+                                   template_document=self.__get_template(doc_template),
                                    output_directory=path.join(program_dir,
                                                               config_parser.get('Directories', 'contract')),
                                    output_name=get_output_name('contract',
@@ -47,3 +45,7 @@ class ContractGenerator(DocumentGenerator):
                                                                self.contract.contract_no,
                                                                self.contract.contract_year))
 
+    def __get_template(self, doc_template):
+        return path.join(config_parser.get('DocTemplates', 'directory'),
+                         self.contract.program.get_part_with_year_and_sem(),
+                         doc_template)

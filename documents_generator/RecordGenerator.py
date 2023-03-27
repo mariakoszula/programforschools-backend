@@ -3,7 +3,6 @@ from os import path
 from documents_generator.DocumentGenerator import DocumentGenerator
 from helpers.common import get_output_name
 from helpers.config_parser import config_parser
-from helpers.file_folder_creator import DirectoryCreator
 from helpers.date_converter import DateConverter
 from models.product import ProductTypeModel
 from models.record import RecordModel
@@ -28,8 +27,8 @@ class RecordGenerator(DocumentGenerator):
 
     def __init__(self, record: RecordModel):
         self.record = record
-        program_dir = DirectoryCreator.get_main_dir(school_year=self.record.contract.program.school_year,
-                                                    semester_no=self.record.contract.program.semester_no)
+        program_dir = self.record.contract.program.get_main_dir()
+
         DocumentGenerator.__init__(self,
                                    template_document=RecordGenerator.get_template(),
                                    output_directory=path.join(program_dir,
@@ -49,8 +48,8 @@ class RecordGenerator(DocumentGenerator):
             'regon': record.contract.school.regon,
             'email': record.contract.school.email,
             'kids_no': record.delivered_kids_no,
-            'product_name': record.product_store_diary.product.name,
-            'record_title': get_record_title_mapping(record.product_store_diary.product.type)
+            'product_name': record.product_store.product.name,
+            'record_title': get_record_title_mapping(record.product_store.product.type)
         }
 
     @staticmethod

@@ -82,7 +82,7 @@ def get_generator(gen, **args):
         app_logger.error(f"Problem occurred during document generation '{e}'")
 
 
-def get_generator_list(generators_init_data: List[tuple]):
+def get_generator_list(generators_init_data: List):
     generators = []
     for (gen, args) in generators_init_data:
         generator = get_generator(gen, **args)
@@ -115,7 +115,7 @@ async def upload_and_update_meta(func, input_doc):
     return documents
 
 
-async def generate_documents_async(generators_init_data: List[Tuple[Type[DocumentGenerator], Dict]], redis_conn=None) \
+async def create_generator_and_run(generators_init_data: List[Tuple[Type[DocumentGenerator], Dict]], redis_conn=None) \
         -> List[FileData]:
     """
     Async function for generating documents based on template docx, upload them to GoogleDrive,
@@ -127,6 +127,10 @@ async def generate_documents_async(generators_init_data: List[Tuple[Type[Documen
     """
     with TimeMeasure("get_generator_list"):
         produced_generators = get_generator_list(generators_init_data)
+    return await generate_documents_async(produced_generators, redis_conn)
+
+
+async def generate_documents_async(produced_generators: List, redis_conn=None):
     with TimeMeasure("run_generate_documents"):
         run_generate_documents(produced_generators)
     generator: DocumentGenerator

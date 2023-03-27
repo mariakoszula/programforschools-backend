@@ -1,11 +1,9 @@
-from helpers.file_folder_creator import DirectoryCreator
 from models.product import ProductTypeModel, ProductModel
-from os import path
 from helpers.config_parser import config_parser
 from documents_generator.DocumentGenerator import DocumentGenerator
 from typing import Dict, List
 from collections import defaultdict
-from helpers.common import get_template
+
 from helpers.date_converter import DateConverter
 from helpers.google_drive import GoogleDriveCommands
 from models.application import ApplicationModel, ApplicationType
@@ -15,9 +13,16 @@ from models.school import SchoolModel
 from models.week import WeekModel
 from decimal import ROUND_HALF_UP, getcontext, Decimal
 from collections import namedtuple
+from os import path
 
 getcontext().rounding = ROUND_HALF_UP
 round_number = Decimal('.01')
+
+
+def _get_template(program, doc_template):
+    return path.join(config_parser.get('DocTemplates', 'directory'),
+                     program.get_part_with_year_and_sem(),
+                     doc_template)
 
 
 def template_postfix(name):
@@ -31,8 +36,7 @@ def get_application_dir_per_school(application: ApplicationModel):
 
 
 def get_application_dir(application: ApplicationModel):
-    program_dir = DirectoryCreator.get_main_dir(school_year=application.program.school_year,
-                                                semester_no=application.program.semester_no)
+    program_dir = application.program.get_main_dir()
     return path.join(program_dir, application.get_dir())
 
 
@@ -105,7 +109,7 @@ class RecordsSummaryGenerator(DocumentGenerator):
 
         _output_name = config_parser.get('DocNames', 'records_summary').format(school.nick.strip())
         DocumentGenerator.__init__(self,
-                                   template_document=get_template(application.program, _template_doc),
+                                   template_document=_get_template(application.program, _template_doc),
                                    output_directory=_output_dir,
                                    output_name=_output_name,
                                    drive_tool=_drive_tool)
@@ -150,9 +154,9 @@ class StatementsBaseData(DataContainer):
         self.default_data = DefaultData(school, date)
         self.output_name = config_parser.get('DocNames', 'records_statements').format(school.nick.strip())
         self.is_last = is_last
-        self.template_doc = get_template(application.program,
-                                         config_parser.get('DocTemplates', 'records_statements').format(
-                                             template_postfix(application.type)))
+        self.template_doc = _get_template(application.program,
+                                          config_parser.get('DocTemplates', 'records_statements').format(
+                                              template_postfix(application.type)))
         self.output_dir = get_application_dir_per_school(application) if _output_dir is None else _output_dir
         self.application = application
         self.start_week = start_week
@@ -330,7 +334,7 @@ class ApplicationGenerator(DocumentGenerator):
 
         _output_name = config_parser.get('DocNames', 'application').format(self.application.get_str_name())
         DocumentGenerator.__init__(self,
-                                   template_document=get_template(application.program, _template_doc),
+                                   template_document=_get_template(application.program, _template_doc),
                                    output_directory=_output_dir,
                                    output_name=_output_name,
                                    drive_tool=_drive_tool)

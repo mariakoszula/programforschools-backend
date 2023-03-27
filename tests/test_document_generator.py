@@ -16,8 +16,7 @@ import pytest
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join("helper_files",
                                   config_parser.get('DocTemplates', 'test').format(""))
-    main_directory_name = DirectoryCreator.get_main_dir(school_year=program_data["school_year"],
-                                                        semester_no=program_data["semester_no"])
+    main_directory_name = "TEST_PROGRAM_2022_2023_SEMESTR_2"
 
     def prepare_data(self):
         self.merge(**self.fields_to_merge)
@@ -129,14 +128,14 @@ redis_external = factories.redisdb('redis_nooproc')
 
 @pytest.mark.asyncio
 async def test_successful_generate_documents_async(initial_app_setup, remove_created_resources, redis_external):
-    from tasks.generate_documents_task import generate_documents_async
+    from tasks.generate_documents_task import create_generator_and_run
     loop_size = 2
     test_documents = prepare_generate_documents_data(loop_size)
-    first: List[FileData] = await generate_documents_async(test_documents, redis_conn=redis_external)
+    first: List[FileData] = await create_generator_and_run(test_documents, redis_conn=redis_external)
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
     __validate_successful_generation_test([str(res) for res in first], no_of_items=loop_size)
-    second: List[FileData] = await generate_documents_async(test_documents, redis_conn=redis_external)
+    second: List[FileData] = await create_generator_and_run(test_documents, redis_conn=redis_external)
     for item in test_documents:
         assert DirectoryTreeModel.find_one_by_name(item[1]["directory_name"])
     __validate_successful_generation_test([str(res) for res in second], no_of_items=loop_size)

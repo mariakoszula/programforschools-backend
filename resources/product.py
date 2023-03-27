@@ -54,7 +54,7 @@ class ProductStoreResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(ProductStoreModel, "program_id", validator=ProductStoreQueryPostSchema())
+        return simple_post(ProductStoreModel, "program_id", "name", validator=ProductStoreQueryPostSchema())
 
     @classmethod
     @handle_exception_pretty

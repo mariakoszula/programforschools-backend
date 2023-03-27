@@ -135,8 +135,16 @@ class ProductStoreModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def find(cls, program_id, product_type):
-        product_type_id = ProductTypeModel.find_one_by_name(product_type).id
-        return cls.query.filter_by(program_id=program_id).join(cls.product).filter_by(type_id=product_type_id)
+        product_types = []
+        if product_type == ProductTypeModel.fruit_veg_name():
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.FRUIT_TYPE).id)
+            product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.VEGETABLE_TYPE).id)
+        else:
+            product_types.append(ProductTypeModel.find_one_by_name(product_type).id)
+        results = []
+        for type_id in product_types:
+            results.extend(cls.query.filter_by(program_id=program_id).join(cls.product).filter_by(type_id=type_id).all())
+        return results
 
     def json(self):
         data: {} = super().json()

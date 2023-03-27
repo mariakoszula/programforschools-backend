@@ -19,7 +19,7 @@ def test_create_and_remove_directory_successful():
     dummy_directory = "DUMMY_NAME"
     directory_id = GoogleDriveCommands.create_directory(GOOGLE_DRIVE_ID, dummy_directory)
     assert directory_id
-    time.sleep(5)
+    time.sleep(15)
     assert dummy_directory in [item.name for item in GoogleDriveCommands.search()]
     GoogleDriveCommands.remove(directory_id)
 

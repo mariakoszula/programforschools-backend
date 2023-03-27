@@ -39,7 +39,7 @@ def test_week(week):
 
 
 def test_product(product_store_milk):
-    store = ProductStoreModel.find(product_store_milk.program_id, ProductTypeModel.DAIRY_TYPE).one()
+    store = ProductStoreModel.find(product_store_milk.program_id, ProductTypeModel.DAIRY_TYPE)[0]
     assert store is not None and store.product.name == "milk"
     store_find_by_name = ProductStoreModel.find_by(product_store_milk.program_id, "milk")
     assert store_find_by_name is not None and store_find_by_name.min_amount == 5

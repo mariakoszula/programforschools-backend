@@ -9,6 +9,7 @@ from helpers.schema_validators import ApplicationSchema, program_schema, Applica
 from models.application import ApplicationModel, ApplicationType
 from models.contract import ContractModel
 from models.week import WeekModel
+from tasks.generate_application_tasks import queue_application
 
 
 class ApplicationRegister(Resource):
@@ -76,10 +77,11 @@ def validate_application_impl(application_id):
     results = []
     for r in ApplicationGenerator.check_record_consistency(application):
         results.append({"school": r.school.nick, "type": r.message.__class__.__name__, "message": str(r.message)})
-    return {"application": application.json(),
+    return {"application": str(application),
             "errors": results}, 200
 
 
 def create_application_impl(application_id):
-    return {'message': f"create application App {application_id}",
-            'application_id': application_id}, 200
+    application = ApplicationModel.find_by_id(application_id)
+    request.json["application"] = application
+    return queue_application(request)

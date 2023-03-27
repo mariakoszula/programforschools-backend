@@ -29,8 +29,7 @@ class RegisterGenerator(DocumentGenerator):
         self.contracts = ContractModel.all_filtered_by_program(self.program.id)
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'register'),
-                                   output_directory=DirectoryCreator.get_main_dir(school_year=self.program.school_year,
-                                                                                  semester_no=self.program.semester_no),
+                                   output_directory=self.program.get_main_dir(),
                                    output_name=get_output_name('register', self.date))
 
     def __prepare_school_data(self):

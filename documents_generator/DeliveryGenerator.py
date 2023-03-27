@@ -104,8 +104,7 @@ class DeliveryGenerator(DocumentGenerator):
 
     @staticmethod
     def get_output_dir(record, delivery_date):
-        program_dir = DirectoryCreator.get_main_dir(school_year=record.contract.program.school_year,
-                                                    semester_no=record.contract.program.semester_no)
+        program_dir = record.contract.program.get_main_dir()
         return path.join(program_dir, config_parser.get('Directories', 'record'), delivery_date)
 
     @staticmethod
