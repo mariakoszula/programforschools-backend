@@ -74,7 +74,7 @@ class DefaultData(DataContainer):
 class ApplicationCommonData:
     @staticmethod
     def add_weeks(data: Dict, application: ApplicationModel):
-        data['weeks'] = WeekModel.prepare_str_from_weeks(application.program.weeks)
+        data['weeks'] = WeekModel.prepare_str_from_weeks(application.weeks)
 
     @staticmethod
     def add_application_no(data: Dict, application: ApplicationModel):
