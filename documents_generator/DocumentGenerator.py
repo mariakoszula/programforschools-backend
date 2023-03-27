@@ -5,7 +5,7 @@ from shutil import copy
 from os import path, makedirs, remove, rename
 from typing import List, Dict
 from helpers.google_drive import GoogleDriveCommands
-from helpers.common import DOCX_MIME_TYPE, PDF_MIME_TYPE, FileData, DOCX_EXT, PDF_EXT
+from helpers.common import PDF_MIME_TYPE, FileData, DOCX_EXT, PDF_EXT, DOC_GOOGLE_MIME_TYPE
 from models.directory_tree import DirectoryTreeModel
 
 
@@ -16,6 +16,7 @@ class DocumentGenerator(ABC):
             app_logger.error("[%s] template document: %s does not exists", __class__.__name__, template_document)
         self.generated_documents: List[FileData] = []
         self.generated_document = None
+        self.mime_type = DOC_GOOGLE_MIME_TYPE
         self.output_directory = output_directory
         self.output_doc_name = output_name
         self.template_document = template_document
@@ -27,6 +28,9 @@ class DocumentGenerator(ABC):
         self._given_keys = set()
 
         super(DocumentGenerator, self).__init__()
+
+    def change_mime_type(self, mime_type):
+        self.mime_type = mime_type
 
     def __get_missing_keys(self):
         return set([key for key in self._fields_to_merge if key not in self._given_keys])
@@ -102,7 +106,7 @@ class DocumentGenerator(ABC):
         self.__document.write(generated_file)
         if not path.exists(generated_file):
             ValueError(f"Document not generated: {generated_file}")
-        self.generated_document = FileData(_name=generated_file, _mime_type=DOCX_MIME_TYPE,
+        self.generated_document = FileData(_name=generated_file, _mime_type=self.mime_type,
                                            _parent_id=self.remote_parent.google_id)
         self.generated_documents.append(self.generated_document)
         app_logger.debug("[%s] Created new output file: %s", __class__.__name__, generated_file, )

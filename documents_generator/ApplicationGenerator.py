@@ -1,3 +1,5 @@
+from app import create_app
+from helpers.common import DOCX_MIME_TYPE
 from models.product import ProductTypeModel, ProductModel
 from helpers.config_parser import config_parser
 from documents_generator.DocumentGenerator import DocumentGenerator
@@ -28,7 +30,7 @@ def _get_template(program, doc_template):
 def template_postfix(name):
     if name == ApplicationType.FULL:
         return f""
-    return f"_{ProductTypeModel.DAIRY_TYPE if name == ApplicationType.DAIRY else ProductTypeModel.fruit_veg_name()}"
+    return f"_{ProductTypeModel.dairy_name(replace=True) if name == ApplicationType.DAIRY else ProductTypeModel.fruit_veg_name()}"
 
 
 def get_application_dir_per_school(application: ApplicationModel):
@@ -113,6 +115,7 @@ class RecordsSummaryGenerator(DocumentGenerator):
                                    output_directory=_output_dir,
                                    output_name=_output_name,
                                    drive_tool=_drive_tool)
+        self.change_mime_type(DOCX_MIME_TYPE)
 
     def __record_date_info(self):
         records = []
@@ -204,6 +207,7 @@ class StatementGenerator(DocumentGenerator):
                                    output_directory=self.bd.output_dir,
                                    output_name=self.bd.output_name,
                                    drive_tool=_drive_tool)
+        self.change_mime_type(DOCX_MIME_TYPE)
 
     def __products_with_zero(self):
         res = dict()
@@ -281,7 +285,7 @@ class ApplicationGenerator(DocumentGenerator):
     def __check_kids_inconsistency(contract, errors, record):
         expected = record.contract.get_kids_no(product_type=record.product_store.product.type,
                                                date=record.date)
-        if record.delivered_kids_no != expected:
+        if record.delivered_kids_no is not None and record.delivered_kids_no != expected:
             errors.append(InconsistencyError(contract.school,
                                              KidsInconsistencyError(record, expected)))
 
@@ -338,6 +342,7 @@ class ApplicationGenerator(DocumentGenerator):
                                    output_directory=_output_dir,
                                    output_name=_output_name,
                                    drive_tool=_drive_tool)
+        self.change_mime_type(DOCX_MIME_TYPE)
 
     def __products_with_zero(self):
         res = dict()
@@ -352,18 +357,20 @@ class ApplicationGenerator(DocumentGenerator):
             return Decimal(self.application.program.fruitVeg_price)
 
     def __fill_product_details(self):
-        for name, amount in self.product_dict.items():
-            if "all" not in name:
-                product = ProductModel.find_by(template_name=name)
-                amount = Decimal(amount)
-                all_name = product.type.template_name()
-                self.__fill_product(all_name, name, amount)
-                self.__fill_product(all_name, name, amount * self.__product_price(product), postfix="wn")
-                self.__fill_product(all_name, name, self.data[f"{name}wn"] * Decimal(product.vat) / 100, postfix="vat")
-                self.__fill_product(all_name, name, self.data[f"{name}wn"] + self.data[f"{name}vat"], postfix="wb")
-        for name, amount in self.data.items():
-            if "wn" in name or "vat" in name or "wb" in name:
-                self.data[name] = f"{amount:.2f}"
+        with create_app().app_context():
+            for name, amount in self.product_dict.items():
+                if "all" not in name:
+                    product = ProductModel.find_by(template_name=name)
+                    amount = Decimal(amount)
+                    all_name = product.type.template_name()
+                    self.__fill_product(all_name, name, amount)
+                    self.__fill_product(all_name, name, amount * self.__product_price(product), postfix="wn")
+                    self.__fill_product(all_name, name, self.data[f"{name}wn"] * Decimal(product.vat) / 100,
+                                        postfix="vat")
+                    self.__fill_product(all_name, name, self.data[f"{name}wn"] + self.data[f"{name}vat"], postfix="wb")
+            for name, amount in self.data.items():
+                if "wn" in name or "vat" in name or "wb" in name:
+                    self.data[name] = f"{amount:.2f}"
 
     def __fill_product(self, all_name, name, amount, postfix=""):
         all_key = f"{all_name}{postfix}"

@@ -1,8 +1,7 @@
 import pytest
 
 from documents_generator.ApplicationGenerator import get_application_dir, get_application_dir_per_school, \
-    RecordsSummaryGenerator, StatementGenerator, application_factory, ApplicationGenerator, \
-    KidsInconsistencyError, WeekInconsistencyError, StateInconsistencyError
+    RecordsSummaryGenerator, StatementGenerator, application_factory, ApplicationGenerator
 from models.application import ApplicationModel, ApplicationType
 from os import path
 

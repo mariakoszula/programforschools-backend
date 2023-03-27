@@ -5,7 +5,8 @@ from typing import List
 
 
 EMPTY_FILED = "................................................................"
-DOCX_MIME_TYPE = 'application/vnd.google-apps.document'
+DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+DOC_GOOGLE_MIME_TYPE = 'application/vnd.google-apps.document'
 PDF_MIME_TYPE = 'application/pdf'
 DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
 GOOGLE_DRIVE_ID = config_parser.get("GoogleDriveConfig", "google_drive_id")
@@ -18,7 +19,7 @@ def get_mime_type(mime_type):
 
 
 class FileData:
-    def __init__(self, _name, _mime_type=get_mime_type(DOCX_MIME_TYPE), _id=None, _parent_id=GOOGLE_DRIVE_ID,
+    def __init__(self, _name, _mime_type=get_mime_type(DOC_GOOGLE_MIME_TYPE), _id=None, _parent_id=GOOGLE_DRIVE_ID,
                  _webViewLink=None):
         self.name = _name
         self.mime_type = _mime_type

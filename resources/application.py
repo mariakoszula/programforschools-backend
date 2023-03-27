@@ -82,6 +82,5 @@ def validate_application_impl(application_id):
 
 
 def create_application_impl(application_id):
-    application = ApplicationModel.find_by_id(application_id)
-    request.json["application"] = application
+    request.json["application_id"] = application_id
     return queue_application(request)

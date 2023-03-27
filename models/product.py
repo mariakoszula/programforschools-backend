@@ -38,8 +38,10 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
         return self.name == ProductTypeModel.FRUIT_TYPE or self.name == ProductTypeModel.VEGETABLE_TYPE
 
     @staticmethod
-    def dairy_name():
-        return ProductTypeModel.DAIRY_TYPE.replace("ł", "l")
+    def dairy_name(replace=False):
+        if replace:
+            return ProductTypeModel.DAIRY_TYPE.replace("ł", "l")
+        return  ProductTypeModel.DAIRY_TYPE
 
     @staticmethod
     def fruit_veg_name():

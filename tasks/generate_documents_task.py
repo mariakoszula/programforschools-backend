@@ -130,7 +130,7 @@ async def create_generator_and_run(generators_init_data: List[Tuple[Type[Documen
     return await generate_documents_async(produced_generators, redis_conn)
 
 
-async def generate_documents_async(produced_generators: List, redis_conn=None):
+async def generate_documents_async(produced_generators: List, redis_conn=None, pdf=True):
     with TimeMeasure("run_generate_documents"):
         run_generate_documents(produced_generators)
     generator: DocumentGenerator
@@ -141,11 +141,12 @@ async def generate_documents_async(produced_generators: List, redis_conn=None):
     with TimeMeasure("upload_and_update_meta"):
         output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, docx_files_to_upload)
         uploaded_documents.extend(output)
-    with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output"):
-        output = await upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output)
-    with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)"):
-        output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)
-        uploaded_documents.extend(output)
+    if pdf:
+        with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output"):
+            output = await upload_and_update_meta(GoogleDriveCommandsAsync.convert_to_pdf_many, output)
+        with TimeMeasure("upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)"):
+            output = await upload_and_update_meta(GoogleDriveCommandsAsync.upload_many, output)
+            uploaded_documents.extend(output)
     with TimeMeasure("remove_old_save_new"):
         remove_old_save_new(uploaded_documents, redis_conn)
     return uploaded_documents
