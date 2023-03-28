@@ -74,7 +74,7 @@ class DefaultData(DataContainer):
 class ApplicationCommonData:
     @staticmethod
     def add_weeks(data: Dict, application: ApplicationModel):
-        data['weeks'] = WeekModel.prepare_str_from_weeks(application.program.weeks)
+        data['weeks'] = WeekModel.prepare_str_from_weeks(application.weeks)
 
     @staticmethod
     def add_application_no(data: Dict, application: ApplicationModel):
@@ -143,7 +143,8 @@ class StatementsBaseData(DataContainer):
             record.delivered_kids_no for record in self.records if record.week == week))
         self.__prepare_per_week(PORTION_TEMPLATE,
                                 lambda week: len([record for record in self.records if record.week == week]))
-        self.data["kids_no"] = self.__max_kids()
+        self.maximum_kids_no = self.__max_kids()
+        self.data["kids_no"] = self.__max_kids(init_value=self.__kids_on_contract())
 
     def __init__(self, application: ApplicationModel, date, records: List[RecordModel], start_week: int,
                  is_last: bool = False, _output_dir=None):
@@ -157,6 +158,7 @@ class StatementsBaseData(DataContainer):
         self.default_data = DefaultData(school, date)
         self.output_name = config_parser.get('DocNames', 'records_statements').format(school.nick.strip())
         self.is_last = is_last
+        self.maximum_kids_no = 0
         self.template_doc = _get_template(application.program,
                                           config_parser.get('DocTemplates', 'records_statements').format(
                                               template_postfix(application.type)))
@@ -165,10 +167,14 @@ class StatementsBaseData(DataContainer):
         self.start_week = start_week
         super().__init__()
 
-    def __max_kids(self):
+    def __kids_on_contract(self):
         max_kids = self.contract.fruitVeg_products if \
             self.application.type == ApplicationType.FRUIT_VEG else self.contract.dairy_products
         assert max_kids > 0 and "Maximum number of kids must be greater than 0"
+        return max_kids
+
+    def __max_kids(self, init_value=0):
+        max_kids = init_value
         for key, val in self.data.items():
             if key.startswith("kids_no"):
                 if val > max_kids:
@@ -302,7 +308,7 @@ class ApplicationGenerator(DocumentGenerator):
         ApplicationCommonData.add_is_last(self.data, self.is_last)
         self.data["app_school_no"] = len(self.application.contracts)
         self.data["weeks_no"] = len(self.application.weeks)
-        self.data["kids_no"] = sum([s.bd.get()["kids_no"] for s in self.statements])
+        self.data["kids_no"] = sum([s.bd.maximum_kids_no for s in self.statements])
         self.__fill_product_details()
         self.__fill_income()
         self.data.update(**self.__products_with_zero())

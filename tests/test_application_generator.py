@@ -47,6 +47,7 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
     add_record("22.12.2023", contract_for_school_no_dairy.id, product_store_kohlrabi)  # 100 kids no
     add_record("16.12.2023", contract_for_school_no_dairy.id, product_store_juice)  # 3 kids no
 
+    AnnexModel(second_contract_for_school, validity_date="01.12.2023", fruitVeg_products=2)
     AnnexModel(second_contract_for_school, validity_date="20.12.2023", fruitVeg_products=11)
     add_record("02.12.2023", second_contract_for_school.id, product_store_kohlrabi)  # 2 kids no
     add_record("17.12.2023", second_contract_for_school.id, product_store_juice)  # 2 kids no
@@ -92,8 +93,14 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
     assert_value(statement.data["kohlrabi"], 100)
     assert_value(statement.data["vegall"], 300)
     assert_value(statement.bd.data["kids_no"], 100)
-
     assert record_summary.data["product_sum"] == (statement.data["fruitall"] + statement.data["vegall"])
+
+    second_statement = application_generator.statements[1]
+    assert_value(second_statement.bd.data["kids_no"], 22)
+    assert_value(second_statement.bd.data["kids_no_1"], 2)
+    assert_value(second_statement.bd.data["kids_no_2"], 11)
+    assert_value(second_statement.bd.data["kids_no_3"], 11)
+    assert_value(second_statement.bd.maximum_kids_no, 11)
 
     validate_document_creation(application_generator, ApplicationGenerator,
                                "Wniosek_o_pomoc_2_1_2022_2023_warzywa-owoce.docx")
@@ -150,7 +157,7 @@ def test_consistency_check(contract_for_school_no_dairy, second_contract_for_sch
     assert str(results[0].message) == f"17.12.2023: apple  3 -> 100"
     annex.delete_from_db()
 
-    add_record("02.12.2023", second_contract_for_school.id, product_store_apple)  # 2 kids no
+    add_record("02.12.2023", second_contract_for_school.id, product_store_apple)  # 22 kids no
     results = ApplicationGenerator.check_record_consistency(application)
     assert results[0].school == second_contract_for_school.school
     assert str(results[0].message) == f"2: 17.12.2023 - 22.12.2023"
@@ -160,7 +167,7 @@ def test_consistency_check(contract_for_school_no_dairy, second_contract_for_sch
 
     results = ApplicationGenerator.check_record_consistency(application)
     assert results[0].school == second_contract_for_school.school
-    assert str(results[0].message) == f"03.12.2023: apple  2 != RecordState.DELIVERED"
+    assert str(results[0].message) == f"03.12.2023: apple  22 != RecordState.DELIVERED"
     application.delete_from_db()
 
 

@@ -110,7 +110,7 @@ def second_contract_for_school(program_setup):
     school.save_to_db()
     contract = ContractModel(school.id, program_setup)
     contract.save_to_db()
-    contract.update_db(dairy_products=1, fruitVeg_products=2)
+    contract.update_db(dairy_products=1, fruitVeg_products=22)
     yield contract
     clear_tables_schools()
 
