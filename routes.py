@@ -95,7 +95,7 @@ def create_routes(app):
     def validate_application(application_id):
         return validate_application_impl(application_id)
 
-    @app.route("/create_application/<int:application_id>")
+    @app.route("/create_application/<int:application_id>", methods=['PUT'])
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def create_application(application_id):
         return create_application_impl(application_id)
