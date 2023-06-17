@@ -34,7 +34,7 @@ application_week = db.Table('application_week',
                             db.Column('week_id', db.Integer, db.ForeignKey('week.id')))
 
 
-class ApplicationModel(db.Model, BaseDatabaseQuery):
+class   ApplicationModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'application'
     __table_args__ = {'extend_existing': True}
 
