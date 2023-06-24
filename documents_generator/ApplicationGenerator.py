@@ -401,7 +401,8 @@ def application_factory(application: ApplicationModel, date, start_week, is_last
             records = RecordModel.filter_records_by_contract(application, contract)
             records_summary.append(
                 RecordsSummaryGenerator(application, records, date, _output_dir=_output_dir, _drive_tool=_drive_tool))
-            statements.append(statement_factory(application, records, date, start_week, _output_dir=_output_dir,
+            statements.append(statement_factory(application, records, date, start_week, is_last=is_last,
+                                                _output_dir=_output_dir,
                                                 _drive_tool=_drive_tool))
     except ValueError as e:
         raise ValueError(f"Error while creating application for {application.get_str_name()}: {e}")
