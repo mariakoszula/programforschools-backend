@@ -21,6 +21,11 @@ class TaskProgressStatus(Resource):
                                'message': "Task failed to finish"
                            }, 500
                 if create_task.is_finished:
+                    if isinstance(create_task.result, str):
+                        return {
+                               'progress': -1,
+                               'message': create_task.result
+                           }, 200
                     return {
                                'progress': progress,
                                'documents': [str(res) for res in create_task.result]
