@@ -12,20 +12,12 @@
 - PostgreSQL database (DATABASE_URL)
 - Redis server (REDIS_URL)
 
-## REST API (preparing documentation in progress)
-### GET
-| Request   |      URL      |  JSON return value |
-|-----------|:-------------:|:-------------------|
-### POST
-| Request   |      URL      |  JSON return value |
-|-----------|:-------------:|:-------------------|
-### PUT
-| Request   |      URL      |  JSON return value |
-|-----------|:-------------:|:-------------------|
-### DELETE
-| Request   |      URL      |  JSON return value |
-|-----------|:-------------:|:-------------------|
-
-### Postman collection in JSON
+## REST API 
+### Postman collection
 ```shell
+https://grey-sunset-995258.postman.co/workspace/RykoSystem~ee82e97e-50d7-45c3-86eb-49d5962fafdd/collection/22112983-8cc34c88-dc14-4789-bc2f-fd1638332f8b
 ```
+
+### Running test locally with docker ###
+* Change test/config.ini: Database.host=test_db, * Redis.url=redis://redis:6379/0
+* pytest.ini redis_host=redis

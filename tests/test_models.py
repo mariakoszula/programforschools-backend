@@ -4,7 +4,7 @@ from models.application import ApplicationModel, ApplicationType
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
 from models.contract import ContractModel, AnnexModel
 from models.week import WeekModel
-from models.product import ProductModel, WeightTypeModel, ProductTypeModel, ProductStoreModel
+from models.product import ProductTypeModel, ProductStoreModel
 from models.record import RecordModel, RecordState
 from tests.common import add_record
 from tests.common_data import school_data, annex_data, week_data
@@ -81,7 +81,7 @@ def test_week_overlap_throws_value_error(week):
     week_two.delete_from_db()
 
 
-def test_invoice_model(product_store_milk):
+def test_invoice_model(product_store_milk, product_store_kohlrabi):
     supplier = SupplierModel("Long name for supplier", "supplier nickname")
     assert str(supplier) == "Long name for supplier <supplier nickname>"
     assert supplier.id is not None
@@ -94,6 +94,9 @@ def test_invoice_model(product_store_milk):
     product = InvoiceProductModel(invoice.id, product_store_milk.id, 500)
     assert str(product) == "InvoiceNo RL 123z: milk 500.0L"
     assert product.id is not None
+    product_second = InvoiceProductModel(invoice.id, product_store_kohlrabi.id, 20.5)
+    assert str(product_second) == "InvoiceNo RL 123z: kohlrabi 20.5KG"
+    assert product_second.id is not None
 
 
 def test_application_setup(setup_record_test_init, second_week):

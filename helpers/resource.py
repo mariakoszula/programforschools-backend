@@ -26,7 +26,8 @@ def simple_post(model, *args, validator=name_query):
         filter_data[arg] = request.json[arg]
     found = model.find_by(**filter_data)
     if found:
-        return {'message': f"{model.__tablename__} '{found}' already exists"}, 400
+        return {'message': f"'{found}' już istnieje. Edytuj lub wybierz inną wartość.",
+                'database_table': f"{model.__tablename__}"}, 400
     return successful_response(model)
 
 
@@ -50,7 +51,7 @@ def simple_get_all_by_program(model, *, _order=None):
 def simple_get(model, index):
     found = model.find_by_id(index)
     if not found:
-        return {'message': f'{model.__tablename__} {index} does not exists'}, 404
+        return {'message': f'{model.__tablename__} {index} podany indeks nie istnieje'}, 404
     return successful_response(model, found, code=200)
 
 
@@ -72,7 +73,7 @@ def simple_put(model, index, validator=name_query):
 def simple_delete(model, index):
     found = model.find_by_id(index)
     if not found:
-        return {'message': f'{model.__tablename__} {index} does not exists'}, 404
+        return {'message': f'{model.__tablename__} {index} podany indeks nie istnieje'}, 404
     found.delete_from_db()
     return {'message': f'{model.__tablename__} {index} removed'}, 200
 

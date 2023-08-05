@@ -12,7 +12,7 @@ from resources.invoice import SupplierResource, SupplierRegister, SuppliersResou
 from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource, ProductBoxResource, ProductStoreUpdateResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
-from resources.record import RecordsAllResource, RecordResource, RecordDeliveryCreate
+from resources.record import RecordsAllResource, RecordResource, RecordDeliveryCreate, SummarizeDeliveryCreate
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
 from resources.task_progress import TaskProgressStatus
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
@@ -70,6 +70,7 @@ def create_routes(app):
     api.add_resource(RecordsAllResource, '/records')
     api.add_resource(RecordResource, '/record/<int:record_id>')
     api.add_resource(RecordDeliveryCreate, '/create_delivery')
+    api.add_resource(SummarizeDeliveryCreate, '/summarize_week_delivery/<int:week_id>')
 
     api.add_resource(SupplierResource, '/supplier/<int:supplier_id>')
     api.add_resource(SupplierRegister, '/supplier')
