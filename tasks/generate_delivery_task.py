@@ -1,6 +1,6 @@
 from operator import attrgetter
 from models.record import RecordModel, RecordState
-from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator
+from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator, SummaryGenerator
 from app import create_app
 from models.product import ProductBoxModel
 from tasks.generate_documents_task import queue_task, setup_progress_meta, create_generator_and_run, \
@@ -43,3 +43,16 @@ def queue_delivery(request):
                       request=request,
                       callback_failure=on_failure_delivery_update)
 
+
+async def create_week_summary_async(**request):
+    with create_app().app_context():
+        records = RecordModel.all_filtered_by_week(request["week_id"]).all()
+        records.sort(key=attrgetter('contract_id', 'date'))
+        input_docs = [(SummaryGenerator, {"records": records})]
+        setup_progress_meta(len(input_docs))
+        return await create_generator_and_run(input_docs)
+
+
+def queue_week_summary(week_id):
+    return queue_task(func=create_week_summary_async,
+                      request={"week_id": week_id})

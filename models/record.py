@@ -59,6 +59,10 @@ class RecordModel(db.Model, BaseDatabaseQuery):
     def all_filtered_by_program(cls, program_id):
         return cls.query.join(cls.product_store).filter_by(program_id=program_id)
 
+    @classmethod
+    def all_filtered_by_week(cls, week_id):
+        return cls.query.filter_by(week_id=week_id).join(cls.product_store)
+
     def json(self):
         data: {} = super().json()
         DateConverter.replace_date_to_converted(data, "date")

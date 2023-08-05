@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 gen/
 programforschools.log
+tests/config.ini
+tests/pytest.ini

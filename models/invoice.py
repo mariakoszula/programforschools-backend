@@ -72,8 +72,12 @@ class InvoiceProductModel(db.Model, BaseDatabaseQuery):
         return cls.query.join(cls.invoice).filter_by(program_id=program_id)
 
     def __str__(self):
-        return f"InvoiceNo {self.invoice.name}: " \
+        return f"Numer faktury {self.invoice.name}: " \
                f"{self.product_store.product.name} {self.amount}{self.product_store.product.weight.name}"
 
     def __repr__(self):
         return f"InvoiceProduct({self.invoice_id}, {self.product_store_id}, {self.amount})"
+
+    @classmethod
+    def find_by(cls, product_store_id, invoice_id):
+        return cls.query.filter_by(product_store_id=product_store_id).filter_by(invoice_id=invoice_id).first()

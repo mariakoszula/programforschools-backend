@@ -84,7 +84,7 @@ class InvoiceProductRegister(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(InvoiceProductModel, validator=InvoiceProductSchema())
+        return simple_post(InvoiceProductModel, "product_store_id", "invoice_id", validator=InvoiceProductSchema())
 
 
 class InvoiceProductResource(Resource):

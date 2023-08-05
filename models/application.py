@@ -80,7 +80,7 @@ class   ApplicationModel(db.Model, BaseDatabaseQuery):
     @staticmethod
     def validate_type(program_id, app_type):
         if app_type not in ApplicationModel.possible_types(program_id):
-            raise ValueError("Cannot mix full and partial applications in one program")
+            raise ValueError("Jeden program musi zawierać wszystkie wnioski całościowe lub częściowe: owoce-nabiał i nabiał")
 
     @staticmethod
     def get_next_no(program_id):

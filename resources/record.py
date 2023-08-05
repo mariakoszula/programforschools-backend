@@ -9,13 +9,14 @@ from models.contract import ContractModel
 from models.product import ProductStoreModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
-from tasks.generate_delivery_task import queue_delivery
+from tasks.generate_delivery_task import queue_delivery, queue_week_summary
 from helpers.logger import app_logger
+from models.week import WeekModel
 
 
 def must_not_be_empty(data):
     if not data:
-        raise ValidationError("Must not be empty")
+        raise ValidationError("Pole nie może być puste")
 
 
 class RecordStateSchema(Schema):
@@ -145,7 +146,7 @@ class RecordResource(Resource):
     def get(cls, record_id):
         record = RecordModel.find_by_id(record_id)
         if not record:
-            return {"message": f"Record with id {record_id} not found"}, 404
+            return {"message": f"Nie istnieje WZtka o zadanym id: {record_id}"}, 404
         return {
                    "record": record.json()
                }, 200
@@ -159,7 +160,7 @@ class RecordResource(Resource):
             return {"message": f"{body_errors}"}, 400
         record: RecordModel = RecordModel.find_by_id(record_id)
         if not record:
-            return {"message": f"Record with id {record_id} not found"}, 404
+            return {"message": f"Nie istnieje WZtka o zadanym id: {record_id}"}, 404
         try:
             record.change_state(**request.json)
         except ValueError as e:
@@ -202,7 +203,22 @@ class RecordDeliveryCreate(Resource):
         records = RecordModel.get_records(records_ids)
         if any(record.state == RecordState.GENERATION_IN_PROGRESS for record in records):
             return {
-                       "message": f"One of the records is already added to other delivery, wait after it is finished",
+                       "message": f"Jedna z WZtek jest już dodana do generującej się dostawy, poczekaj na koniec generowania.",
                        "records": [record.json() for record in records]
                    }, 400
         return queue_delivery(request)
+
+
+class SummarizeDeliveryCreate(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls, week_id):
+        records = RecordModel.all_filtered_by_week(week_id).all()
+        week = WeekModel.find_by_id(week_id)
+        if len(records) == 0:
+            return {
+                "message": f"Nie znaleziono WZtek dla tygodnia: {week}"
+            }, 400
+        return queue_week_summary(week_id)
+
