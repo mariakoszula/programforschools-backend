@@ -14,6 +14,7 @@ class RecordState(enum.Enum):
     GENERATED = 2
     DELIVERED = 3
     GENERATION_IN_PROGRESS = 4
+    DELIVERY_PLANNED = 5
 
 
 class RecordModel(db.Model, BaseDatabaseQuery):
