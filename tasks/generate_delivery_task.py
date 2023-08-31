@@ -2,7 +2,6 @@ from operator import attrgetter
 from models.record import RecordModel, RecordState
 from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator, SummaryGenerator
 from app import create_app
-from models.product import ProductBoxModel
 from tasks.generate_documents_task import queue_task, setup_progress_meta, create_generator_and_run, \
     measure_time_callback
 
@@ -11,23 +10,28 @@ async def create_delivery_async(**request):
     with create_app().app_context():
         records = RecordModel.get_records(request["records"])
         records.sort(key=attrgetter('contract_id', 'date'))
-        boxes = [ProductBoxModel.find_by_id(_id) for _id in request.get("boxes", [])]
         delivery_date = request["date"]
         for record in records:
             record.change_state(RecordState.GENERATION_IN_PROGRESS, date=delivery_date)
+        driver = request.get("driver", None)
         delivery_args = {'records': records, 'date': delivery_date,
-                         'driver': request["driver"],
-                         'boxes': boxes,
+                         'driver': driver,
                          'comments': request.get("comments", "")}
-        input_docs = [(DeliveryGenerator, delivery_args), (DeliveryRecordsGenerator, delivery_args)]
+        input_docs = [(DeliveryGenerator, delivery_args)]
+        if driver is not None:
+            input_docs.append((DeliveryRecordsGenerator, delivery_args))
         setup_progress_meta(len(input_docs))
         return await create_generator_and_run(input_docs)
 
 
 def on_success_delivery_update(job, connection, result, *args, **kwargs):
     with create_app().app_context():
+        state: RecordState = RecordState.GENERATED
+        if not job.kwargs.get('driver', None):
+            state = RecordState.DELIVERY_PLANNED
         for record in RecordModel.get_records(job.kwargs['records']):
-            record.change_state(RecordState.GENERATED)
+
+            record.change_state(state)
         measure_time_callback(job, connection, result, *args, **kwargs)
 
 
