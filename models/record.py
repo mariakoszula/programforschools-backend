@@ -14,6 +14,7 @@ class RecordState(enum.Enum):
     GENERATED = 2
     DELIVERED = 3
     GENERATION_IN_PROGRESS = 4
+    DELIVERY_PLANNED = 5
 
 
 class RecordModel(db.Model, BaseDatabaseQuery):
@@ -85,9 +86,6 @@ class RecordModel(db.Model, BaseDatabaseQuery):
             self.delivered_kids_no = None
             if "product_store_id" in kwargs:
                 _store_id = kwargs["product_store_id"]
-                product_store: ProductStoreModel = ProductStoreModel.find_by_id(_store_id)
-                if product_store.product.type_id != self.product_type_id:
-                    raise ValueError("Product type mismatch")
                 self.product_store_id = _store_id
 
         self.state = state

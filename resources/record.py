@@ -34,7 +34,7 @@ class RecordsAllSchema(DateQuerySchema):
 
 
 class CreateRecordSchema(DateQuerySchema):
-    driver = fields.String(required=True)
+    driver = fields.String(required=False)
 
 
 class CreateRecordBodySchema(Schema):
