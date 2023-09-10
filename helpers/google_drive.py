@@ -97,7 +97,7 @@ class GoogleDriveCommands(DriveCommands):
             DirectoryCreator.create_remote_tree(output_directory)
             return DirectoryTreeModel.get_google_parent_directory(file_path)
         except Exception as e:
-            app_logger.error(f"During creation of directory tree{e}")
+            app_logger.error(f"During creation of directory tree: {e}")
             raise DirectoryCreatorError()
 
     @staticmethod
