@@ -37,11 +37,17 @@ class ProductTypeModel(db.Model, BaseDatabaseQuery):
     def is_fruit_veg(self):
         return self.name == ProductTypeModel.FRUIT_TYPE or self.name == ProductTypeModel.VEGETABLE_TYPE
 
+    def get_complementary_type(self):
+        if self.name == ProductTypeModel.FRUIT_TYPE:
+            return ProductTypeModel.VEGETABLE_TYPE
+        if self.name == ProductTypeModel.VEGETABLE_TYPE:
+            return ProductTypeModel.FRUIT_TYPE
+
     @staticmethod
     def dairy_name(replace=False):
         if replace:
             return ProductTypeModel.DAIRY_TYPE.replace("ł", "l")
-        return  ProductTypeModel.DAIRY_TYPE
+        return ProductTypeModel.DAIRY_TYPE
 
     @staticmethod
     def fruit_veg_name():
