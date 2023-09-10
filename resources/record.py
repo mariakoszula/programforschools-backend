@@ -6,7 +6,7 @@ from marshmallow import fields, Schema, ValidationError, validate
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
 from helpers.schema_validators import program_schema, DateQuerySchema
 from models.contract import ContractModel
-from models.product import ProductStoreModel
+from models.product import ProductStoreModel, ProductTypeModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
 from tasks.generate_delivery_task import queue_delivery, queue_week_summary
@@ -84,7 +84,11 @@ def try_to_insert_record(program_id, date, record_response) -> RecordResponse:
     product_store: ProductStoreModel = ProductStoreModel.find_by(program_id, record_response.product)
     if product_store:
         contract = ContractModel.find(program_id, SchoolModel.find_one_by_nick(record_response.nick).id)
-        if RecordModel.find(date, product=product_store.product, contract_id=contract.id):
+        check_other_type = product_store.product.type.get_complementary_type() if product_store.product.type.is_fruit_veg() else False
+        if RecordModel.find(date, product_type=product_store.product.type, contract_id=contract.id):
+            record_response.result = RecordAdditionResult.RECORD_OF_THIS_TYPE_EXISTS
+        elif check_other_type and RecordModel.find(date, product_type=ProductTypeModel.find_by(name=check_other_type),
+                                                   contract_id=contract.id):
             record_response.result = RecordAdditionResult.RECORD_OF_THIS_TYPE_EXISTS
         elif not is_contract_valid(product_store, contract):
             record_response.result = RecordAdditionResult.NO_CONTRACT_FOR_PRODUCT_TYPE

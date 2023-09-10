@@ -52,8 +52,8 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         return f"Date: {self.date} {self.product_store.product.name} {self.contract.school.nick}"
 
     @classmethod
-    def find(cls, date, product: ProductModel, contract_id):
-        return cls.query.filter_by(date=DateConverter.convert_to_date(date), product_type_id=product.type.id,
+    def find(cls, date, product_type: ProductTypeModel, contract_id):
+        return cls.query.filter_by(date=DateConverter.convert_to_date(date), product_type_id=product_type.id,
                                    contract_id=contract_id).first()
 
     @classmethod
