@@ -29,7 +29,7 @@ class ContractGenerator(DocumentGenerator):
             regon_additional=self.contract.school.representative_regon if self.contract.school.representative_regon else "-",
             giving_weeks=WeekModel.prepare_str_from_weeks(self.contract.program.weeks))
 
-    def __init__(self, contract: ContractModel, date, omit_representative=False, empty=False):
+    def __init__(self, contract: ContractModel, date, omit_representative=True, empty=False):
         self.contract = contract
         self.omit_representative = omit_representative
         self.date = date
