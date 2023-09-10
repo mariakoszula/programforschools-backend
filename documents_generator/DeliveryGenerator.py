@@ -9,6 +9,7 @@ from helpers.date_converter import DateConverter
 from models.product import  ProductStoreModel
 from models.record import RecordModel
 from models.week import WeekModel
+from helpers.logger import app_logger
 
 
 class SummaryRecords:
@@ -24,7 +25,13 @@ class SummaryRecords:
 
     @staticmethod
     def __sum_products(records):
-        return sum([r.delivered_kids_no for r in records])
+        _sum = 0
+        for r in records:
+            if not r.delivered_kids_no:
+                app_logger.error(f"Record does not have delivered_kids_no: {r}")
+                continue
+            _sum += r.delivered_kids_no
+        return _sum
 
     @staticmethod
     def dict_from_list(data, get_key_fun):
