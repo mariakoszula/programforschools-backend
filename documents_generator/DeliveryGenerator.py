@@ -6,7 +6,7 @@ from documents_generator.RecordGenerator import RecordGenerator
 from helpers.common import get_output_name
 from helpers.config_parser import config_parser
 from helpers.date_converter import DateConverter
-from models.product import  ProductStoreModel
+from models.product import ProductStoreModel
 from models.record import RecordModel
 from models.week import WeekModel
 from helpers.logger import app_logger
@@ -26,11 +26,13 @@ class SummaryRecords:
     @staticmethod
     def __sum_products(records):
         _sum = 0
-        for r in records:
-            if not r.delivered_kids_no:
-                app_logger.error(f"Record does not have delivered_kids_no: {r}")
-                continue
-            _sum += r.delivered_kids_no
+        for record in records:
+            kids_no = record.delivered_kids_no
+            if not kids_no:
+                # If kids no not setup (e.g. for SummaryGenerator then take kids no, but don't update it in database)
+                kids_no = record.contract.get_kids_no(product_type=record.product_store.product.type,
+                                                      date=record.date)
+            _sum += kids_no
         return _sum
 
     @staticmethod
@@ -92,12 +94,15 @@ class DeliveryGenerator(SummaryRecords, DocumentGenerator):
         }
 
     def _schools_delivery_info(self):
-        for nick, records in SummaryRecords.dict_from_list(self.records, lambda record: record.contract.school.nick).items():
+        for nick, records in SummaryRecords.dict_from_list(self.records,
+                                                           lambda record: record.contract.school.nick).items():
             self.schools_delivery_rows.append(self._prepare_school_delivery(nick, records))
 
     @staticmethod
     def get_delivery_output_name(tmpl_name, delivery_date, driver):
-        return get_output_name(tmpl_name, delivery_date, f"Kierowca_{driver}" if driver else DeliveryGenerator.DAY_NAMES[DateConverter.get_day(delivery_date)])
+        return get_output_name(tmpl_name, delivery_date,
+                               f"Kierowca_{driver}" if driver else DeliveryGenerator.DAY_NAMES[
+                                   DateConverter.get_day(delivery_date)])
 
     def prepare_data(self):
         super().prepare_data()
@@ -121,7 +126,9 @@ class DeliveryGenerator(SummaryRecords, DocumentGenerator):
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'delivery'),
                                    output_directory=get_output_dir(self.records[0], self.delivery_date),
-                                   output_name=DeliveryGenerator.get_delivery_output_name('delivery', self.delivery_date, self.driver))
+                                   output_name=DeliveryGenerator.get_delivery_output_name('delivery',
+                                                                                          self.delivery_date,
+                                                                                          self.driver))
 
 
 class DeliveryRecordsGenerator(DocumentGenerator):
