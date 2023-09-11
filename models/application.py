@@ -19,7 +19,7 @@ class ApplicationType(enum.Enum):
     @staticmethod
     def convert_to_str(name):
         if ApplicationType.FULL == name:
-            return f"{ProductTypeModel.DAIRY_TYPE} i {ProductTypeModel.fruit_veg_name()}"
+            return f"{ProductTypeModel.dairy_name()} i {ProductTypeModel.fruit_veg_name()}"
         elif ApplicationType.DAIRY == name:
             return ProductTypeModel.dairy_name()
         elif ApplicationType.FRUIT_VEG == name:
@@ -27,14 +27,16 @@ class ApplicationType(enum.Enum):
 
 
 application_contract = db.Table('application_contract',
-                                db.Column('application_id', db.Integer, db.ForeignKey('application.id', ondelete='CASCADE')),
+                                db.Column('application_id', db.Integer,
+                                          db.ForeignKey('application.id', ondelete='CASCADE')),
                                 db.Column('contract_id', db.Integer, db.ForeignKey('contract.id')))
 application_week = db.Table('application_week',
-                            db.Column('application_id', db.Integer, db.ForeignKey('application.id', ondelete='CASCADE')),
+                            db.Column('application_id', db.Integer,
+                                      db.ForeignKey('application.id', ondelete='CASCADE')),
                             db.Column('week_id', db.Integer, db.ForeignKey('week.id')))
 
 
-class   ApplicationModel(db.Model, BaseDatabaseQuery):
+class ApplicationModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'application'
     __table_args__ = {'extend_existing': True}
 
@@ -80,7 +82,8 @@ class   ApplicationModel(db.Model, BaseDatabaseQuery):
     @staticmethod
     def validate_type(program_id, app_type):
         if app_type not in ApplicationModel.possible_types(program_id):
-            raise ValueError("Jeden program musi zawierać wszystkie wnioski całościowe lub częściowe: owoce-nabiał i nabiał")
+            raise ValueError(
+                "Jeden program musi zawierać wszystkie wnioski całościowe lub częściowe: owoce-nabiał i nabiał")
 
     @staticmethod
     def get_next_no(program_id):
