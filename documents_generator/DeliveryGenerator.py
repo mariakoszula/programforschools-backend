@@ -9,7 +9,6 @@ from helpers.date_converter import DateConverter
 from models.product import ProductStoreModel
 from models.record import RecordModel
 from models.week import WeekModel
-from helpers.logger import app_logger
 
 
 class SummaryRecords:
@@ -25,15 +24,8 @@ class SummaryRecords:
 
     @staticmethod
     def __sum_products(records):
-        _sum = 0
-        for record in records:
-            kids_no = record.delivered_kids_no
-            if not kids_no:
-                # If kids no not setup (e.g. for SummaryGenerator then take kids no, but don't update it in database)
-                kids_no = record.contract.get_kids_no(product_type=record.product_store.product.type,
-                                                      date=record.date)
-            _sum += kids_no
-        return _sum
+        return sum(record.contract.get_kids_no(product_type=record.product_store.product.type,
+                                               date=record.date) for record in records)
 
     @staticmethod
     def dict_from_list(data, get_key_fun):

@@ -17,6 +17,8 @@ from decimal import ROUND_HALF_UP, getcontext, Decimal
 from collections import namedtuple
 from os import path
 
+FRUIT_VEG_PREFIX = "fv_"
+
 getcontext().rounding = ROUND_HALF_UP
 round_number = Decimal('.01')
 
@@ -90,7 +92,15 @@ class RecordsSummaryGenerator(DocumentGenerator):
     def prepare_data(self):
         self.data.update(self.default_data.get())
         ApplicationCommonData.add_weeks(self.data, self.application)
-        self.merge_rows('record_date', self.__record_date_info())
+        if self.application.type == ApplicationType.FULL:
+            fruit_veg_records = filter(lambda r: r.product_store.product.type.is_fruit_veg(), self.records)
+            self.merge_rows(f'{FRUIT_VEG_PREFIX}record_date',
+                            RecordsSummaryGenerator.__record_date_info(in_records=fruit_veg_records,
+                                                                       prefix=FRUIT_VEG_PREFIX))
+            dairy_records = filter(lambda r: r.product_store.product.type.is_dairy(), self.records)
+            self.merge_rows(f'record_date', self.__record_date_info(in_records=dairy_records))
+        else:
+            self.merge_rows(f'record_date', RecordsSummaryGenerator.__record_date_info(self.records))
         self.merge(**self.data)
 
     def __init__(self, application: ApplicationModel, records: List[RecordModel], date, _output_dir=None,
@@ -117,13 +127,14 @@ class RecordsSummaryGenerator(DocumentGenerator):
                                    drive_tool=_drive_tool)
         self.change_mime_type(DOCX_MIME_TYPE)
 
-    def __record_date_info(self):
+    @staticmethod
+    def __record_date_info(in_records, prefix=""):
         records = []
-        for record in self.records:
+        for record in in_records:
             records.append({
-                "record_date": DateConverter.convert_date_to_string(record.date),
-                "kids": record.delivered_kids_no,
-                "product": record.product_store.product.name,
+                f"{prefix}record_date": DateConverter.convert_date_to_string(record.date),
+                f"{prefix}kids": record.delivered_kids_no,
+                f"{prefix}product": record.product_store.product.name,
             })
         return records
 
@@ -138,13 +149,13 @@ class StatementsBaseData(DataContainer):
         self.data.update(self.default_data.get())
         ApplicationCommonData.add_application_no(self.data, self.application)
         ApplicationCommonData.add_is_last(self.data, self.is_last)
-        self.__prepare_per_week(WEEK_TEMPLATE, lambda week: week.str_for_docs())
-        self.__prepare_per_week(KIDS_NO_TEMPLATE, lambda week: max(
+        self.__prepare_per_week(f"{self.prefix}{WEEK_TEMPLATE}", lambda week: week.str_for_docs())
+        self.__prepare_per_week(f"{self.prefix}{KIDS_NO_TEMPLATE}", lambda week: max(
             record.delivered_kids_no for record in self.records if record.week == week))
-        self.__prepare_per_week(PORTION_TEMPLATE,
+        self.__prepare_per_week(f"{self.prefix}{PORTION_TEMPLATE}",
                                 lambda week: len([record for record in self.records if record.week == week]))
         self.maximum_kids_no = self.__max_kids()
-        self.data["kids_no"] = self.__max_kids(init_value=self.__kids_on_contract())
+        self.data[f"{self.prefix}kids_no"] = self.__max_kids(init_value=self.__kids_on_contract())
 
     def __init__(self, application: ApplicationModel, date, records: List[RecordModel], start_week: int,
                  is_last: bool = False, _output_dir=None):
@@ -165,11 +176,17 @@ class StatementsBaseData(DataContainer):
         self.output_dir = get_application_dir_per_school(application) if _output_dir is None else _output_dir
         self.application = application
         self.start_week = start_week
+        self.prefix = ""
+        if self.application.type == ApplicationType.FULL and self.records[0].product_store.product.type.is_fruit_veg():
+            self.prefix = FRUIT_VEG_PREFIX
         super().__init__()
 
     def __kids_on_contract(self):
         max_kids = self.contract.fruitVeg_products if \
-            self.application.type == ApplicationType.FRUIT_VEG else self.contract.dairy_products
+            self.application.type == ApplicationType.DAIRY else self.contract.dairy_products
+        if self.application.type == ApplicationType.FULL and self.records[0].product_store.product.type.is_fruit_veg():
+            max_kids = self.contract.fruitVeg_products
+
         assert max_kids > 0 and "Maximum number of kids must be greater than 0"
         return max_kids
 
@@ -203,11 +220,12 @@ class StatementGenerator(DocumentGenerator):
         self.data.update(**self.__products_with_zero())
         self.merge(**self.data)
 
-    def __init__(self, baseData: StatementsBaseData, _drive_tool=GoogleDriveCommands):
+    def __init__(self, baseData: [StatementsBaseData], _drive_tool=GoogleDriveCommands):
         self.bd = baseData
         self.product_dict = defaultdict(int)
         self.data = dict()
-        fill_product_data(self.bd.records, self.product_dict)
+        for bd in self.bd:
+            fill_product_data(bd.records, self.product_dict)
         DocumentGenerator.__init__(self,
                                    template_document=self.bd.template_doc,
                                    output_directory=self.bd.output_dir,
@@ -227,8 +245,15 @@ class StatementGenerator(DocumentGenerator):
 
 def statement_factory(application: ApplicationModel, records: List[RecordModel], date, start_week: int,
                       is_last: bool = False, _output_dir=None, _drive_tool=GoogleDriveCommands):
-    sbd = StatementsBaseData(application, date, records, start_week, is_last, _output_dir)
-    return StatementGenerator(sbd, _drive_tool=_drive_tool)
+    statement_data = []
+    if application.type == ApplicationType.FULL:
+        fruit_veg_records = list(filter(lambda r: r.product_store.product.type.is_fruit_veg(), records))
+        dairy_records = list(filter(lambda r: r.product_store.product.type.is_dairy(), records))
+        statement_data.append(StatementsBaseData(application, date, fruit_veg_records, start_week, is_last, _output_dir))
+        statement_data.append(StatementsBaseData(application, date, dairy_records, start_week, is_last, _output_dir))
+    else:
+        statement_data.append(StatementsBaseData(application, date, records, start_week, is_last, _output_dir))
+    return StatementGenerator(statement_data, _drive_tool=_drive_tool)
 
 
 InconsistencyError = namedtuple("InconsistencyError", ["school", "message"])
@@ -307,6 +332,7 @@ class ApplicationGenerator(DocumentGenerator):
         ApplicationCommonData.add_weeks(self.data, self.application)
         ApplicationCommonData.add_is_last(self.data, self.is_last)
         self.data["app_school_no"] = len(self.application.contracts)
+        self.data["max_app_school_no"] = self.data["app_school_no"]
         self.data["weeks_no"] = len(self.application.weeks)
         self.data["kids_no"] = sum([s.bd.maximum_kids_no for s in self.statements])
         self.__fill_product_details()
