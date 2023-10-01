@@ -8,12 +8,12 @@ company = {
 }
 
 program = {
-    "semester_no": 2,
-    "school_year": "2022/2023",
+    "semester_no": 1,
+    "school_year": "2023/2024",
     "fruitVeg_price": 1.5,
     "dairy_price": 2.00,
-    "start_date": "2023-01-01",
-    "end_date": "2023-12-31",
+    "start_date": "2023-09-18",
+    "end_date": "2024-01-12",
     "dairy_min_per_week": 2,
     "fruitVeg_min_per_week": 3,
     "dairy_amount": 12,

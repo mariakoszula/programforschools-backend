@@ -14,7 +14,7 @@ import pytest
 class CustomDocumentGenerator(DocumentGenerator):
     template_document = path.join("helper_files",
                                   config_parser.get('DocTemplates', 'test').format(""))
-    main_directory_name = "TEST_PROGRAM_2022_2023_SEMESTR_2"
+    main_directory_name = "TEST_PROGRAM_2023_2024_SEMESTR_1"
 
     def prepare_data(self):
         self.merge(**self.fields_to_merge)
