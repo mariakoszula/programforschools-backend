@@ -51,7 +51,7 @@ class DocumentGenerator(ABC):
     def __prepare_data(self, fields):
         self._given_keys.update(fields.keys())
         for key, value in fields.items():
-            fields[key] = str(value) if value else ""
+            fields[key] = str(value) if value is not None else ""
 
     def merge(self, **fields):
         self.__prepare_data(fields)

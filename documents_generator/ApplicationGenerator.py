@@ -93,13 +93,18 @@ class RecordsSummaryGenerator(DocumentGenerator):
         self.data.update(self.default_data.get())
         ApplicationCommonData.add_weeks(self.data, self.application)
         if self.application.type == ApplicationType.FULL:
-            fruit_veg_records = filter(lambda r: r.product_store.product.type.is_fruit_veg(), self.records)
+            fruit_veg_records = list(filter(lambda r: r.product_store.product.type.is_fruit_veg(), self.records))
+            self.data[f'{FRUIT_VEG_PREFIX}product_sum'] = sum([record.delivered_kids_no for record in fruit_veg_records])
             self.merge_rows(f'{FRUIT_VEG_PREFIX}record_date',
                             RecordsSummaryGenerator.__record_date_info(in_records=fruit_veg_records,
                                                                        prefix=FRUIT_VEG_PREFIX))
-            dairy_records = filter(lambda r: r.product_store.product.type.is_dairy(), self.records)
+            dairy_records = list(filter(lambda r: r.product_store.product.type.is_dairy(), self.records))
+            self.data[f'product_sum'] = sum(
+                [record.delivered_kids_no for record in dairy_records])
             self.merge_rows(f'record_date', self.__record_date_info(in_records=dairy_records))
         else:
+            self.data[f'product_sum'] = sum(
+                [record.delivered_kids_no for record in self.records])
             self.merge_rows(f'record_date', RecordsSummaryGenerator.__record_date_info(self.records))
         self.merge(**self.data)
 
@@ -108,11 +113,10 @@ class RecordsSummaryGenerator(DocumentGenerator):
         if not len(records):
             raise ValueError("List with records cannot be empty")
         school: SchoolModel = records[0].contract.school
-        self.records = records
+        self.records = list(records)
         self.application = application
         self.default_data = DefaultData(school, date)
         self.data = dict()
-        self.data['product_sum'] = sum([record.delivered_kids_no for record in self.records])
 
         _template_doc = config_parser.get('DocTemplates', 'records_summary').format(
             template_postfix(application.type))
@@ -129,14 +133,20 @@ class RecordsSummaryGenerator(DocumentGenerator):
 
     @staticmethod
     def __record_date_info(in_records, prefix=""):
-        records = []
+        output = []
         for record in in_records:
-            records.append({
+            output.append({
                 f"{prefix}record_date": DateConverter.convert_date_to_string(record.date),
                 f"{prefix}kids": record.delivered_kids_no,
                 f"{prefix}product": record.product_store.product.name,
             })
-        return records
+        if not output:
+            output.append({
+                f"{prefix}record_date": "-",
+                f"{prefix}kids": "-",
+                f"{prefix}product": "-",
+            })
+        return output
 
 
 WEEK_TEMPLATE = "week"
@@ -176,24 +186,24 @@ class StatementsBaseData(DataContainer):
         self.output_dir = get_application_dir_per_school(application) if _output_dir is None else _output_dir
         self.application = application
         self.start_week = start_week
+        self.type = ApplicationType.DAIRY if self.application.type == ApplicationType.DAIRY \
+                                          or self.application.type == ApplicationType.FULL else ApplicationType.FRUIT_VEG
         self.prefix = ""
         if self.application.type == ApplicationType.FULL and self.records[0].product_store.product.type.is_fruit_veg():
             self.prefix = FRUIT_VEG_PREFIX
+            self.type = ApplicationType.FRUIT_VEG
         super().__init__()
 
     def __kids_on_contract(self):
-        max_kids = self.contract.fruitVeg_products if \
-            self.application.type == ApplicationType.DAIRY else self.contract.dairy_products
-        if self.application.type == ApplicationType.FULL and self.records[0].product_store.product.type.is_fruit_veg():
-            max_kids = self.contract.fruitVeg_products
-
+        max_kids = self.contract.fruitVeg_products if self.records[0].product_store.product.type.is_fruit_veg() \
+                                                   else self.contract.dairy_products
         assert max_kids > 0 and "Maximum number of kids must be greater than 0"
         return max_kids
 
     def __max_kids(self, init_value=0):
         max_kids = init_value
         for key, val in self.data.items():
-            if key.startswith("kids_no"):
+            if key.startswith(f"{self.prefix}kids_no"):
                 if val > max_kids:
                     max_kids = val
         return max_kids
@@ -215,7 +225,8 @@ def fill_product_data(records: List[RecordModel], product_dict: defaultdict):
 
 class StatementGenerator(DocumentGenerator):
     def prepare_data(self):
-        self.data.update(self.bd.get())
+        for bd in self.bd:
+            self.data.update(bd.get())
         self.data.update(**self.product_dict)
         self.data.update(**self.__products_with_zero())
         self.merge(**self.data)
@@ -227,9 +238,9 @@ class StatementGenerator(DocumentGenerator):
         for bd in self.bd:
             fill_product_data(bd.records, self.product_dict)
         DocumentGenerator.__init__(self,
-                                   template_document=self.bd.template_doc,
-                                   output_directory=self.bd.output_dir,
-                                   output_name=self.bd.output_name,
+                                   template_document=self.bd[0].template_doc,
+                                   output_directory=self.bd[0].output_dir,
+                                   output_name=self.bd[0].output_name,
                                    drive_tool=_drive_tool)
         self.change_mime_type(DOCX_MIME_TYPE)
 
@@ -241,20 +252,6 @@ class StatementGenerator(DocumentGenerator):
             else:
                 res[key] = "0"
         return res
-
-
-def statement_factory(application: ApplicationModel, records: List[RecordModel], date, start_week: int,
-                      is_last: bool = False, _output_dir=None, _drive_tool=GoogleDriveCommands):
-    statement_data = []
-    if application.type == ApplicationType.FULL:
-        fruit_veg_records = list(filter(lambda r: r.product_store.product.type.is_fruit_veg(), records))
-        dairy_records = list(filter(lambda r: r.product_store.product.type.is_dairy(), records))
-        statement_data.append(StatementsBaseData(application, date, fruit_veg_records, start_week, is_last, _output_dir))
-        statement_data.append(StatementsBaseData(application, date, dairy_records, start_week, is_last, _output_dir))
-    else:
-        statement_data.append(StatementsBaseData(application, date, records, start_week, is_last, _output_dir))
-    return StatementGenerator(statement_data, _drive_tool=_drive_tool)
-
 
 InconsistencyError = namedtuple("InconsistencyError", ["school", "message"])
 
@@ -304,6 +301,7 @@ class ApplicationGenerator(DocumentGenerator):
         records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATED))
         records.extend(
             RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATION_IN_PROGRESS))
+        records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.DELIVERY_PLANNED))
         return records
 
     @staticmethod
@@ -331,12 +329,30 @@ class ApplicationGenerator(DocumentGenerator):
         ApplicationCommonData.add_application_no(self.data, self.application)
         ApplicationCommonData.add_weeks(self.data, self.application)
         ApplicationCommonData.add_is_last(self.data, self.is_last)
-        self.data["app_school_no"] = len(self.application.contracts)
-        self.data["max_app_school_no"] = self.data["app_school_no"]
         self.data["weeks_no"] = len(self.application.weeks)
-        self.data["kids_no"] = sum([s.bd.maximum_kids_no for s in self.statements])
+        self.data["max_app_school_no"] = len(self.application.contracts)
+        if self.application.type == ApplicationType.FULL:
+            fruit_veg_statement = []
+            dairy_statement = []
+            for s in self.statements:
+                for bs_ in s.bd:
+                    if bs_.type == ApplicationType.DAIRY:
+                        dairy_statement.append(bs_)
+                    if bs_.type == ApplicationType.FRUIT_VEG:
+                        fruit_veg_statement.append(bs_)
+            self.data[f"{FRUIT_VEG_PREFIX}app_school_no"] = len(fruit_veg_statement)
+            self.data[f"{FRUIT_VEG_PREFIX}kids_no"] = sum([s.maximum_kids_no for s in fruit_veg_statement])
+            self.data["app_school_no"] = len(dairy_statement)
+            self.data["kids_no"] = sum([s.maximum_kids_no for s in dairy_statement])
+        else:
+            self.data["app_school_no"] = self.data["max_app_school_no"]
+            self.data["kids_no"] = sum([s.bd[0].maximum_kids_no for s in self.statements])
         self.__fill_product_details()
-        self.__fill_income()
+        if self.application.type == ApplicationType.FULL:
+            self.__fill_income(fields_name=["fruitallwb", "vegallwb"], prefix=FRUIT_VEG_PREFIX)
+            self.__fill_income(fields_name=["dairyallwb"])
+        else:
+            self.__fill_income()
         self.data.update(**self.__products_with_zero())
         self.merge(**self.data)
 
@@ -410,12 +426,31 @@ class ApplicationGenerator(DocumentGenerator):
         self.data[key] = amount
         self.data[all_key] = self.data.get(all_key, 0) + amount
 
-    def __fill_income(self):
+    def __fill_income(self, prefix="", fields_name=None):
+        if fields_name is None:
+            fields_name = ["allwb"]
         income = 0
         for name, amount in self.data.items():
-            if "allwb" in name:
+            if any(fn in name for fn in fields_name):
                 income += Decimal(amount)
-        self.data["income"] = f"{income:.2f}"
+        self.data[f"{prefix}income"] = f"{income:.2f}"
+
+
+def statement_factory(application: ApplicationModel, records: List[RecordModel], date, start_week: int,
+                      is_last: bool = False, _output_dir=None, _drive_tool=GoogleDriveCommands):
+    statement_data = []
+    if application.type == ApplicationType.FULL:
+        fruit_veg_records = list(filter(lambda r: r.product_store.product.type.is_fruit_veg(), records))
+        dairy_records = list(filter(lambda r: r.product_store.product.type.is_dairy(), records))
+        if not fruit_veg_records and not dairy_records:
+            raise ValueError("Both fruit_veg and dairy records cannot be empty")
+        if fruit_veg_records:
+            statement_data.append(StatementsBaseData(application, date, fruit_veg_records, start_week, is_last, _output_dir))
+        if dairy_records:
+            statement_data.append(StatementsBaseData(application, date, dairy_records, start_week, is_last, _output_dir))
+    else:
+        statement_data.append(StatementsBaseData(application, date, records, start_week, is_last, _output_dir))
+    return StatementGenerator(statement_data, _drive_tool=_drive_tool)
 
 
 def application_factory(application: ApplicationModel, date, start_week, is_last: bool = False,

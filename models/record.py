@@ -100,9 +100,9 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         weeks = [week.id for week in application.weeks]
         contracts = [contract.id for contract in application.contracts]
         product_types = []
-        if application.type == ApplicationType.DAIRY:
+        if application.type == ApplicationType.DAIRY or application.type == ApplicationType.FULL:
             product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.DAIRY_TYPE).id)
-        elif application.type == ApplicationType.FRUIT_VEG:
+        if application.type == ApplicationType.FRUIT_VEG or application.type == ApplicationType.FULL:
             product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.FRUIT_TYPE).id)
             product_types.append(ProductTypeModel.find_one_by_name(ProductTypeModel.VEGETABLE_TYPE).id)
         return cls.query.filter(cls.state == state,

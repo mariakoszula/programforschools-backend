@@ -106,7 +106,12 @@ def contract_for_school(program_setup):
 
 @pytest.fixture(scope="module")
 def second_contract_for_school(program_setup):
-    school = SchoolModel(nick="SecondSchool")
+    school = SchoolModel(nick="SecondSchool",
+                         city="CitySecond",
+                         name="SecondSchoolName",
+                         nip="098746623",
+                         regon="74983579023",
+                         address="street 2")
     school.save_to_db()
     contract = ContractModel(school.id, program_setup)
     contract.save_to_db()
@@ -129,6 +134,23 @@ def contract_for_school_no_dairy(program_setup):
     contract.update_db(dairy_products=0, fruitVeg_products=3)
     yield contract
     clear_tables_schools()
+
+
+@pytest.fixture(scope="module")
+def contract_for_school_no_fruit(program_setup):
+    school = SchoolModel(nick="NoFruitInSchool",
+                         city="NoFruitCity",
+                         name="NoFruitInSchoolName",
+                         nip="xxxxxxxxx",
+                         regon="yyyyyyyyy",
+                         address="ssssssssss")
+    school.save_to_db()
+    contract = ContractModel(school.id, program_setup)
+    contract.save_to_db()
+    contract.update_db(dairy_products=43, fruitVeg_products=0)
+    yield contract
+    clear_tables_schools()
+
 
 
 @pytest.fixture(scope="module")
@@ -210,7 +232,7 @@ def product_store_milk(program_setup, weight_type_liter, dairy):
 
 
 @pytest.fixture(scope="module")
-def product_store_yoghurt(program_setup, weight_type_liter, dairy):
+def product_store_yoghurt(program_setup, weight_type_kg, dairy):
     product = ProductModel("yoghurt", ProductTypeModel.DAIRY_TYPE, "KG", vat=2)
     product.update_db(template_name="yoghurt")
     yield ProductStoreModel(program_setup.id, "yoghurt", 2, 0.15)
