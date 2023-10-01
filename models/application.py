@@ -17,10 +17,14 @@ class ApplicationType(enum.Enum):
     FRUIT_VEG = 2
 
     @staticmethod
-    def convert_to_str(name):
+    def convert_to_str(name, file_name=True):
         if ApplicationType.FULL == name:
+            if file_name:
+                return f"{ProductTypeModel.dairy_name(replace=True)}_i_{ProductTypeModel.fruit_veg_name()}"
             return f"{ProductTypeModel.dairy_name()} i {ProductTypeModel.fruit_veg_name()}"
         elif ApplicationType.DAIRY == name:
+            if file_name:
+                return ProductTypeModel.dairy_name(replace=True)
             return ProductTypeModel.dairy_name()
         elif ApplicationType.FRUIT_VEG == name:
             return ProductTypeModel.fruit_veg_name()
@@ -91,7 +95,7 @@ class ApplicationModel(db.Model, BaseDatabaseQuery):
 
     def json(self):
         data: {} = super().json()
-        data["type"] = ApplicationType.convert_to_str(self.type)
+        data["type"] = ApplicationType.convert_to_str(self.type, file_name=False)
         data["contracts"] = [contract.json() for contract in self.contracts]
         data["weeks"] = [week.json() for week in self.weeks]
         return data

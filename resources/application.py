@@ -36,7 +36,7 @@ class ApplicationTypeResource(Resource):
         if errors:
             return {f'app_type': [],
                     "message": f"{errors}"}, 400
-        return {'app_type': [ApplicationType.convert_to_str(a) for a in
+        return {'app_type': [ApplicationType.convert_to_str(a, file_name=False) for a in
                              ApplicationModel.possible_types(request.args["program_id"])]}, 200
 
 
