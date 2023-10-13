@@ -8,7 +8,8 @@ from resources.company import CompanyResource, CompaniesResource, CompanyRegiste
 from resources.contracts import ContractsCreateResource, ContractResource, ContractsAllResource, \
     AnnexResource
 from resources.invoice import SupplierResource, SupplierRegister, SuppliersResource, InvoiceResource, InvoiceRegister, \
-    InvoiceProductsResource, InvoiceProductResource, InvoiceProductRegister, InvoicesResource
+    InvoiceProductsResource, InvoiceProductResource, InvoiceProductRegister, InvoicesResource, InvoiceDisposalResource, \
+    InvoiceDisposalsResource, InvoiceDisposalCreateResource, InvoiceDisposalRegister
 from resources.product import WeightTypeResource, ProductTypeResource, \
     ProductResource, ProductStoreResource, ProductBoxResource, ProductStoreUpdateResource
 from resources.program import ProgramResource, ProgramRegister, ProgramsResource
@@ -83,6 +84,11 @@ def create_routes(app):
     api.add_resource(InvoiceProductResource, '/invoice_product/<int:invoice_product_id>')
     api.add_resource(InvoiceProductRegister, '/invoice_product')
     api.add_resource(InvoiceProductsResource, '/invoice_product/all')
+
+    api.add_resource(InvoiceDisposalRegister, '/invoice_disposal')
+    api.add_resource(InvoiceDisposalResource, '/invoice_disposal/<int:invoice_disposal_id>')
+    api.add_resource(InvoiceDisposalsResource, '/invoice_disposal/all')
+    api.add_resource(InvoiceDisposalCreateResource, '/create_invoice_disposal')
 
     api.add_resource(ApplicationRegister, '/application')
     api.add_resource(ApplicationTypeResource, '/application/type')

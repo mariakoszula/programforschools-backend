@@ -3,8 +3,8 @@ from auth.accesscontrol import roles_required, AllowedRoles, handle_exception_pr
 from helpers.resource import simple_post, simple_put, simple_get, simple_delete, simple_get_all, \
     simple_get_all_by_program
 from helpers.schema_validators import InvoiceQuerySchema, NickWithNameQuery, NickWithNameOptQuery, \
-    InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema
-from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
+    InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema, InvoiceDisposalSchema
+from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel, InvoiceDisposalModel
 
 
 class SupplierRegister(Resource):
@@ -113,3 +113,50 @@ class InvoiceProductsResource(Resource):
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def get(cls):
         return simple_get_all_by_program(InvoiceProductModel)
+
+
+class InvoiceDisposalRegister(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def post(cls):
+        return simple_post(InvoiceDisposalModel, validator=InvoiceDisposalSchema())
+
+
+class InvoiceDisposalResource(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def put(cls, invoice_product_id):
+        return simple_put(InvoiceDisposalModel, invoice_product_id, validator=AmountFloatQuerySchema())
+
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls, invoice_product_id):
+        return simple_get(InvoiceDisposalModel, invoice_product_id)
+
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name])
+    def delete(cls, invoice_product_id):
+        return simple_delete(InvoiceDisposalModel, invoice_product_id)
+
+
+class InvoiceDisposalsResource(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls):
+        return simple_get_all_by_program(InvoiceDisposalModel)
+
+
+class InvoiceDisposalCreateResource(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def put(cls):
+        errors = None  # contract_query.validate(request.args)
+        if errors:
+            return {"message": f"{errors}"}, 400
+        return  # queue_contracts(request)

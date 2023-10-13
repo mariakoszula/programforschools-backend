@@ -1,7 +1,7 @@
 import pytest
 
 from models.application import ApplicationModel, ApplicationType
-from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel
+from models.invoice import InvoiceDisposalModel
 from models.contract import ContractModel, AnnexModel
 from models.week import WeekModel
 from models.product import ProductTypeModel, ProductStoreModel
@@ -9,7 +9,6 @@ from models.record import RecordModel, RecordState
 from tests.common import add_record
 from tests.common_data import school_data, annex_data, week_data
 from helpers.date_converter import DateConverter
-
 
 def test_school_model_with_contract(contract_for_school):
     contract = ContractModel.find(contract_for_school.program_id, contract_for_school.school_id)
@@ -45,18 +44,6 @@ def test_product(product_store_milk):
     assert store_find_by_name is not None and store_find_by_name.min_amount == 5
 
 
-@pytest.fixture(scope="class")
-def setup_record_test_init(contract_for_school, product_store_milk, week):
-    contract_for_school.update_db(dairy_products=5, fruitVeg_products=10)  # 2023-01-01
-    AnnexModel(contract_for_school, **annex_data)  # 2023-12-07
-    AnnexModel(contract_for_school, validity_date="2023-12-08", dairy_products=11, fruitVeg_products=12,
-               validity_date_end="2023-12-12")
-    AnnexModel(contract_for_school, validity_date="2023-12-09", dairy_products=22, fruitVeg_products=23,
-               validity_date_end="2023-12-13")
-    yield contract_for_school, product_store_milk, week
-    RecordModel.query.delete()
-
-
 @pytest.mark.parametrize("date,expected_kids_no,expected_min_amount", [("01.12.2023", 5, False),
                                                                        ("07.12.2023", 1, False),
                                                                        ("08.12.2023", 11, False),
@@ -81,36 +68,19 @@ def test_week_overlap_throws_value_error(week):
     week_two.delete_from_db()
 
 
-def test_invoice_model(product_store_milk, product_store_kohlrabi):
-    supplier = SupplierModel("Long name for supplier", "supplier nickname")
-    assert str(supplier) == "Long name for supplier <supplier nickname>"
-    assert supplier.id is not None
-    invoice = InvoiceModel("RL 123z", "30.12.2022", supplier.id, product_store_milk.program_id)
-    assert str(invoice) == "Invoice 'RL 123z' from 'supplier nickname' on 30.12.2022"
-    assert invoice.id is not None
-    second_invoice = InvoiceModel("TH new", "2023-01-08", supplier.id, product_store_milk.program_id)
-    assert str(second_invoice) == "Invoice 'TH new' from 'supplier nickname' on 08.01.2023"
+def test_application_all_types(third_week):
+    assert ApplicationModel.possible_types(third_week.program_id) == [ApplicationType.FULL, ApplicationType.DAIRY,
+                                                                      ApplicationType.FRUIT_VEG]
 
-    product = InvoiceProductModel(invoice.id, product_store_milk.id, 500)
-    assert str(product) == "Numer faktury RL 123z: milk 500.0L"
-    assert product.id is not None
-    product_second = InvoiceProductModel(invoice.id, product_store_kohlrabi.id, 20.5)
-    assert str(product_second) == "Numer faktury RL 123z: kohlrabi 20.5KG"
-    assert product_second.id is not None
-
-
-def test_application_setup(setup_record_test_init, second_week):
-    contract, _, week = setup_record_test_init
-    weeks = [week, second_week]
-    assert ApplicationModel.possible_types(week.program_id) == [ApplicationType.FULL, ApplicationType.DAIRY,
-                                                                ApplicationType.FRUIT_VEG]
-    application = ApplicationModel(week.program_id, [contract], weeks, ApplicationType.FULL)
-    assert ApplicationModel.possible_types(week.program_id) == [ApplicationType.FULL]
-    assert str(application) == "2/1/2022/2023"
+# TODO fix tests
+def test_application_setup(create_application):
+    application, weeks, contract = create_application
+    assert ApplicationModel.possible_types(weeks[0].program_id) == [ApplicationType.FULL]
+    assert str(application) == "1/1/2023/2024"
     with pytest.raises(ValueError):
-        ApplicationModel(week.program_id, [contract], weeks, ApplicationType.DAIRY)
-    application_other = ApplicationModel(week.program_id, [contract], weeks, ApplicationType.FULL)
-    assert str(application_other) == "2/2/2022/2023"
+        ApplicationModel(weeks[0].program_id.program_id, [contract], weeks, ApplicationType.DAIRY)
+    application_other = ApplicationModel(weeks[0].program_id.program_id, [contract], weeks, ApplicationType.FULL)
+    assert str(application_other) == "2/2/2023/2024"
     application_other.delete_from_db()
     application.delete_from_db()
 
@@ -164,3 +134,29 @@ def test_filter_records(setup_record_test_init, second_week, third_week,
     application_dairy.delete_from_db()
     application_fruit_veg.delete_from_db()
     second_application_dairy.delete_from_db()
+
+
+def test_invoice_model(invoice_data, create_application):
+    invoices, products, supplier, invoice_disposals = invoice_data
+    invoice = invoices[0]
+    second_invoice = invoices[1]
+    product = products[0]
+    product_second = products[1]
+    assert str(supplier) == "Long name for supplier <supplier nickname>"
+    assert supplier.id is not None
+    assert str(invoice) == "Invoice 'RL 123z' from 'supplier nickname' on 30.12.2022"
+    assert invoice.id is not None
+    assert str(second_invoice) == "Invoice 'TH new' from 'supplier nickname' on 08.01.2023"
+    assert str(product) == "Numer faktury RL 123z: milk 500.0L"
+    assert product.id is not None
+    assert str(product_second) == "Numer faktury RL 123z: kohlrabi 20.5KG"
+    assert product_second.id is not None
+
+    invoice_disposal = invoice_disposals[0]
+    second_invoice_disposal = invoice_disposals[1]
+    application_id = invoice_disposals[0].application_id
+    assert str(invoice_disposal) == "Wniosek: 1/1/2023/2024 Numer faktury RL 123z: milk 500.0L: 20.0"
+    assert invoice_disposal.id is not None
+    assert second_invoice_disposal.id is not None
+    with pytest.raises(ValueError):
+        InvoiceDisposalModel(product.id, application_id, 481)
