@@ -127,20 +127,20 @@ class InvoiceDisposalResource(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-    def put(cls, invoice_product_id):
-        return simple_put(InvoiceDisposalModel, invoice_product_id, validator=AmountFloatQuerySchema())
+    def put(cls, invoice_disposal_id):
+        return simple_put(InvoiceDisposalModel, invoice_disposal_id, validator=AmountFloatQuerySchema())
 
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
-    def get(cls, invoice_product_id):
-        return simple_get(InvoiceDisposalModel, invoice_product_id)
+    def get(cls, invoice_disposal_id):
+        return simple_get(InvoiceDisposalModel, invoice_disposal_id)
 
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name])
-    def delete(cls, invoice_product_id):
-        return simple_delete(InvoiceDisposalModel, invoice_product_id)
+    def delete(cls, invoice_disposal_id):
+        return simple_delete(InvoiceDisposalModel, invoice_disposal_id)
 
 
 class InvoiceDisposalsResource(Resource):

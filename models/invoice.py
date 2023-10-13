@@ -109,3 +109,9 @@ class InvoiceDisposalModel(db.Model, BaseDatabaseQuery):
 
     def __repr__(self):
         return f"InvoiceDisposalModel({self.invoice_product_id}, {self.application_id}, {self.amount})"
+
+    @classmethod
+    def all_filtered_by_program(cls, program_id):
+        output = InvoiceDisposalModel.all()
+        return list(filter(lambda i: i.invoice_product.invoice.program_id != program_id, output))
+
