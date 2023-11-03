@@ -1,6 +1,5 @@
 from helpers.common import FileData
 from helpers.google_drive import DriveCommands
-from models.application import ApplicationModel, application_contract, application_week
 from models.contract import TimedAnnexModel, AnnexModel, ContractModel
 from models.directory_tree import DirectoryTreeModel
 from models.invoice import InvoiceProductModel, InvoiceModel, SupplierModel
@@ -8,6 +7,18 @@ from models.product import ProductStoreModel, ProductModel, ProductTypeModel, We
 from models.record import RecordState, RecordModel
 from models.school import SchoolModel
 from models.week import WeekModel
+from os import path
+
+
+def validate_document_creation(obj, gen, name_output):
+    print(obj.remote_parent.name)
+    assert obj.remote_parent.name == f"gen/{name_output}"
+    obj.generate()
+    assert isinstance(obj, gen)
+    assert len(obj.generated_documents) == 1
+    assert path.isdir(obj.output_directory)
+    assert obj.generated_documents[0].name == f"gen/{name_output}"
+
 
 
 def all_fields_to_marge_are_in_file(file_name, **fields):

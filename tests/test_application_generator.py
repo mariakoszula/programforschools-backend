@@ -3,21 +3,11 @@ import pytest
 from documents_generator.ApplicationGenerator import get_application_dir, get_application_dir_per_school, \
     RecordsSummaryGenerator, StatementGenerator, application_factory, ApplicationGenerator
 from models.application import ApplicationModel, ApplicationType
-from os import path
 
 from models.contract import AnnexModel
 from models.record import RecordModel, RecordState
 from tests import common_data
-from tests.common import all_fields_to_marge_are_in_file, add_record, GoogleDriveFakeCommands
-
-
-def validate_document_creation(obj, gen, name_output):
-    assert obj.remote_parent.name == f"gen/{name_output}"
-    obj.generate()
-    assert isinstance(obj, gen)
-    assert len(obj.generated_documents) == 1
-    assert path.isdir(obj.output_directory)
-    assert obj.generated_documents[0].name == f"gen/{name_output}"
+from tests.common import all_fields_to_marge_are_in_file, add_record, GoogleDriveFakeCommands, validate_document_creation
 
 
 def assert_value(value, expected, precision=0):

@@ -5,13 +5,16 @@ from helpers.db import db
 from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
+from models.application import ApplicationModel, ApplicationType
 from models.company import CompanyModel
-from models.contract import ContractModel
+from models.contract import ContractModel, AnnexModel
+from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel, InvoiceDisposalModel
 from models.product import ProductTypeModel, WeightTypeModel, ProductStoreModel, ProductModel
 from models.program import ProgramModel
 import tests.common_data as common_data
 from helpers.google_drive import GoogleDriveCommands
 from helpers.file_folder_creator import DirectoryCreator
+from models.record import RecordModel
 from models.school import SchoolModel
 from models.week import WeekModel
 from tests.common import clear_tables_schools, clear_tables_common
@@ -236,3 +239,50 @@ def product_store_yoghurt(program_setup, weight_type_kg, dairy):
     product = ProductModel("yoghurt", ProductTypeModel.DAIRY_TYPE, "KG", vat=2)
     product.update_db(template_name="yoghurt")
     yield ProductStoreModel(program_setup.id, "yoghurt", 2, 0.15)
+
+@pytest.fixture(scope="module")
+def setup_record_test_init(contract_for_school, product_store_milk, week):
+    contract_for_school.update_db(dairy_products=5, fruitVeg_products=10)  # 2023-01-01
+    AnnexModel(contract_for_school, **common_data.annex_data)  # 2023-12-07
+    AnnexModel(contract_for_school, validity_date="2023-12-08", dairy_products=11, fruitVeg_products=12,
+               validity_date_end="2023-12-12")
+    AnnexModel(contract_for_school, validity_date="2023-12-09", dairy_products=22, fruitVeg_products=23,
+               validity_date_end="2023-12-13")
+    yield contract_for_school, product_store_milk, week
+    RecordModel.query.delete()
+
+@pytest.fixture(scope="module")
+def create_application(setup_record_test_init, second_week):
+    contract, _, week = setup_record_test_init
+    weeks = [week, second_week]
+    application = ApplicationModel(week.program_id, [contract], weeks, ApplicationType.FULL)
+    yield application, weeks, contract
+
+
+@pytest.fixture(scope="function")
+def invoice_data(product_store_milk, product_store_kohlrabi, product_store_apple, create_application):
+    supplier = SupplierModel("Long name for supplier", "supplier nickname")
+    invoices = []
+    products = []
+    invoice_disposals = []
+    invoices.append(InvoiceModel("RL 123z", "30.12.2022", supplier.id, product_store_milk.program_id))
+    invoices.append(InvoiceModel("TH new", "2023-01-08", supplier.id, product_store_milk.program_id))
+    invoices.append(InvoiceModel("Another", "2023-02-09", supplier.id, product_store_milk.program_id))
+    products.append(InvoiceProductModel(invoices[0].id, product_store_milk.id, 500))
+    products.append(InvoiceProductModel(invoices[0].id, product_store_kohlrabi.id, 20.5))
+    products.append(InvoiceProductModel(invoices[1].id, product_store_apple.id, 12.3))
+    products.append(InvoiceProductModel(invoices[2].id, product_store_milk.id, 10))
+    products.append(InvoiceProductModel(invoices[2].id, product_store_apple.id, 10))
+    application, _, _ = create_application
+
+    invoice_disposals.append(InvoiceDisposalModel(products[0].id, application.id, 500))
+    invoice_disposals.append(InvoiceDisposalModel(products[1].id, application.id, 15))
+    invoice_disposals.append(InvoiceDisposalModel(products[2].id, application.id, 12.3))
+    invoice_disposals.append(InvoiceDisposalModel(products[3].id, application.id, 8))
+    invoice_disposals.append(InvoiceDisposalModel(products[4].id, application.id, 5))
+    yield invoices, products, supplier, invoice_disposals
+    for invoice_disposal in invoice_disposals:
+        invoice_disposal.delete_from_db()
+    for product in products:
+        product.delete_from_db()
+    supplier.delete_from_db()

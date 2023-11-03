@@ -45,6 +45,9 @@ class InvoiceProductSchema(AmountFloatQuerySchema):
     product_store_id = fields.Int(required=True)
     invoice_id = fields.Int(required=True)
 
+class InvoiceDisposalSchema(AmountFloatQuerySchema):
+    invoice_product_id = fields.Int(required=True)
+    application_id = fields.Int(required=True)
 
 class ProductQuerySchema(NameQuerySchema):
     product_type = fields.Str(required=True)

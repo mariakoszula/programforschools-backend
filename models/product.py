@@ -11,6 +11,9 @@ class WeightTypeModel(db.Model, BaseDatabaseQuery):
         self.name = name
         self.save_to_db()
 
+    def is_kg(self):
+        return self.name.lower() == "KG".lower()
+
     def json(self):
         return self.name
 
