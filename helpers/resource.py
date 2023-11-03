@@ -24,10 +24,11 @@ def simple_post(model, *args, validator=name_query):
     filter_data = {}
     for arg in args:
         filter_data[arg] = request.json[arg]
-    found = model.find_by(**filter_data)
-    if found:
-        return {'message': f"'{found}' już istnieje. Edytuj lub wybierz inną wartość.",
-                'database_table': f"{model.__tablename__}"}, 400
+    if filter_data:
+        found = model.find_by(**filter_data)
+        if found:
+            return {'message': f"'{found}' już istnieje. Edytuj lub wybierz inną wartość.",
+                    'database_table': f"{model.__tablename__}"}, 400
     return successful_response(model)
 
 

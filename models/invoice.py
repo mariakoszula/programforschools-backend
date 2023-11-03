@@ -1,3 +1,5 @@
+from typing import List
+
 from helpers.date_converter import DateConverter
 from models.base_database_query import BaseDatabaseQuery
 from helpers.db import db
@@ -95,7 +97,7 @@ class InvoiceDisposalModel(db.Model, BaseDatabaseQuery):
     def __init__(self, invoice_product_id, application_id, amount):
         existing_disposals = InvoiceDisposalModel.query.filter_by(invoice_product_id=invoice_product_id).all()
         existing_disposals_amount = sum(id.amount for id in existing_disposals)
-        if existing_disposals and (existing_disposals_amount + amount) > existing_disposals[0].invoice_product.amount:
+        if existing_disposals and (existing_disposals_amount + int(amount)) > existing_disposals[0].invoice_product.amount:
             raise ValueError(
                 "Suma produktów przypisanych do wniosków przekracza sumę na fakturze")
 
@@ -115,3 +117,6 @@ class InvoiceDisposalModel(db.Model, BaseDatabaseQuery):
         output = InvoiceDisposalModel.all()
         return list(filter(lambda i: i.invoice_product.invoice.program_id != program_id, output))
 
+    @classmethod
+    def all_filtered_by_application(cls, applications: List[int]):
+        return cls.query.filter(cls.application_id.in_(applications)).all()

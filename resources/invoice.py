@@ -1,10 +1,14 @@
+from flask import request
 from flask_restful import Resource
+from marshmallow import fields, validate, Schema
 from auth.accesscontrol import roles_required, AllowedRoles, handle_exception_pretty
 from helpers.resource import simple_post, simple_put, simple_get, simple_delete, simple_get_all, \
-    simple_get_all_by_program
+    simple_get_all_by_program, validate_body
 from helpers.schema_validators import InvoiceQuerySchema, NickWithNameQuery, NickWithNameOptQuery, \
     InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema, InvoiceDisposalSchema
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel, InvoiceDisposalModel
+from resources.contracts import DelimitedListField
+from tasks.generate_invoice_disposal_task import queue_invoice_disposal
 
 
 class SupplierRegister(Resource):
@@ -151,12 +155,19 @@ class InvoiceDisposalsResource(Resource):
         return simple_get_all_by_program(InvoiceDisposalModel)
 
 
+class InvoiceDisposalCreateQuerySchema(Schema):
+    applications = fields.List(fields.Int(), required=True, allow_none=False)
+
+
+invoice_disposal_create_query = InvoiceDisposalCreateQuerySchema()
+
+
 class InvoiceDisposalCreateResource(Resource):
     @classmethod
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def put(cls):
-        errors = None  # contract_query.validate(request.args)
+        errors = validate_body(invoice_disposal_create_query)
         if errors:
             return {"message": f"{errors}"}, 400
-        return  # queue_contracts(request)
+        return queue_invoice_disposal(request)
