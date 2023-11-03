@@ -11,7 +11,7 @@ from typing import List, Set, Dict
 from models.product import ProductModel
 from models.program import ProgramModel
 
-EMPTY = ""
+EMPTY = "-"
 
 
 def get_app_name_for_dir(applications: Set[ApplicationModel]):
