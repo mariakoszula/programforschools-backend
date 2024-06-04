@@ -26,12 +26,13 @@ class SupplierModel(db.Model, BaseDatabaseQuery):
 class InvoiceModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'invoice'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False, unique=True)
+    name = db.Column(db.String(80), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     supplier = db.relationship('SupplierModel', backref=db.backref('invoices', lazy=True))
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
     program = db.relationship('ProgramModel', backref=db.backref('invoices', lazy=True))
+    __table_args__ = (db.UniqueConstraint('program_id', 'name'),)
 
     def __init__(self, name, date, supplier_id, program_id):
         self.name = name
