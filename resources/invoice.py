@@ -7,7 +7,6 @@ from helpers.resource import simple_post, simple_put, simple_get, simple_delete,
 from helpers.schema_validators import InvoiceQuerySchema, NickWithNameQuery, NickWithNameOptQuery, \
     InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema, InvoiceDisposalSchema
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel, InvoiceDisposalModel
-from resources.contracts import DelimitedListField
 from tasks.generate_invoice_disposal_task import queue_invoice_disposal
 
 
@@ -52,7 +51,7 @@ class InvoiceRegister(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(InvoiceModel, "name", validator=InvoiceQuerySchema())
+        return simple_post(InvoiceModel, "name", "program_id", validator=InvoiceQuerySchema())
 
 
 class InvoiceResource(Resource):
