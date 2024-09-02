@@ -90,7 +90,8 @@ class ProductModel(db.Model, BaseDatabaseQuery):
         return {
             'name': self.name,
             'weight_type': self.weight.json(),
-            'product_type': self.type.json()
+            'product_type': self.type.json(),
+            'vat': self.vat
         }
 
 
