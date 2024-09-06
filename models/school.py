@@ -8,7 +8,7 @@ class SchoolModel(db.Model, BaseDatabaseQuery):
 
     id = db.Column(db.Integer, primary_key=True)
     nick = db.Column(db.String(60), unique=True, nullable=False)
-    name = db.Column(db.String(120))
+    name = db.Column(db.String(600))
     address = db.Column(db.String(120), unique=True)
     city = db.Column(db.String(30))
     nip = db.Column(db.String(80))
