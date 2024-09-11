@@ -18,7 +18,9 @@ async def create_delivery_async(**request):
                          'driver': driver,
                          'comments': request.get("comments", "")}
         input_docs = [(DeliveryGenerator, delivery_args)]
-        if driver is not None:
+        if driver:
+            for record in records:
+                record.change_state(RecordState.ASSIGN_NUMBER)
             input_docs.append((DeliveryRecordsGenerator, delivery_args))
         setup_progress_meta(len(input_docs))
         return await create_generator_and_run(input_docs)
@@ -30,7 +32,6 @@ def on_success_delivery_update(job, connection, result, *args, **kwargs):
         if not job.kwargs.get('driver', None):
             state = RecordState.DELIVERY_PLANNED
         for record in RecordModel.get_records(job.kwargs['records']):
-
             record.change_state(state)
         measure_time_callback(job, connection, result, *args, **kwargs)
 

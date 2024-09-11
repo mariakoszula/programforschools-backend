@@ -3,7 +3,6 @@ from helpers.logger import app_logger
 from helpers.config_parser import config_parser
 from typing import List
 
-
 EMPTY_FILED = "................................................................"
 DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 DOC_GOOGLE_MIME_TYPE = 'application/vnd.google-apps.document'
@@ -12,6 +11,7 @@ DIR_MIME_TYPE = 'application/vnd.google-apps.folder'
 GOOGLE_DRIVE_ID = config_parser.get("GoogleDriveConfig", "google_drive_id")
 DOCX_EXT = ".docx"
 PDF_EXT = ".pdf"
+TMP_DIR = '/app/tmp/'
 
 
 def get_mime_type(mime_type):
@@ -29,7 +29,7 @@ class FileData:
         super().__init__()
 
     def __str__(self):
-        return f"{self.name}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
+        return f"{self.name.replace(TMP_DIR, '')}: webViewLink:{self.web_view_link if self.web_view_link else '-'}"
 
     def __repr__(self):
         return f"FileData(_name={self.name}, _mime_type={self.mime_type}, _id={self.id}, _parent_id={self.parent_id})"

@@ -6,6 +6,7 @@ from helpers.config_parser import config_parser
 from helpers.date_converter import DateConverter
 from models.product import ProductTypeModel
 from models.record import RecordModel
+from app import create_app
 
 
 def get_record_title_mapping(product_type: ProductTypeModel):
@@ -39,18 +40,20 @@ class RecordGenerator(DocumentGenerator):
 
     @staticmethod
     def prepare_data_to_fill(record):
-        return {
-            'city': record.contract.school.city,
-            'current_date': DateConverter.convert_date_to_string(record.date),
-            'name': record.contract.school.name,
-            'address': record.contract.school.address,
-            'nip': record.contract.school.nip,
-            'regon': record.contract.school.regon,
-            'email': record.contract.school.email,
-            'kids_no': record.delivered_kids_no,
-            'product_name': record.product_store.product.name,
-            'record_title': get_record_title_mapping(record.product_store.product.type)
-        }
+        with create_app().app_context():
+            return {
+                'city': record.contract.school.city,
+                'current_date': DateConverter.convert_date_to_string(record.date),
+                'name': record.contract.school.name,
+                'address': record.contract.school.address,
+                'nip': record.contract.school.nip,
+                'regon': record.contract.school.regon,
+                'email': record.contract.school.email,
+                'kids_no': record.delivered_kids_no,
+                'product_name': record.product_store.product.name,
+                'record_number': record.get_record_no(),
+                'record_title': get_record_title_mapping(record.product_store.product.type)
+            }
 
     @staticmethod
     def get_template():
