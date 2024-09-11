@@ -11,15 +11,14 @@ from googleapiclient.http import MediaFileUpload
 import json
 from os import getenv, getcwd, listdir, makedirs, remove
 
+
 from helpers.logger import app_logger
 from helpers.common import FileData, DOCX_MIME_TYPE, PDF_MIME_TYPE, DIR_MIME_TYPE, GOOGLE_DRIVE_ID, get_mime_type, \
     DOCX_EXT, PDF_EXT
 from os import path
 from aiogoogle import Aiogoogle
 from aiogoogle.auth.creds import ServiceAccountCreds
-from asynctempfile import NamedTemporaryFile
 import asyncio
-from shutil import copy
 
 from models.directory_tree import DirectoryTreeModel
 
@@ -249,19 +248,20 @@ class GoogleDriveCommandsAsync(DriveCommands):
         async with Aiogoogle(service_account_creds=aio_creds) as aiogoogle:
             google_drive = await aiogoogle.discover('drive', 'v3')
             try:
-                async with NamedTemporaryFile(dir=GoogleDriveCommandsAsync.tmp_pdf_dir,
-                                              delete=False) as file:
-                    command = google_drive.files.export(fileId=file_data.id, mimeType=PDF_MIME_TYPE,
-                                                        download_file=file.name)
-                    await aiogoogle.as_service_account(command)
-                    pdf_name = file_data.name.replace(DOCX_EXT, PDF_EXT)
-                    pdf_file: FileData = FileData(_name=pdf_name, _mime_type=PDF_MIME_TYPE,
-                                                  _parent_id=file_data.parent_id)
-                    copy(file.name, pdf_name)
-                    app_logger.debug(f"Export pdf file on google drive for {file_data.id} Pdf file info: {pdf_file}")
+                pdf_name = path.join(GoogleDriveCommandsAsync.tmp_pdf_dir, file_data.name.replace(DOCX_EXT, PDF_EXT).split("/")[-1])
+
+                await aiogoogle.as_service_account(google_drive.files.export(fileId=file_data.id, mimeType=PDF_MIME_TYPE,
+                                                                             download_file=pdf_name))
+
+                pdf_file: FileData = FileData(_name=pdf_name, _mime_type=PDF_MIME_TYPE,
+                                              _parent_id=file_data.parent_id)
+                app_logger.debug(f"Export pdf file on google drive for {file_data.id} Pdf file info: {pdf_file}")
                 return pdf_file
             except HttpError as error:
-                app_logger.error(f"Error during uploading file '{file_data.id}': {error}")
+                app_logger.error(f"Error during downloading pdf '{file_data.id}': {error}")
+            except Exception as error:
+                app_logger.error(f"Error during downloading pdf'{file_data.id}': {error}")
+
 
     @staticmethod
     async def upload_many(file_data_list: List[FileData]):
@@ -284,7 +284,7 @@ class GoogleDriveCommandsAsync(DriveCommands):
                                                     json=json_body)
 
                 response = await aiogoogle.as_service_account(command, full_res=True)
-                app_logger.debug(
+                app_logger.info(
                     f"Uploaded file on google drive {response.json.get('id')} {file_data.name} parent_id: {file_data.parent_id}"
                     f" webViewLink:{response.json.get('webViewLink')}")
                 file_data.id = response.json.get("id")
@@ -293,6 +293,8 @@ class GoogleDriveCommandsAsync(DriveCommands):
             except HttpError as error:
                 app_logger.error(
                     f"Error during uploading file '{file_data.name}' in '{file_data.parent_id}': {error}")
+            except Exception as error:
+                app_logger.error(f"Error during uploading file '{file_data.id}': {error}")
 
     @staticmethod
     async def search(parent_id=GOOGLE_DRIVE_ID,

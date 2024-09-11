@@ -5,8 +5,9 @@ from helpers.db import db
 from models.application import ApplicationType, ApplicationModel
 from models.base_database_query import BaseDatabaseQuery
 from models.contract import ContractModel
-from models.product import ProductModel, ProductTypeModel, ProductStoreModel
+from models.product import ProductTypeModel
 from models.week import WeekModel
+from helpers.logger import app_logger
 
 
 class RecordState(enum.Enum):
@@ -15,11 +16,13 @@ class RecordState(enum.Enum):
     DELIVERED = 3
     GENERATION_IN_PROGRESS = 4
     DELIVERY_PLANNED = 5
+    ASSIGN_NUMBER = 6
 
 
 class RecordModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'record'
     id = db.Column(db.Integer, primary_key=True)
+    no = db.Column(db.Integer, nullable=True)
     date = db.Column(db.DateTime, nullable=False)
     delivery_date = db.Column(db.DateTime, nullable=True)
     delivered_kids_no = db.Column(db.Integer, nullable=True)
@@ -44,6 +47,26 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.contract_id = contract_id
         self.week_id = WeekModel.find_by_date(self.date).id
         self.product_type_id = product_store.product.type.id
+        self.save_to_db()
+
+    def __assign_record_no(self):
+        is_current_dairy_type = ProductTypeModel.find_by_id(self.product_type_id).is_dairy()
+        previous_records_no = [record for record in RecordModel.query.join(RecordModel.contract).filter_by(id=self.contract_id).order_by(RecordModel.date)
+                               if ProductTypeModel.find_by_id(record.product_type_id).is_dairy() == is_current_dairy_type]
+        app_logger.debug(f"Assigning number previuos_records:{previous_records_no} current:{self} ({self.date})")
+        for i in range(len(previous_records_no)):
+            if previous_records_no[i].no != i + 1:
+                if previous_records_no[i].no:
+                    app_logger.error(f"Skipping overriding the number for {previous_records_no[i]} from {previous_records_no[i].no} -> {i+1}")
+                elif previous_records_no[i].date == self.date:
+                    previous_records_no[i].no = i + 1
+
+    def get_record_no(self):
+        product_prefix = "NB" if ProductTypeModel.find_by_id(self.product_type_id).is_dairy() else "WO"
+        if self.no:
+            return f"{product_prefix} {self.no}/{self.contract.contract_no}/{self.contract.program}"
+        else:
+            return f"-"
 
     def __str__(self):
         return f"{self.product_store.product.name}  {self.delivered_kids_no}"
@@ -71,6 +94,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         if data["state"]:
             data["state"] = RecordState(data["state"]).name
         data["product_type"] = ProductTypeModel.find_by_id(data["product_type_id"]).json()
+        data["no"] = self.get_record_no()
         del data["product_type_id"]
         return data
 
@@ -81,6 +105,8 @@ class RecordModel(db.Model, BaseDatabaseQuery):
             self.delivery_date = DateConverter.convert_to_date(kwargs["date"])
             self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
                                                                date=self.date)
+        elif state == RecordState.ASSIGN_NUMBER:
+            self.__assign_record_no()
         elif state == RecordState.PLANNED:
             self.delivery_date = None
             self.delivered_kids_no = None
