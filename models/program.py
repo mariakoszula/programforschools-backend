@@ -39,6 +39,9 @@ class ProgramModel(db.Model, BaseDatabaseQuery):
         self.fruitVeg_price = fruitVeg_price
         self.dairy_price = dairy_price
 
+    def __str__(self):
+        return f"{self.semester_no}/{self.school_year}"
+
     def __repr__(self):
         return f"Program: {self.id} semester_no:{self.semester_no} year:{self.school_year}"
 
