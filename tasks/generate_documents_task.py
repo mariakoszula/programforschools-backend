@@ -41,12 +41,14 @@ def queue_task(*, func, request, callback=measure_time_callback, callback_failur
            }, 202
 
 
-def setup_progress_meta(documents_no: int):
+def setup_progress_meta(documents_no: int, notification=None):
     job = get_current_job()
     if not job:
         return
     job.meta["documents_no"] = documents_no * NO_OF_GOOGLE_DRIVE_ACTIONS
     job.meta["finished_documents_no"] = 0
+    if notification:
+        job.meta["notification"] = notification
     job.save_meta()
 
 
@@ -59,6 +61,15 @@ def update_finished_documents_meta(documents_no: int):
 
 
 DECREASE_FACTOR = 1
+
+
+def get_notification(current_job):
+    if current_job:
+        meta = current_job.get_meta(refresh=True)
+        if meta.get("notification") and isinstance(meta.get("notification"), list):
+            app_logger.info(meta.get("notification"))
+            return "\n".join([msg for msg in meta.get("notification")])
+    return ""
 
 
 def calculate_progress(current_job):

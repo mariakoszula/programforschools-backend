@@ -180,9 +180,12 @@ class RecordResource(Resource):
         record: RecordModel = RecordModel.find_by_id(record_id)
         if not record:
             return {"message": f"Record with id {record_id} not found"}, 404
+        is_in_middle = record.is_in_middle()
         record.delete_from_db()
+
         return {
-                   'deleted_record': record.id
+                   'deleted_record': record.id,
+                   'is_in_middle': is_in_middle
                }, 200
 
 
