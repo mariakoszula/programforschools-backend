@@ -19,6 +19,11 @@ class RecordState(enum.Enum):
     ASSIGN_NUMBER = 6
 
 
+class RecordNumbersChangedError(Exception):
+    def __str__(self):
+        return f"Zmienione zostały numery WZ dla szkoły: {self.args[0] if len(self.args) else ''}"
+
+
 class RecordModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'record'
     id = db.Column(db.Integer, primary_key=True)
@@ -49,17 +54,28 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.product_type_id = product_store.product.type.id
         self.save_to_db()
 
-    def __assign_record_no(self):
+    def is_in_middle(self):
+        is_current_dairy_type = ProductTypeModel.find_by_id(self.product_type_id).is_dairy()
+        previous_records_no = [record.no for record in
+                               RecordModel.query.join(RecordModel.contract).filter_by(id=self.contract_id).order_by(
+                                   RecordModel.no)
+                               if ProductTypeModel.find_by_id(record.product_type_id).is_dairy() == is_current_dairy_type]
+        return self.no != previous_records_no[-1]
+
+    def __assign_record_no(self) -> bool:
         is_current_dairy_type = ProductTypeModel.find_by_id(self.product_type_id).is_dairy()
         previous_records_no = [record for record in RecordModel.query.join(RecordModel.contract).filter_by(id=self.contract_id).order_by(RecordModel.date)
                                if ProductTypeModel.find_by_id(record.product_type_id).is_dairy() == is_current_dairy_type]
-        app_logger.debug(f"Assigning number previuos_records:{previous_records_no} current:{self} ({self.date})")
+        numbers_changed = False
         for i in range(len(previous_records_no)):
             if previous_records_no[i].no != i + 1:
                 if previous_records_no[i].no:
-                    app_logger.error(f"Skipping overriding the number for {previous_records_no[i]} from {previous_records_no[i].no} -> {i+1}")
+                    previous_records_no[i].no = i + 1
+                    numbers_changed = True
+                    app_logger.debug(f"Overriding the number for {repr(self)} {previous_records_no[i].no} -> {i+1}")
                 elif previous_records_no[i].date == self.date:
                     previous_records_no[i].no = i + 1
+        return numbers_changed
 
     def get_record_no(self):
         product_prefix = "NB" if ProductTypeModel.find_by_id(self.product_type_id).is_dairy() else "WO"
@@ -99,6 +115,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         return data
 
     def change_state(self, state, **kwargs):
+        numbers_changed = False
         if isinstance(state, int):
             state = RecordState(state)
         if state == RecordState.GENERATION_IN_PROGRESS:
@@ -106,7 +123,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
             self.delivered_kids_no = self.contract.get_kids_no(product_type=self.product_store.product.type,
                                                                date=self.date)
         elif state == RecordState.ASSIGN_NUMBER:
-            self.__assign_record_no()
+            numbers_changed = self.__assign_record_no()
         elif state == RecordState.PLANNED:
             self.delivery_date = None
             self.delivered_kids_no = None
@@ -116,6 +133,8 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
         self.state = state
         self.update_db()
+        if numbers_changed:
+            raise RecordNumbersChangedError(self.contract.school.nick)
 
     @classmethod
     def get_records(cls, ids):
