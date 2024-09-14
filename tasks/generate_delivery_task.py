@@ -1,5 +1,5 @@
 from operator import attrgetter
-from models.record import RecordModel, RecordState
+from models.record import RecordModel, RecordState, RecordNumbersChangedError
 from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator, SummaryGenerator
 from app import create_app
 from tasks.generate_documents_task import queue_task, setup_progress_meta, create_generator_and_run, \
@@ -19,10 +19,14 @@ async def create_delivery_async(**request):
                          'comments': request.get("comments", "")}
         input_docs = [(DeliveryGenerator, delivery_args)]
         if driver:
+            discovered_changed_records = []
             for record in records:
-                record.change_state(RecordState.ASSIGN_NUMBER)
+                try:
+                    record.change_state(RecordState.ASSIGN_NUMBER)
+                except RecordNumbersChangedError as e:
+                    discovered_changed_records.append(str(e))
             input_docs.append((DeliveryRecordsGenerator, delivery_args))
-        setup_progress_meta(len(input_docs))
+        setup_progress_meta(len(input_docs), notification=discovered_changed_records)
         return await create_generator_and_run(input_docs)
 
 
