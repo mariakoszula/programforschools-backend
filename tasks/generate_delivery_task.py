@@ -18,8 +18,8 @@ async def create_delivery_async(**request):
                          'driver': driver,
                          'comments': request.get("comments", "")}
         input_docs = [(DeliveryGenerator, delivery_args)]
+        discovered_changed_records = []
         if driver:
-            discovered_changed_records = []
             for record in records:
                 try:
                     record.change_state(RecordState.ASSIGN_NUMBER)
