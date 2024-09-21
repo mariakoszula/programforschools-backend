@@ -28,5 +28,5 @@ class SchoolModel(db.Model, BaseDatabaseQuery):
         return cls.query.filter_by(nick=nick).one()
 
     def fill_responsible_person(self):
-        return self.responsible_person if self.responsible_person else EMPTY_FILED
+        return EMPTY_FILED
 
