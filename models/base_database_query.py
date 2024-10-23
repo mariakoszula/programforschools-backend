@@ -14,16 +14,22 @@ class BaseDatabaseQuery:
         db.session.add(self)
         db.session.commit()
 
+    def add_to_db(self):
+        db.session.add(self)
+
     def delete_from_db(self):
         db.session.delete(self)
         db.session.commit()
 
-    def update_db(self, **update_patch):
+    def update_db_only(self, **update_patch):
         for name, changed_value in update_patch.items():
             if "date" in name and isinstance(changed_value, str):
                 changed_value = DateConverter.convert_to_date(changed_value)
             if changed_value and hasattr(self, name):
                 setattr(self, name, changed_value)
+
+    def update_db(self, **update_patch):
+        self.update_db_only(**update_patch)
         db.session.commit()
 
     def json(self):
