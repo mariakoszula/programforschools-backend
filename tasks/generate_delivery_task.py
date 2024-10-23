@@ -28,7 +28,7 @@ async def create_delivery_async(**request):
                 except RecordNumbersChangedError as e:
                     discovered_changed_records.append(str(e))
             input_docs.append((DeliveryRecordsGenerator, delivery_args))
-        app_logger.info(f"create_delivery_async to database records_no: {records.len()}")
+        app_logger.info(f"create_delivery_async to database records_no: {len(records)}")
         db.session.commit()
         setup_progress_meta(len(input_docs), notification=discovered_changed_records)
         return await create_generator_and_run(input_docs)
@@ -42,7 +42,7 @@ def on_success_delivery_update(job, connection, result, *args, **kwargs):
             state = RecordState.DELIVERY_PLANNED
         for record in records:
             record.change_state(state)
-        app_logger.info(f"Saving to database records_no: {records.len()}")
+        app_logger.info(f"Saving to database records_no: {len(records)}")
         db.session.commit()
         measure_time_callback(job, connection, result, *args, **kwargs)
 
@@ -52,7 +52,7 @@ def on_failure_delivery_update(job, connection, exception, *args, **kwargs):
         records = RecordModel.get_records(job.kwargs['records'])
         for record in records:
             record.change_state(RecordState.PLANNED)
-        app_logger.info(f"On failure to database records_no: {records.len()}")
+        app_logger.info(f"On failure to database records_no: {len(records)}")
         db.session.commit()
 
 
