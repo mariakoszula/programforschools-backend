@@ -97,6 +97,7 @@ def try_to_insert_record(program_id, date, record_response) -> RecordResponse:
         else:
             try:
                 rc = RecordModel(date=date, contract_id=contract.id, product_store=product_store)
+                rc.save_to_db()
                 record_response.result = RecordAdditionResult.SUCCESS
                 record_response.record_id = rc.id
             except ValueError as e:
