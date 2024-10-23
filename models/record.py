@@ -52,7 +52,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.contract_id = contract_id
         self.week_id = WeekModel.find_by_date(self.date).id
         self.product_type_id = product_store.product.type.id
-        self.save_to_db()
+        self.add_to_db()
 
     def is_in_middle(self):
         is_current_dairy_type = ProductTypeModel.find_by_id(self.product_type_id).is_dairy()
@@ -132,7 +132,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
                 self.product_store_id = _store_id
 
         self.state = state
-        self.update_db()
+        self.update_db_only()
         if numbers_changed:
             raise RecordNumbersChangedError(self.contract.school.nick)
 
