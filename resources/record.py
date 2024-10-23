@@ -12,7 +12,7 @@ from models.school import SchoolModel
 from tasks.generate_delivery_task import queue_delivery, queue_week_summary
 from helpers.logger import app_logger
 from models.week import WeekModel
-
+from helpers.db import db
 
 def must_not_be_empty(data):
     if not data:
@@ -167,6 +167,7 @@ class RecordResource(Resource):
             return {"message": f"Nie istnieje WZtka o zadanym id: {record_id}"}, 404
         try:
             record.change_state(**request.json)
+            db.session.commit()
         except ValueError as e:
             app_logger.warn(f"Failed to change state of record {record_id} due to {e}")
             return {"message": f"{e}"}, 400
