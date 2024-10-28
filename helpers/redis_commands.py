@@ -10,7 +10,7 @@ from helpers.logger import app_logger
 UPLOADED_FILES_DICT = "uploadedFilesDict"
 
 
-redis_url = environ.get('REDIS_URL', config_parser.get('Redis', 'url'))
+redis_url = environ.get('REDIS_TLS_URL', config_parser.get('Redis', 'url'))
 conn = redis.from_url(redis_url)
 
 
