@@ -6,12 +6,13 @@ from helpers.google_drive import FileData
 from helpers.config_parser import config_parser
 from helpers.google_drive import GoogleDriveCommands
 from helpers.logger import app_logger
+from urllib.parse import urlparse
 
 UPLOADED_FILES_DICT = "uploadedFilesDict"
 
 
-redis_url = environ.get('REDIS_TLS_URL', config_parser.get('Redis', 'url'))
-conn = redis.from_url(redis_url)
+url = urlparse(environ.get('REDIS_URL', config_parser.get('Redis', 'url')))
+conn = redis.Redis(host=url.hostname, port=url.port, password=url.password, ssl=(url.scheme == "rediss"), ssl_cert_reqs=None)
 
 
 def save_uploaded_files(files: List[FileData], redis_connection=conn):
