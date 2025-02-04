@@ -8,7 +8,7 @@ from models.contract import AnnexModel
 from models.record import RecordModel, RecordState
 from tests import common_data
 from tests.common import all_fields_to_marge_are_in_file, add_record, GoogleDriveFakeCommands, validate_document_creation
-
+import os
 
 def assert_value(value, expected, precision=0):
     assert f"{value}" == f"{expected:.{precision}f}"
@@ -24,9 +24,9 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
                                    [week, second_week, third_week],
                                    ApplicationType.FRUIT_VEG)
 
-    assert get_application_dir(application) == "TEST_PROGRAM_2023_2024_SEMESTR_1/WNIOSKI/1_1_2023_2024_warzywa-owoce"
+    assert get_application_dir(application) == os.path.join("TEST_PROGRAM_2023_2024_SEMESTR_1", "WNIOSKI", "1_1_2023_2024_warzywa-owoce")
     assert get_application_dir_per_school(
-        application) == "TEST_PROGRAM_2023_2024_SEMESTR_1/WNIOSKI/1_1_2023_2024_warzywa-owoce/EWIDENCJE"
+        application) == os.path.join("TEST_PROGRAM_2023_2024_SEMESTR_1", "WNIOSKI", "1_1_2023_2024_warzywa-owoce", "EWIDENCJE")
     records = RecordModel.filter_records_by_contract(application, contract_for_school_no_dairy)
     with pytest.raises(ValueError):
         RecordsSummaryGenerator(application, records, "30.12.2023")
@@ -106,17 +106,17 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
     assert_value(application_generator.data["apple"], 6)
     assert_value(common_data.program["fruitVeg_price"], 1.5, precision=1)
     assert_value(application_generator.data["applewn"], 9.00, precision=2)
-    assert_value(application_generator.data["applevat"], 0.00, precision=2)
-    assert_value(application_generator.data["applewb"], 9.00, precision=2)
+    assert_value(application_generator.data["applevat"], 0.45, precision=2)
+    assert_value(application_generator.data["applewb"], 9.45, precision=2)
     assert_value(application_generator.data["pear"], 0)
     assert_value(application_generator.data["juice"], 16)
     assert_value(application_generator.data["juicewn"], 24.00, precision=2)
-    assert_value(application_generator.data["juicevat"], 0.72, precision=2)
-    assert_value(application_generator.data["juicewb"], 24.72, precision=2)
+    assert_value(application_generator.data["juicevat"], 5.28, precision=2)
+    assert_value(application_generator.data["juicewb"], 29.28, precision=2)
     assert_value(application_generator.data["fruitall"], 22)
     assert_value(application_generator.data["fruitallwn"], 33.00, precision=2)
-    assert_value(application_generator.data["fruitallvat"], 0.72, precision=2)
-    assert_value(application_generator.data["fruitallwb"], 33.72, precision=2)
+    assert_value(application_generator.data["fruitallvat"], 5.73, precision=2)
+    assert_value(application_generator.data["fruitallwb"], 38.73, precision=2)
     assert_value(application_generator.data["carrot"], 200)
     assert_value(application_generator.data["carrotwn"], 300.00, precision=2)
     assert_value(application_generator.data["carrotvat"], 24.00, precision=2)
@@ -132,7 +132,7 @@ def test_application_generator_fruit_veg(contract_for_school_no_dairy, second_co
     assert_value(application_generator.data["kids_no"], 111)
     assert_value(application_generator.data["app_school_no"], 2)
     assert_value(application_generator.data["weeks_no"], 3)
-    assert_value(application_generator.data["income"], 527.22, precision=2)
+    assert_value(application_generator.data["income"], 532.23, precision=2)
     RecordModel.query.delete()
     AnnexModel.query.delete()
     application.delete_from_db()
@@ -177,9 +177,9 @@ def test_application_generator_with_dairy_contract_school(contract_for_school_no
                                    [second_week, third_week],
                                    ApplicationType.DAIRY)
 
-    assert get_application_dir(application) == "TEST_PROGRAM_2023_2024_SEMESTR_1/WNIOSKI/1_1_2023_2024_nabial"
+    assert get_application_dir(application) == os.path.join("TEST_PROGRAM_2023_2024_SEMESTR_1", "WNIOSKI", "1_1_2023_2024_nabial")
     assert get_application_dir_per_school(
-        application) == "TEST_PROGRAM_2023_2024_SEMESTR_1/WNIOSKI/1_1_2023_2024_nabial/EWIDENCJE"
+        application) == os.path.join("TEST_PROGRAM_2023_2024_SEMESTR_1","WNIOSKI","1_1_2023_2024_nabial","EWIDENCJE")
     records = RecordModel.filter_records_by_contract(application, contract_for_school_no_dairy)
     with pytest.raises(ValueError):
         RecordsSummaryGenerator(application, records, "30.12.2023")
@@ -245,8 +245,8 @@ def test_application_generator_with_dairy_contract_school(contract_for_school_no
     assert_value(application_generator.data["milk"], 72)
     assert_value(common_data.program["dairy_price"], 2.0, precision=1)
     assert_value(application_generator.data["milkwn"], 144.00, precision=2)
-    assert_value(application_generator.data["milkvat"], 0.00, precision=2)
-    assert_value(application_generator.data["milkwb"], 144.00, precision=2)
+    assert_value(application_generator.data["milkvat"], 10.08, precision=2)
+    assert_value(application_generator.data["milkwb"], 154.08, precision=2)
 
     assert_value(application_generator.data["yoghurt"], 99)
     assert_value(application_generator.data["yoghurtwn"], 198.00, precision=2)
@@ -255,14 +255,14 @@ def test_application_generator_with_dairy_contract_school(contract_for_school_no
 
     assert_value(application_generator.data["dairyall"], 171)
     assert_value(application_generator.data["dairyallwn"], 342.00, precision=2)
-    assert_value(application_generator.data["dairyallvat"], 3.96, precision=2)
-    assert_value(application_generator.data["dairyallwb"], 345.96, precision=2)
+    assert_value(application_generator.data["dairyallvat"], 14.04, precision=2)
+    assert_value(application_generator.data["dairyallwb"], 356.04, precision=2)
 
     assert_value(application_generator.data["kids_no"], 55)
     assert_value(application_generator.data["app_school_no"], 2)
     assert_value(application_generator.data["weeks_no"], 2)
 
-    assert_value(application_generator.data["income"], 345.96, precision=2)
+    assert_value(application_generator.data["income"], 356.04, precision=2)
 
     RecordModel.query.delete()
     AnnexModel.query.delete()

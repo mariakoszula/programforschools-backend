@@ -1,0 +1,53 @@
+[Common]
+secret_key = programforschools
+main_directory = ..
+
+[Database]
+local_prefix = postgresql://
+remote_prefix = postgres://
+user = programforschools_test
+password = programforschools_password_test
+port = 5433
+host = localhost
+url = ${Database:user}:${Database:password}@${Database:host}:${Database:port}/${Database:user}
+
+[Redis]
+url = redis://redis:6379/0
+
+[GoogleDriveConfig]
+google_drive_id = 1L60b0ELqlhSI25oew2t_69bCak1ef6EX
+
+[DocTemplates]
+directory = ${Common:main_directory}/mergefield_docs_templates
+register = ${DocTemplates:directory}/rejestr.docx
+annex = ${DocTemplates:directory}/aneks.docx
+record = ${DocTemplates:directory}/wz.docx
+delivery = ${DocTemplates:directory}/rozwozka.docx
+contract = Zalacznik_VIII_Umowa.docx
+contract_empty = Zalacznik_VIII_Umowa_Pusta.docx
+test = test_file{}.docx
+validity_annex_end_info = i obowiązuje do dnia {} r.
+records_summary = Zalacznik_VA_Ewidencja_dostaw{}.docx
+records_statements = Zalacznik_V_Oswiadczenie_szkoly{}.docx
+application = Zalacznik_IV_Wniosek_o_pomoc{}.docx
+
+[DocNames]
+register = Rejestr_{}.docx
+annex = {}_Aneks_{}_{}_{}.docx
+contract = {}_Umowa_{}_{}.docx
+record = {}_WZ_{}_{}.docx
+record_all = Data_{}_Kierowca_{}_WZ.docx
+delivery = Data_{}_Kierowca_{}_rozpiska.docx
+records_summary = {}_Ewidencja_dostaw.docx
+records_statements = {}_Oswiadczenie.docx
+application = Wniosek_o_pomoc_{}.docx
+
+[Directories]
+main_dir_program_part = TEST_PROGRAM
+main_sem_dir_part = SEMESTR
+annex = ANEKSY
+contract = UMOWY
+application = WNIOSKI
+applicationForSchool = EWIDENCJE
+record = WZ
+
