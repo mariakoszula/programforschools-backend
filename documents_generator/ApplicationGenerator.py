@@ -13,15 +13,14 @@ from models.contract import ContractModel
 from models.record import RecordModel, RecordState
 from models.school import SchoolModel
 from models.week import WeekModel
-from decimal import ROUND_HALF_UP, getcontext, Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from collections import namedtuple
 from os import path
+from helpers.logger import app_logger
 
 FRUIT_VEG_PREFIX = "fv_"
 
-getcontext().rounding = ROUND_HALF_UP
-round_number = Decimal('.01')
-
+financial_round = lambda value: Decimal(f"{value:.2f}").quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 def _get_template(program, doc_template):
     return path.join(config_parser.get('DocTemplates', 'directory'),
@@ -400,22 +399,21 @@ class ApplicationGenerator(DocumentGenerator):
 
     def __product_price(self, product: ProductModel):
         if product.type.name == ProductTypeModel.DAIRY_TYPE:
-            return Decimal(self.application.program.dairy_price)
+            return financial_round(self.application.program.dairy_price)
         else:
-            return Decimal(self.application.program.fruitVeg_price)
+            return financial_round(self.application.program.fruitVeg_price)
 
     def __fill_product_details(self):
         with create_app().app_context():
             for name, amount in self.product_dict.items():
                 if "all" not in name:
                     product = ProductModel.find_by(template_name=name)
-                    amount = Decimal(amount)
                     all_name = product.type.template_name()
                     self.__fill_product(all_name, name, amount)
                     self.__fill_product(all_name, name, amount * self.__product_price(product), postfix="wn")
-                    self.__fill_product(all_name, name, Decimal(self.data[f"{name}wn"]) * Decimal(product.vat / 100),
+                    self.__fill_product(all_name, name, financial_round(self.data[f"{name}wn"]) * financial_round(product.vat / 100),
                                         postfix="vat")
-                    self.__fill_product(all_name, name, Decimal(self.data[f"{name}wn"]) + Decimal(self.data[f"{name}vat"]), postfix="wb")
+                    self.__fill_product(all_name, name, financial_round(self.data[f"{name}wn"]) + financial_round(self.data[f"{name}vat"]), postfix="wb")
             for name, amount in self.data.items():
                 if "wn" in name or "vat" in name or "wb" in name:
                     self.data[name] = f"{amount:.2f}"
@@ -423,9 +421,13 @@ class ApplicationGenerator(DocumentGenerator):
     def __fill_product(self, all_name, name, amount, postfix=""):
         all_key = f"{all_name}{postfix}"
         key = f"{name}{postfix}"
-        amount = Decimal(amount)
+        if postfix:
+            amount = financial_round(amount)
+            amount_all = financial_round(self.data.get(all_key, financial_round(0)) + amount)
+        else:
+            amount_all = self.data.get(all_key, 0) + amount
         self.data[key] = amount
-        self.data[all_key] = self.data.get(all_key, Decimal(0)) + amount
+        self.data[all_key] = amount_all
 
     def __fill_income(self, prefix="", fields_name=None):
         if fields_name is None:
