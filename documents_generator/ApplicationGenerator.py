@@ -413,9 +413,9 @@ class ApplicationGenerator(DocumentGenerator):
                     all_name = product.type.template_name()
                     self.__fill_product(all_name, name, amount)
                     self.__fill_product(all_name, name, amount * self.__product_price(product), postfix="wn")
-                    self.__fill_product(all_name, name, self.data[f"{name}wn"] * Decimal(product.vat) / 100,
+                    self.__fill_product(all_name, name, Decimal(self.data[f"{name}wn"]) * Decimal(product.vat / 100),
                                         postfix="vat")
-                    self.__fill_product(all_name, name, self.data[f"{name}wn"] + self.data[f"{name}vat"], postfix="wb")
+                    self.__fill_product(all_name, name, Decimal(self.data[f"{name}wn"]) + Decimal(self.data[f"{name}vat"]), postfix="wb")
             for name, amount in self.data.items():
                 if "wn" in name or "vat" in name or "wb" in name:
                     self.data[name] = f"{amount:.2f}"
@@ -423,8 +423,9 @@ class ApplicationGenerator(DocumentGenerator):
     def __fill_product(self, all_name, name, amount, postfix=""):
         all_key = f"{all_name}{postfix}"
         key = f"{name}{postfix}"
+        amount = Decimal(amount)
         self.data[key] = amount
-        self.data[all_key] = self.data.get(all_key, 0) + amount
+        self.data[all_key] = self.data.get(all_key, Decimal(0)) + amount
 
     def __fill_income(self, prefix="", fields_name=None):
         if fields_name is None:
