@@ -1,4 +1,4 @@
-name: Codeball
+name: Codeball Review
 on:
   pull_request: {}
   pull_request_review_comment:
@@ -18,3 +18,5 @@ jobs:
           labelPullRequestsWhenApproved: "true"
           labelPullRequestsWhenReviewNeeded: "false"
           failJobsWhenReviewNeeded: "false"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
