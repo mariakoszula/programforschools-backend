@@ -9,6 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Codeball
     steps:
+      - name: Checkout Repository
+          uses: actions/checkout@v3  # Ensures that the repository code is available
+
+      - name: Set TLS Version to TLSv1.2
+         run: echo "NODE_OPTIONS=--tls-min-v1.2" >> $GITHUB_ENV  # Forces TLS 1.2+ for all Node.js requests
+
       # Run Codeball on all new Pull Requests and Review Comments! 🚀
       # For customizations and more documentation, see https://github.com/sturdy-dev/codeball-action
       - name: Codeball
