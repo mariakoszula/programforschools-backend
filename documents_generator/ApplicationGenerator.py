@@ -21,6 +21,7 @@ FRUIT_VEG_PREFIX = "fv_"
 
 financial_round = lambda value: Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
+
 def _get_template(program, doc_template):
     return path.join(config_parser.get('DocTemplates', 'directory'),
                      program.get_part_with_year_and_sem(),
@@ -92,7 +93,8 @@ class RecordsSummaryGenerator(DocumentGenerator):
         ApplicationCommonData.add_weeks(self.data, self.application)
         if self.application.type == ApplicationType.FULL:
             fruit_veg_records = list(filter(lambda r: r.product_store.product.type.is_fruit_veg(), self.records))
-            self.data[f'{FRUIT_VEG_PREFIX}product_sum'] = sum([record.delivered_kids_no for record in fruit_veg_records])
+            self.data[f'{FRUIT_VEG_PREFIX}product_sum'] = sum(
+                [record.delivered_kids_no for record in fruit_veg_records])
             self.merge_rows(f'{FRUIT_VEG_PREFIX}record_date',
                             RecordsSummaryGenerator.__record_date_info(in_records=fruit_veg_records,
                                                                        prefix=FRUIT_VEG_PREFIX))
@@ -185,7 +187,7 @@ class StatementsBaseData(DataContainer):
         self.application = application
         self.start_week = start_week
         self.type = ApplicationType.DAIRY if self.application.type == ApplicationType.DAIRY \
-                                          or self.application.type == ApplicationType.FULL else ApplicationType.FRUIT_VEG
+                                             or self.application.type == ApplicationType.FULL else ApplicationType.FRUIT_VEG
         self.prefix = ""
         if self.application.type == ApplicationType.FULL and self.records[0].product_store.product.type.is_fruit_veg():
             self.prefix = FRUIT_VEG_PREFIX
@@ -194,7 +196,7 @@ class StatementsBaseData(DataContainer):
 
     def __kids_on_contract(self):
         max_kids = self.contract.fruitVeg_products if self.records[0].product_store.product.type.is_fruit_veg() \
-                                                   else self.contract.dairy_products
+            else self.contract.dairy_products
         assert max_kids > 0 and "Maximum number of kids must be greater than 0"
         return max_kids
 
@@ -251,6 +253,7 @@ class StatementGenerator(DocumentGenerator):
                 res[key] = "0"
         return res
 
+
 InconsistencyError = namedtuple("InconsistencyError", ["school", "message"])
 
 
@@ -299,7 +302,8 @@ class ApplicationGenerator(DocumentGenerator):
         records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATED))
         records.extend(
             RecordModel.filter_records_by_contract(application, contract, state=RecordState.GENERATION_IN_PROGRESS))
-        records.extend(RecordModel.filter_records_by_contract(application, contract, state=RecordState.DELIVERY_PLANNED))
+        records.extend(
+            RecordModel.filter_records_by_contract(application, contract, state=RecordState.DELIVERY_PLANNED))
         return records
 
     @staticmethod
@@ -428,7 +432,7 @@ class ApplicationGenerator(DocumentGenerator):
             amount_all = self.data.get(all_key, 0) + amount
         self.data[key] = amount
         self.data[all_key] = amount_all
-    
+
     def __fill_income(self, prefix="", fields_name=None):
         if fields_name is None:
             fields_name = ["allwb"]
@@ -448,9 +452,11 @@ def statement_factory(application: ApplicationModel, records: List[RecordModel],
         if not fruit_veg_records and not dairy_records:
             raise ValueError("Both fruit_veg and dairy records cannot be empty")
         if fruit_veg_records:
-            statement_data.append(StatementsBaseData(application, date, fruit_veg_records, start_week, is_last, _output_dir))
+            statement_data.append(
+                StatementsBaseData(application, date, fruit_veg_records, start_week, is_last, _output_dir))
         if dairy_records:
-            statement_data.append(StatementsBaseData(application, date, dairy_records, start_week, is_last, _output_dir))
+            statement_data.append(
+                StatementsBaseData(application, date, dairy_records, start_week, is_last, _output_dir))
     else:
         statement_data.append(StatementsBaseData(application, date, records, start_week, is_last, _output_dir))
     return StatementGenerator(statement_data, _drive_tool=_drive_tool)
