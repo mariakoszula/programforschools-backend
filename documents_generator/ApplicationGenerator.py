@@ -415,7 +415,7 @@ class ApplicationGenerator(DocumentGenerator):
                     self.__fill_product(all_name, name, wn, postfix="vat")
                     wb = financial_round(self.data[f"{name}wn"]) + financial_round(self.data[f"{name}vat"])
                     self.__fill_product(all_name, name, wb, postfix="wb")
-                    app_logger.debug(f"amount:{amount} price:{self.__product_price(product)} "
+                    app_logger.error(f"amount:{amount} price:{self.__product_price(product)} "
                                      f"wn:{wn} wb:{wb}")
             # for name, amount in self.data.items():
             #     if "wn" in name or "vat" in name or "wb" in name:
@@ -427,13 +427,13 @@ class ApplicationGenerator(DocumentGenerator):
         if postfix:
             amount = financial_round(amount)
             amount_all = financial_round(self.data.get(all_key, financial_round(0)) + amount)
-            app_logger.debug(f"financial_round:{amount} amount_all:{amount_all} ")
+            app_logger.error(f"financial_round:{amount} amount_all:{amount_all} ")
         else:
             amount_all = self.data.get(all_key, 0) + amount
-            app_logger.debug(f"no round:{amount} amount_all:{amount_all} ")
+            app_logger.error(f"no round:{amount} amount_all:{amount_all} ")
         self.data[key] = amount
         self.data[all_key] = amount_all
-        app_logger.debug(f"{key}:{self.data[key]} {all_key}:{self.data[all_key]} ")
+        app_logger.error(f"{key}:{self.data[key]} {all_key}:{self.data[all_key]} ")
 
     def __fill_income(self, prefix="", fields_name=None):
         if fields_name is None:
