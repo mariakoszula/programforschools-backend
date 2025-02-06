@@ -16,11 +16,10 @@ from models.week import WeekModel
 from decimal import ROUND_HALF_UP, Decimal
 from collections import namedtuple
 from os import path
-from helpers.logger import app_logger
 
 FRUIT_VEG_PREFIX = "fv_"
 
-financial_round = lambda value: Decimal(f"{value:.2f}").quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+financial_round = lambda value: Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 def _get_template(program, doc_template):
     return path.join(config_parser.get('DocTemplates', 'directory'),
@@ -411,15 +410,13 @@ class ApplicationGenerator(DocumentGenerator):
                     all_name = product.type.template_name()
                     self.__fill_product(all_name, name, amount)
                     self.__fill_product(all_name, name, amount * self.__product_price(product), postfix="wn")
-                    wn = financial_round(self.data[f"{name}wn"]) * financial_round(product.vat / 100)
-                    self.__fill_product(all_name, name, wn, postfix="vat")
+                    vat = financial_round(self.data[f"{name}wn"]) * financial_round(product.vat / 100)
+                    self.__fill_product(all_name, name, vat, postfix="vat")
                     wb = financial_round(self.data[f"{name}wn"]) + financial_round(self.data[f"{name}vat"])
                     self.__fill_product(all_name, name, wb, postfix="wb")
-                    app_logger.error(f"amount:{amount} price:{self.__product_price(product)} "
-                                     f"wn:{wn} wb:{wb}")
-            # for name, amount in self.data.items():
-            #     if "wn" in name or "vat" in name or "wb" in name:
-            #         self.data[name] = f"{amount:.2f}"
+            for name, amount in self.data.items():
+                if "wn" in name or "vat" in name or "wb" in name:
+                    self.data[name] = f"{amount:.2f}"
 
     def __fill_product(self, all_name, name, amount, postfix=""):
         all_key = f"{all_name}{postfix}"
@@ -427,14 +424,11 @@ class ApplicationGenerator(DocumentGenerator):
         if postfix:
             amount = financial_round(amount)
             amount_all = financial_round(self.data.get(all_key, financial_round(0)) + amount)
-            app_logger.error(f"financial_round:{amount} amount_all:{amount_all} ")
         else:
             amount_all = self.data.get(all_key, 0) + amount
-            app_logger.error(f"no round:{amount} amount_all:{amount_all} ")
         self.data[key] = amount
         self.data[all_key] = amount_all
-        app_logger.error(f"{key}:{self.data[key]} {all_key}:{self.data[all_key]} ")
-
+    
     def __fill_income(self, prefix="", fields_name=None):
         if fields_name is None:
             fields_name = ["allwb"]
