@@ -14,6 +14,10 @@ if int(getenv("DEBUG_MODE", 0)):
     app_logger.addHandler(handlerStream)
     handler.setLevel(logging.INFO)
 else:
+    handlerStream = logging.StreamHandler()
+    handlerStream.setLevel(logging.WARNING)
+    handlerStream.setFormatter(formatter)
+    app_logger.addHandler(handlerStream)
     handler.setLevel(logging.WARNING)
     app_logger.setLevel(logging.WARNING)
 
