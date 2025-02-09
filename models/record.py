@@ -8,7 +8,7 @@ from models.contract import ContractModel
 from models.product import ProductTypeModel
 from models.week import WeekModel
 from helpers.logger import app_logger
-
+from sqlalchemy import delete
 
 class RecordState(enum.Enum):
     PLANNED = 1
@@ -134,6 +134,13 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.update_db_only()
         if numbers_changed:
             raise RecordNumbersChangedError(self.contract.school.nick)
+
+    @classmethod
+    def bulk_delete(cls, ids, program_id, product_type):
+        #cls.query.join(cls.product_store).filter_by(program_id=program_id).filter_by()
+        skipped_ids =[]
+        deleted_resords = []
+        return {'skipped': skipped_ids, 'deleted': deleted_resords}
 
     @classmethod
     def get_records(cls, ids):
