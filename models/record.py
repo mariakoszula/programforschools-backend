@@ -9,7 +9,6 @@ from models.product import ProductTypeModel
 from models.week import WeekModel
 from helpers.logger import app_logger
 
-
 class RecordState(enum.Enum):
     PLANNED = 1
     GENERATED = 2
@@ -134,6 +133,20 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         self.update_db_only()
         if numbers_changed:
             raise RecordNumbersChangedError(self.contract.school.nick)
+
+    @classmethod
+    def bulk_delete(cls, ids, program_id):
+        records_all: list[RecordModel] = cls.query.join(cls.product_store).filter_by(program_id=program_id).filter(cls.id.in_(ids)).all()
+        skipped_ids = []
+        deleted_records = []
+        for record in records_all:
+            # Don't delete recrods which are already in state which should not be removed
+            if record.state in [RecordState.GENERATION_IN_PROGRESS, RecordState.GENERATED, RecordState.DELIVERED]:
+                skipped_ids.append(record.id)
+                continue
+            deleted_records.append(record.id)
+        cls.execute(RecordModel.__table__.delete().where(RecordModel.id.in_(deleted_records)))
+        return {'skipped': skipped_ids, 'deleted': deleted_records}
 
     @classmethod
     def get_records(cls, ids):

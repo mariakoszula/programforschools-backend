@@ -21,6 +21,11 @@ class BaseDatabaseQuery:
         db.session.delete(self)
         db.session.commit()
 
+    @staticmethod
+    def execute(cmd):
+        db.session.execute(cmd)
+        db.session.commit()
+
     def update_db_only(self, **update_patch):
         for name, changed_value in update_patch.items():
             if "date" in name and isinstance(changed_value, str):
