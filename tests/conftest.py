@@ -18,6 +18,8 @@ from models.record import RecordModel
 from models.school import SchoolModel
 from models.week import WeekModel
 from tests.common import clear_tables_schools, clear_tables_common
+from flask_jwt_extended import create_access_token
+from models.user import UserModel, Role, AllowedRoles
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -240,6 +242,7 @@ def product_store_yoghurt(program_setup, weight_type_kg, dairy):
     product.update_db(template_name="yoghurt")
     yield ProductStoreModel(program_setup.id, "yoghurt", 2, 0.15)
 
+
 @pytest.fixture(scope="module")
 def setup_record_test_init(contract_for_school, product_store_milk, week):
     contract_for_school.update_db(dairy_products=5, fruitVeg_products=10)  # 2023-01-01
@@ -250,6 +253,7 @@ def setup_record_test_init(contract_for_school, product_store_milk, week):
                validity_date_end="2023-12-13")
     yield contract_for_school, product_store_milk, week
     RecordModel.query.delete()
+
 
 @pytest.fixture(scope="module")
 def create_application(setup_record_test_init, second_week):
@@ -286,3 +290,29 @@ def invoice_data(product_store_milk, product_store_kohlrabi, product_store_apple
     for product in products:
         product.delete_from_db()
     supplier.delete_from_db()
+
+
+@pytest.fixture(scope="session")
+def auth_headers():
+    role = Role(AllowedRoles.admin)
+    role.save_to_db()
+    user = UserModel("test_user", "test_user", "test_user@com.pl", AllowedRoles.admin)
+    user.save_to_db()
+    token = create_access_token(identity=user.id)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="session")
+def client_with_in_memory_db():
+    """Setup a Flask test client and an in-memory database."""
+    app_ = create_app()
+    app_.config["TESTING"] = True
+    app_.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # Use an in-memory database
+    app_.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    with app_.app_context():
+        GoogleDriveCommands.clean_main_directory()
+        db.drop_all()
+        db.create_all()
+        yield app_.test_client()
+        db.drop_all()

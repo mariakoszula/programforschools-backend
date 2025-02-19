@@ -4,7 +4,7 @@ from flask import request
 from flask_restful import Resource
 from marshmallow import fields, Schema, ValidationError, validate
 from auth.accesscontrol import AllowedRoles, handle_exception_pretty, roles_required
-from helpers.schema_validators import program_schema, DateQuerySchema
+from helpers.schema_validators import program_schema, DateQuerySchema, ProgramQuerySchema
 from models.contract import ContractModel
 from models.product import ProductStoreModel, ProductTypeModel
 from models.record import RecordModel, RecordState
@@ -18,6 +18,8 @@ def must_not_be_empty(data):
     if not data:
         raise ValidationError("Pole nie może być puste")
 
+class BulkDeleteSchema(ProgramQuerySchema):
+    ids = fields.List(fields.Int(required=True), required=True)
 
 class RecordStateSchema(Schema):
     state = fields.Int(required=True, validate=validate.Range(RecordState.PLANNED.value, RecordState.DELIVERED.value))
@@ -195,6 +197,17 @@ def validate_record(record: RecordModel, program_id):
     if not record or record.contract.program_id != program_id:
         return False
     return True
+
+
+class RecordBulkDelete(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def delete(cls):
+        errors = BulkDeleteSchema().validate(request.json)
+        if errors:
+            return { "message": f"{errors}" }, 400
+        return RecordModel.bulk_delete(**request.json), 200
 
 
 class RecordDeliveryCreate(Resource):
