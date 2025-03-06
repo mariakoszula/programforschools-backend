@@ -4,7 +4,7 @@ from models.contract import TimedAnnexModel, AnnexModel, ContractModel
 from models.directory_tree import DirectoryTreeModel
 from models.invoice import InvoiceProductModel, InvoiceModel, SupplierModel
 from models.product import ProductStoreModel, ProductModel, ProductTypeModel, WeightTypeModel
-from models.record import RecordState, RecordModel
+from models.record import RecordState, RecordModel, RecordNumbersChangedError
 from models.school import SchoolModel
 from models.week import WeekModel
 from os import path
@@ -28,10 +28,14 @@ def all_fields_to_marge_are_in_file(file_name, **fields):
 
 
 def add_record(date, contract_id, product_store, final_state=RecordState.DELIVERED):
-    record = RecordModel(date, contract_id, product_store)
-    record.save_to_db()
-    record.change_state(RecordState.GENERATION_IN_PROGRESS, date=date)
-    record.change_state(final_state)
+    try:
+        record = RecordModel(date, contract_id, product_store)
+        record.save_to_db()
+        record.change_state(RecordState.ASSIGN_NUMBER)
+        record.change_state(RecordState.GENERATION_IN_PROGRESS, date=date)
+        record.change_state(final_state)
+    except RecordNumbersChangedError as e:
+        print(e)
     return record
 
 
