@@ -13,6 +13,8 @@ from tasks.generate_delivery_task import queue_delivery, queue_week_summary
 from helpers.logger import app_logger
 from models.week import WeekModel
 from helpers.db import db
+from tasks.generate_register_task import queue_record_register
+
 
 def must_not_be_empty(data):
     if not data:
@@ -243,3 +245,13 @@ class SummarizeDeliveryCreate(Resource):
             }, 400
         return queue_week_summary(week_id)
 
+
+class RecordRegister(Resource):
+    @classmethod
+    @handle_exception_pretty
+    @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
+    def get(cls, program_id):
+        try:
+            return queue_record_register(program_id)
+        except ValueError as e:
+            return {'error': f"{e}"}, 400

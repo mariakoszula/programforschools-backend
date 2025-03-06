@@ -20,25 +20,26 @@ def measure_time_callback(job, connection, result, *args, **kwargs):
 
 
 def queue_task(*, func, request, callback=measure_time_callback, callback_failure=measure_time_callback):
-    with Connection(redis_connection):
-        q = Queue()
-        req_in = dict()
-        if isinstance(request, dict):
-            req_in = request
-        else:
-            if request.args:
-                req_in.update(**request.args)
-            if request.is_json:
-                req_in.update(**request.json)
-        create_task = q.enqueue(func,
-                                result_ttl=60 * 60,
-                                on_success=callback,
-                                on_failure=callback_failure,
-                                job_timeout=10 * 60,
-                                **req_in)
-    return {
-               'task_id': create_task.get_id()
-           }, 202
+    with create_app().app_context():
+        with Connection(redis_connection):
+            q = Queue()
+            req_in = dict()
+            if isinstance(request, dict):
+                req_in = request
+            else:
+                if request.args:
+                    req_in.update(**request.args)
+                if request.is_json:
+                    req_in.update(**request.json)
+            create_task = q.enqueue(func,
+                                    result_ttl=60 * 60,
+                                    on_success=callback,
+                                    on_failure=callback_failure,
+                                    job_timeout=10 * 60,
+                                    **req_in)
+        return {
+                   'task_id': create_task.get_id()
+               }, 202
 
 
 def setup_progress_meta(documents_no: int, notification=None):

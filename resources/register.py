@@ -2,8 +2,6 @@ from flask_restful import Resource
 from auth.accesscontrol import roles_required, handle_exception_pretty
 from models.user import AllowedRoles
 from tasks.generate_register_task import queue_register
-from models.program import ProgramModel
-
 
 class RegisterResource(Resource):
 

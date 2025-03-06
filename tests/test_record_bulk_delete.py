@@ -1,6 +1,6 @@
 import json
 from models.record import RecordModel, RecordState
-from models.product import ProductTypeModel
+
 
 def test_bulk_delete(client_with_in_memory_db, auth_headers, setup_record_test_init, product_store_carrot):
     with client_with_in_memory_db.application.app_context():
