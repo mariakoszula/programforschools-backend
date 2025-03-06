@@ -1,5 +1,5 @@
 from app import create_app
-from documents_generator import RecordRegisterGenerator
+from documents_generator.RecordRegisterGenerator import RecordRegisterGenerator
 from documents_generator.RegisterGenerator import RegisterGenerator
 from models.program import ProgramModel
 from tasks.generate_documents_task import queue_task, setup_progress_meta, create_generator_and_run
