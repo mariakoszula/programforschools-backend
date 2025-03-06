@@ -95,7 +95,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def all_filtered_by_program(cls, program_id):
-        return cls.query.join(cls.product_store).filter_by(program_id=program_id)
+        return cls.query.join(cls.product_store).join(cls.contract).filter_by(program_id=program_id)
 
     @classmethod
     def all_filtered_by_week(cls, week_id):
