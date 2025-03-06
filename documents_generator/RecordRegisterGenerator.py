@@ -9,7 +9,7 @@ from models.program import ProgramModel
 from helpers.config_parser import config_parser
 from helpers.common import get_output_name
 from models.record import RecordModel
-
+from app import create_app
 
 class RecordRegisterGenerator(DocumentGenerator):
     def __prepare_record_data(self, record: RecordModel, component_type: str):
@@ -23,17 +23,18 @@ class RecordRegisterGenerator(DocumentGenerator):
         return data
 
     def prepare_data(self):
-        rows = []
-        sorted_records = sorted(self.record_by_school_and_product.items())
-        for contract_component, records in sorted_records:
-            _, component = contract_component
-            for record in records:
-                rows.append(self.__prepare_record_data(record, component))
-        self.merge_rows('no', rows)
-        self.merge(
-            semester_no=self.program.get_current_semester(),
-            school_year=self.program.school_year
-        )
+        with create_app().app_context():
+            rows = []
+            sorted_records = sorted(self.record_by_school_and_product.items())
+            for contract_component, records in sorted_records:
+                _, component = contract_component
+                for record in records:
+                    rows.append(self.__prepare_record_data(record, component))
+            self.merge_rows('no', rows)
+            self.merge(
+                semester_no=self.program.get_current_semester(),
+                school_year=self.program.school_year
+            )
 
     def __init__(self, program: ProgramModel, _output_dir=None, _drive_tool=GoogleDriveCommands):
         self.program = program
