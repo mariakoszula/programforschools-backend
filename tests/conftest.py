@@ -1,7 +1,7 @@
 import pytest
 import sqlalchemy.exc
 
-from helpers.db import db
+from helpers.db import db as _db
 from app import create_app
 import psycopg2
 from helpers.config_parser import config_parser
@@ -41,21 +41,25 @@ def database(request):
         conn.close()
 
 
-@pytest.fixture(scope='session')
-def _db(app):
-    from flask_sqlalchemy import SQLAlchemy
-    _db = SQLAlchemy(app=app)
-    return _db
+@pytest.fixture(scope="session")
+def db_session(app):
+    """Provides a database session for tests."""
+    with app.app_context():
+        _db.create_all()  # Create all tables
+        yield _db  # Provide the database to tests
+        _db.drop_all()  # Cleanup after tests
 
 
 @pytest.fixture(scope='session')
 def app(database):
-    app = create_app()
-    with app.app_context():
+    app_ = create_app()
+    app_.config["TESTING"] = True
+    app_.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # Use an in-memory database
+    app_.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    with app_.app_context():
         GoogleDriveCommands.clean_main_directory()
-        db.drop_all()
-        db.create_all()
-        yield app
+        yield app_
+        GoogleDriveCommands.clean_main_directory()
 
 
 class InitialSetupError(BaseException):
@@ -77,7 +81,7 @@ def create_if_not_exists(model, custom_filter: Filter, **kwargs):
 
 
 @pytest.fixture(scope="module")
-def program_setup(_db):
+def program_setup(db_session):
     company = create_if_not_exists(CompanyModel, Filter(name=common_data.company["name"]), **common_data.company)
     program = create_if_not_exists(ProgramModel, Filter(semester_no=common_data.program["semester_no"],
                                                         school_year=common_data.program["school_year"]),
