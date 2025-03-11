@@ -27,9 +27,12 @@ def all_fields_to_marge_are_in_file(file_name, **fields):
         assert str(value) in text and f"value: {value} not found in {text}"
 
 
-def add_record(date, contract_id, product_store, final_state=RecordState.DELIVERED):
+def add_record(date, contract_id, product_store, final_state=RecordState.DELIVERED, db=None):
     try:
         record = RecordModel(date, contract_id, product_store)
+        if db is not None:
+            db.session.add(record)
+            db.session.commit()
         record.save_to_db()
         record.change_state(RecordState.ASSIGN_NUMBER)
         record.change_state(RecordState.GENERATION_IN_PROGRESS, date=date)
