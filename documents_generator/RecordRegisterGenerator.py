@@ -8,7 +8,7 @@ from models.product import ProductTypeModel
 from models.program import ProgramModel
 from helpers.config_parser import config_parser
 from helpers.common import get_output_name
-from models.record import RecordModel
+from models.record import RecordModel, RecordState
 from app import create_app
 
 class RecordRegisterGenerator(DocumentGenerator):
@@ -32,6 +32,7 @@ class RecordRegisterGenerator(DocumentGenerator):
                     rows.append(self.__prepare_record_data(record, component))
             self.merge_rows('no', rows)
             self.merge(
+                date=self.date,
                 semester_no=self.program.get_current_semester(),
                 school_year=self.program.school_year
             )
@@ -48,7 +49,8 @@ class RecordRegisterGenerator(DocumentGenerator):
             key = (record.contract_id, ProductTypeModel.DAIRY_TYPE) if product_type.is_dairy() else (record.contract_id, f"{ProductTypeModel.VEGETABLE_TYPE }-{ProductTypeModel.FRUIT_TYPE}")
             if key not in self.record_by_school_and_product:
                 self.record_by_school_and_product[key] = list()
-            self.record_by_school_and_product[key].append(record)
+            if record.state in (RecordState.GENERATED, RecordState.DELIVERED):
+                self.record_by_school_and_product[key].append(record)
 
         if _output_dir is None:
             _output_dir = self.program.get_main_dir()
