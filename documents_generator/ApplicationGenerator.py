@@ -401,10 +401,11 @@ class ApplicationGenerator(DocumentGenerator):
         return res
 
     def __product_price(self, product: ProductModel):
-        if product.type.name == ProductTypeModel.DAIRY_TYPE:
-            return financial_round(self.application.program.dairy_price)
-        else:
-            return financial_round(self.application.program.fruitVeg_price)
+        price = self.application.program.dairy_price if (product.type.name == ProductTypeModel.DAIRY_TYPE) else self.application.program.fruitVeg_price
+        if price is None:
+            product_name = 'nabiał' if product.type.name == ProductTypeModel.DAIRY_TYPE else 'owocowo-warzywny'
+            price = 0.0
+        return financial_round(price)
 
     def __fill_product_details(self):
         with create_app().app_context():
