@@ -25,6 +25,8 @@ class RecordNumbersChangedError(Exception):
 
 class RecordModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'record'
+    _default_eager = ["contract", "contract.program"]
+
     id = db.Column(db.Integer, primary_key=True)
     no = db.Column(db.Integer, nullable=True)
     date = db.Column(db.DateTime, nullable=False)

@@ -15,11 +15,17 @@ class NameQuerySchema(Schema):
     name = fields.Str(required=True)
 
 
-class NickWithNameQuery(NameQuerySchema):
+class SupplierDataQuery(Schema):
+    address = fields.Str(required=False)
+    nip = fields.Str(required=False)
+    contact = fields.Str(required=False)
+
+
+class SuppliersNickAndNameReqQuery(NameQuerySchema, SupplierDataQuery):
     nick = fields.Str(required=True)
 
 
-class NickWithNameOptQuery(Schema):
+class SuppliersOptQuery(SupplierDataQuery):
     name = fields.Str(required=False)
     nick = fields.Str(required=False)
 

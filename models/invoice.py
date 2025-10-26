@@ -10,17 +10,23 @@ class SupplierModel(db.Model, BaseDatabaseQuery):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False, unique=True)
     nick = db.Column(db.String(30), nullable=False, unique=True)
+    address = db.Column(db.String(300), nullable=True, unique=False)
+    nip = db.Column(db.String(100), nullable=True, unique=True)
+    contact = db.Column(db.String(100), nullable=True, unique=True)
 
-    def __init__(self, name, nick):
+    def __init__(self, name, nick, address, nip, contact):
         self.name = name
         self.nick = nick
+        self.address = address
+        self.nip = nip
+        self.contact = contact
         self.save_to_db()
 
     def __str__(self):
         return f"{self.name} <{self.nick}>"
 
     def __repr__(self):
-        return f"SupplierModel({self.name}, {self.nick})"
+        return f"SupplierModel({self.name}, {self.nick}, {self.address}, {self.nip}, {self.contact})"
 
 
 class InvoiceModel(db.Model, BaseDatabaseQuery):
