@@ -8,6 +8,8 @@ from models.contract import ContractModel
 from models.product import ProductTypeModel
 from models.week import WeekModel
 from helpers.logger import app_logger
+from sqlalchemy.orm import joinedload
+
 
 class RecordState(enum.Enum):
     PLANNED = 1
@@ -25,7 +27,6 @@ class RecordNumbersChangedError(Exception):
 
 class RecordModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'record'
-    _default_eager = ["contract", "contract.program"]
 
     id = db.Column(db.Integer, primary_key=True)
     no = db.Column(db.Integer, nullable=True)
@@ -34,12 +35,12 @@ class RecordModel(db.Model, BaseDatabaseQuery):
     delivered_kids_no = db.Column(db.Integer, nullable=True)
     state = db.Column(db.Enum(RecordState), nullable=False)
     product_store_id = db.Column(db.Integer, db.ForeignKey('product_store.id'), nullable=False)
-    product_store = db.relationship('ProductStoreModel',
-                                    backref=db.backref('records', lazy=True))
+    product_store = db.relationship('ProductStoreModel', lazy="selectin",
+                                    backref=db.backref('records', lazy="selectin"))
     product_type_id = db.Column(db.Integer, db.ForeignKey('product_type.id'), nullable=False)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), nullable=False)
-    contract = db.relationship('ContractModel',
-                               backref=db.backref('records', lazy=True, cascade="all, delete-orphan"))
+    contract = db.relationship('ContractModel', lazy="selectin",
+                               backref=db.backref('records', lazy="selectin", cascade="all, delete-orphan"))
     week_id = db.Column(db.Integer, db.ForeignKey('week.id'), nullable=False)
     week = db.relationship('WeekModel',
                            backref=db.backref('records', lazy=True))
@@ -152,7 +153,7 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def get_records(cls, ids):
-        return [cls.find_by_id(_id) for _id in ids]
+        return cls.query.options(joinedload(cls.contract).joinedload(ContractModel.program)).filter(cls.id.in_(ids)).all()
 
     @classmethod
     def filter_records(cls, application: ApplicationModel, state=RecordState.DELIVERED):

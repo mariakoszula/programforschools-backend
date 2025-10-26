@@ -32,9 +32,6 @@ class UserModel(db.Model, BaseDatabaseQuery):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     role = db.relationship('Role')
 
-    # Automatically eager-load role whenever user is fetched
-    _default_eager = ["role"]
-
     def __init__(self, username, password, email, role):
         role = Role.find(role)
         if not role:

@@ -11,20 +11,26 @@ class BaseDatabaseQuery:
         return model
 
     def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def add_to_db(self):
-        db.session.add(self)
+        try:
+            db.session.add(self)
+            db.session.commit()
+        finally:
+            db.session.close()
 
     def delete_from_db(self):
-        db.session.delete(self)
-        db.session.commit()
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        finally:
+            db.session.close()
 
     @staticmethod
     def execute(cmd):
-        db.session.execute(cmd)
-        db.session.commit()
+        try:
+            db.session.execute(cmd)
+            db.session.commit()
+        finally:
+            db.session.close()
 
     def update_db_only(self, **update_patch):
         for name, changed_value in update_patch.items():
@@ -34,8 +40,11 @@ class BaseDatabaseQuery:
                 setattr(self, name, changed_value)
 
     def update_db(self, **update_patch):
-        self.update_db_only(**update_patch)
-        db.session.commit()
+        try:
+            self.update_db_only(**update_patch)
+            db.session.commit()
+        finally:
+            db.session.close()
 
     def json(self):
         return {column.name: getattr(self, column.name, None) for column in self.__table__.columns}
