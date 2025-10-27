@@ -11,6 +11,7 @@ from helpers.common import get_output_name
 from models.record import RecordModel, RecordState
 from app import create_app
 
+
 class RecordRegisterGenerator(DocumentGenerator):
     def __prepare_record_data(self, record: RecordModel, component_type: str):
         data = dict()

@@ -4,7 +4,7 @@ from marshmallow import fields, validate, Schema
 from auth.accesscontrol import roles_required, AllowedRoles, handle_exception_pretty
 from helpers.resource import simple_post, simple_put, simple_get, simple_delete, simple_get_all, \
     simple_get_all_by_program, validate_body
-from helpers.schema_validators import InvoiceQuerySchema, NickWithNameQuery, NickWithNameOptQuery, \
+from helpers.schema_validators import InvoiceQuerySchema, SuppliersNickAndNameReqQuery, SuppliersOptQuery, \
     InvoiceUpdateQuerySchema, InvoiceProductSchema, AmountFloatQuerySchema, InvoiceDisposalSchema
 from models.invoice import SupplierModel, InvoiceModel, InvoiceProductModel, InvoiceDisposalModel
 from tasks.generate_invoice_disposal_task import queue_invoice_disposal
@@ -15,7 +15,7 @@ class SupplierRegister(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def post(cls):
-        return simple_post(SupplierModel, "name", validator=NickWithNameQuery())
+        return simple_post(SupplierModel, "name", validator=SuppliersNickAndNameReqQuery())
 
 
 class SupplierResource(Resource):
@@ -23,7 +23,7 @@ class SupplierResource(Resource):
     @handle_exception_pretty
     @roles_required([AllowedRoles.admin.name, AllowedRoles.program_manager.name])
     def put(cls, supplier_id):
-        return simple_put(SupplierModel, supplier_id, validator=NickWithNameOptQuery())
+        return simple_put(SupplierModel, supplier_id, validator=SuppliersOptQuery())
 
     @classmethod
     @handle_exception_pretty

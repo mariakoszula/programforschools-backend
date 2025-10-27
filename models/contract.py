@@ -24,11 +24,11 @@ class ContractModel(db.Model, BaseDatabaseQuery):
     fruitVeg_products = db.Column(db.Integer, default=0)
     dairy_products = db.Column(db.Integer, default=0)
     school_id = db.Column(db.Integer, db.ForeignKey('school.id'), nullable=False)
-    school = db.relationship('SchoolModel',
-                             backref=db.backref('contract', lazy=True, order_by='ContractModel.validity_date.desc()'))
+    school = db.relationship('SchoolModel', lazy="selectin",
+                             backref=db.backref('contract', lazy="selectin", order_by='ContractModel.validity_date.desc()'))
     program_id = db.Column(db.Integer, db.ForeignKey('program.id'), nullable=False)
-    program = db.relationship('ProgramModel',
-                              backref=db.backref('contract', lazy=True, order_by='ContractModel.contract_no.desc()'))
+    program = db.relationship('ProgramModel', lazy="selectin",
+                              backref=db.backref('contract', lazy="selectin", order_by='ContractModel.contract_no.desc()'))
     __table_args__ = (db.UniqueConstraint('program_id', 'school_id'),)
 
     def invalid_fruit_veg_contract(self):

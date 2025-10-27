@@ -175,6 +175,8 @@ class RecordResource(Resource):
         except ValueError as e:
             app_logger.warn(f"Failed to change state of record {record_id} due to {e}")
             return {"message": f"{e}"}, 400
+        finally:
+            db.session.remove()
         return {
             "record": record.json()
         }
