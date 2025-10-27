@@ -16,7 +16,7 @@ async def create_delivery_async(**request):
         for record in records:
             record.change_state(RecordState.GENERATION_IN_PROGRESS, date=delivery_date)
         driver = request.get("driver", None)
-        delivery_args = {'records': records, 'date': delivery_date,
+        delivery_args = {'records': request["records"], 'date': delivery_date,
                          'driver': driver,
                          'comments': request.get("comments", "")}
         input_docs = [(DeliveryGenerator, delivery_args)]
@@ -30,6 +30,7 @@ async def create_delivery_async(**request):
             input_docs.append((DeliveryRecordsGenerator, delivery_args))
         app_logger.info(f"create_delivery_async to database records_no: {len(records)}")
         db.session.commit()
+        db.session.remove()
         setup_progress_meta(len(input_docs), notification=discovered_changed_records)
         return await create_generator_and_run(input_docs)
 
@@ -44,6 +45,7 @@ def on_success_delivery_update(job, connection, result, *args, **kwargs):
             record.change_state(state)
         app_logger.info(f"Saving to database records_no: {len(records)}")
         db.session.commit()
+        db.session.remove()
         measure_time_callback(job, connection, result, *args, **kwargs)
 
 
@@ -54,6 +56,7 @@ def on_failure_delivery_update(job, connection, exception, *args, **kwargs):
             record.change_state(RecordState.PLANNED)
         app_logger.info(f"On failure to database records_no: {len(records)}")
         db.session.commit()
+        db.session.remove()
 
 
 def queue_delivery(request):

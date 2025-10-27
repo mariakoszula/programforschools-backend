@@ -4,7 +4,7 @@ from models.base_database_query import BaseDatabaseQuery
 from auth.accesscontrol import AllowedRoles
 
 
-class Role(db.Model):
+class Role(db.Model, BaseDatabaseQuery):
     __tablename__ = 'roles'
 
     id = db.Column(db.Integer(), primary_key=True)
@@ -12,10 +12,6 @@ class Role(db.Model):
 
     def __init__(self, name):
         self.name: AllowedRoles = name
-
-    def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
 
     @classmethod
     def find(cls, name):

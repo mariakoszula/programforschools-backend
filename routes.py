@@ -18,7 +18,7 @@ from resources.record import RecordsAllResource, RecordResource, RecordDeliveryC
 from resources.school import SchoolResource, SchoolRegister, SchoolsResource
 from resources.task_progress import TaskProgressStatus
 from resources.user import UserResource, User, UserLogin, UserLogout, RefreshToken, Users
-from resources.register import RegisterResource
+from resources.register import RegisterResource, RegisterSuppliersResource
 from helpers.google_drive import GoogleDriveCommands
 from helpers.json_encoder import to_json
 from resources.week import WeekResource, WeekRegister, WeeksResource
@@ -56,6 +56,7 @@ def create_routes(app):
     api.add_resource(SchoolsResource, '/school/all')
 
     api.add_resource(RegisterResource, '/create_school_register/<int:program_id>')
+    api.add_resource(RegisterSuppliersResource, '/create_suppliers_register/<int:program_id>')
 
     api.add_resource(ContractsCreateResource, '/create_contracts')
     api.add_resource(ContractResource, '/contract/<int:program_id>/<int:school_id>')

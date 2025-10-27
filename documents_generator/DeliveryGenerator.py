@@ -12,10 +12,10 @@ from models.week import WeekModel
 
 
 class SummaryRecords:
-    def __init__(self, records: List[RecordModel], add_weights):
+    def __init__(self, records: list[RecordModel], add_weights):
         if not len(records):
             raise ValueError("List with records cannot be empty")
-        self.records = records
+        self.records: List[RecordModel] = records
         self.add_weights = add_weights
         self.product_summarize_rows = []
 
@@ -64,7 +64,7 @@ def get_main_output_dir(record):
 
 
 class DeliveryGenerator(SummaryRecords, DocumentGenerator):
-    DAY_NAMES = ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"]
+    DAY_NAMES = ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"]
 
     def _school_product_summarize(self, nick):
         records = filter(lambda record: record.contract.school.nick == nick, self.records)
@@ -108,13 +108,13 @@ class DeliveryGenerator(SummaryRecords, DocumentGenerator):
             comments=self.comments
         )
 
-    def __init__(self, records: List[RecordModel], date, driver=None, comments=None):
-        super().__init__(records, add_weights=not driver)
+    def __init__(self, records: List[int], date, driver=None, comments=None):
+        self.records: List[RecordModel] = RecordModel.get_records(records)
+        super().__init__(self.records, add_weights=not driver)
         self.schools_delivery_rows = []
         self.delivery_date = date
         self.driver = driver
         self.comments = comments
-        self.records = records
         DocumentGenerator.__init__(self,
                                    template_document=config_parser.get('DocTemplates', 'delivery'),
                                    output_directory=get_output_dir(self.records[0], self.delivery_date),
@@ -127,8 +127,8 @@ class DeliveryRecordsGenerator(DocumentGenerator):
     def prepare_data(self):
         self.merge_pages([RecordGenerator.prepare_data_to_fill(record) for record in self.records])
 
-    def __init__(self, records, date, driver, **_):
-        self.records = records
+    def __init__(self, records: list[int], date, driver, **_):
+        self.records: list[RecordModel] = RecordModel.get_records(records)
         output_directory = get_output_dir(self.records[0], date)
         DocumentGenerator.__init__(self,
                                    template_document=RecordGenerator.get_template(),
@@ -162,7 +162,7 @@ def prepare_product_dict(_type, records):
 
 
 class SummaryGenerator(SummaryRecords, DocumentGenerator):
-    DAY_NAMES = ["mon", "tue", "wed", "th", "fri"]
+    DAY_NAMES = ["mon", "tue", "wed", "th", "fri", "sat", "sun"]
 
     def prepare_data(self):
         super().prepare_data()
