@@ -30,7 +30,7 @@ async def create_delivery_async(**request):
             input_docs.append((DeliveryRecordsGenerator, delivery_args))
         app_logger.info(f"create_delivery_async to database records_no: {len(records)}")
         db.session.commit()
-        db.session.remove()
+        db.session.close()
         setup_progress_meta(len(input_docs), notification=discovered_changed_records)
         return await create_generator_and_run(input_docs)
 
@@ -45,7 +45,7 @@ def on_success_delivery_update(job, connection, result, *args, **kwargs):
             record.change_state(state)
         app_logger.info(f"Saving to database records_no: {len(records)}")
         db.session.commit()
-        db.session.remove()
+        db.session.close()
         measure_time_callback(job, connection, result, *args, **kwargs)
 
 
@@ -56,7 +56,7 @@ def on_failure_delivery_update(job, connection, exception, *args, **kwargs):
             record.change_state(RecordState.PLANNED)
         app_logger.info(f"On failure to database records_no: {len(records)}")
         db.session.commit()
-        db.session.remove()
+        db.session.close()
 
 
 def queue_delivery(request):
