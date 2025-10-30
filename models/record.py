@@ -79,7 +79,12 @@ class RecordModel(db.Model, BaseDatabaseQuery):
         return numbers_changed
 
     def get_record_no(self):
-        product_prefix = "NB" if ProductTypeModel.find_by_id(self.product_type_id).is_dairy() else "WO"
+        product_type_obj: ProductTypeModel = getattr(self, 'product_type', None)
+        if product_type_obj is not None:
+            product_prefix = "NB" if product_type_obj.is_dairy() else "WO"
+        else:
+            # fallback, but ideally this is never needed!
+            product_prefix = "NB" if ProductTypeModel.find_by_id(self.product_type_id).is_dairy() else "WO"
         if self.no:
             return f"{product_prefix} {self.no}/{self.contract.contract_no}/{self.contract.program}"
         else:
