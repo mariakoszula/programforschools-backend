@@ -74,6 +74,15 @@ class ContractModel(db.Model, BaseDatabaseQuery):
     def find(cls, program_id, school_id):
         return cls.query.filter_by(program_id=program_id, school_id=school_id).first()
 
+    @classmethod
+    def get_contracts_eager_load(cls, contract_ids):
+        """Get contracts with all relationships eagerly loaded"""
+        from sqlalchemy.orm import joinedload
+        return cls.query.options(
+            joinedload(cls.program).joinedload(ProgramModel.weeks),
+            joinedload(cls.school)
+        ).filter(cls.id.in_(contract_ids)).all()
+
 
 class AnnexModel(db.Model, BaseDatabaseQuery):
     __tablename__ = 'annex'
