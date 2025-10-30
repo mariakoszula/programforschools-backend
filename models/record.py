@@ -153,7 +153,11 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def get_records(cls, ids):
-        return cls.query.options(joinedload(cls.contract).joinedload(ContractModel.program)).filter(cls.id.in_(ids)).all()
+        return cls.query.options(
+                    joinedload(cls.product_store),
+                    joinedload(cls.contract).joinedload(ContractModel.program),
+                    joinedload(cls.contract).joinedload(ContractModel.school)
+                    ).filter(cls.id.in_(ids)).all()
 
     @classmethod
     def filter_records(cls, application: ApplicationModel, state=RecordState.DELIVERED):

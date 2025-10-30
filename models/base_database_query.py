@@ -14,23 +14,26 @@ class BaseDatabaseQuery:
         try:
             db.session.add(self)
             db.session.commit()
-        finally:
-            db.session.close()
+        except Exception:
+            db.session.rollback()
+            raise
 
     def delete_from_db(self):
         try:
             db.session.delete(self)
             db.session.commit()
-        finally:
-            db.session.close()
+        except Exception:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def execute(cmd):
         try:
             db.session.execute(cmd)
             db.session.commit()
-        finally:
-            db.session.close()
+        except Exception:
+            db.session.rollback()
+            raise
 
     def update_db_only(self, **update_patch):
         for name, changed_value in update_patch.items():
@@ -43,8 +46,9 @@ class BaseDatabaseQuery:
         try:
             self.update_db_only(**update_patch)
             db.session.commit()
-        finally:
-            db.session.close()
+        except Exception:
+            db.session.rollback()
+            raise
 
     def json(self):
         return {column.name: getattr(self, column.name, None) for column in self.__table__.columns}
