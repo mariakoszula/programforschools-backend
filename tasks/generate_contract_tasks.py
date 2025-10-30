@@ -1,13 +1,13 @@
 from typing import List
 from helpers.logger import app_logger
-from app import create_app
 from models.contract import ContractModel
 from tasks.generate_documents_task import create_generator_and_run, queue_task, setup_progress_meta
 from documents_generator.ContractGenerator import ContractGenerator
 from sqlalchemy.exc import SQLAlchemyError
 from models.program import ProgramModel
 from models.school import SchoolModel
-
+from helpers.db_context import async_with_db_context
+from helpers.db import db
 
 def find_contract(school_id, program_id):
     try:
@@ -37,18 +37,24 @@ def update_contract_in_database(school_id, program_id, **patch_to_update):
         app_logger.error(f"Contract not saved due to {e}")
 
 
+@async_with_db_context
 async def create_contracts_async(**request):
-    with create_app().app_context():
-        program_id = request.get("program_id")
-        contracts: List[ContractModel] = []
-        for school_id in get_school_list(request.get("schools_list")):
-            contract = update_contract_in_database(school_id=school_id, program_id=program_id)
-            if contract:
-                contracts.append(contract)
+    program_id = request.get("program_id")
+    contracts: List[ContractModel] = []
+    for school_id in get_school_list(request.get("schools_list")):
+        contract = update_contract_in_database(school_id=school_id, program_id=program_id)
+        if contract:
+            contracts.append(contract)
 
-        input_docs = [(ContractGenerator, {'contract': contract, 'date': request['date']}) for contract in contracts]
-        setup_progress_meta(len(input_docs))
-        return await create_generator_and_run(input_docs)
+    # IMPORTANT: Eagerly load all relationships BEFORE preparing for generation
+    contracts = ContractModel.get_contracts_eager_load([c.id for c in contracts])
+
+    # Now safe to detach - all data is loaded
+    db.session.expunge_all()
+
+    input_docs = [(ContractGenerator, {'contract': contract, 'date': request['date']}) for contract in contracts]
+    setup_progress_meta(len(input_docs))
+    return await create_generator_and_run(input_docs)
 
 
 def queue_contracts(request):
