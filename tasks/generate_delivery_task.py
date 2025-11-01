@@ -1,4 +1,8 @@
 from operator import attrgetter
+
+from sqlalchemy.orm import load_only
+
+from models.product import ProductTypeModel
 from models.record import RecordModel, RecordState, RecordNumbersChangedError
 from documents_generator.DeliveryGenerator import DeliveryGenerator, DeliveryRecordsGenerator, SummaryGenerator
 from tasks.generate_documents_task import queue_task, setup_progress_meta, create_generator_and_run, \
@@ -14,11 +18,23 @@ async def create_delivery_async(**request):
     records.sort(key=attrgetter('contract_id', 'date'))
     delivery_date = request["date"]
 
+    # Prefetch all ProductTypeIds
+    product_type_ids = {record.product_type_id for record in records}
+    product_types = (
+        ProductTypeModel.query
+            .filter(ProductTypeModel.id.in_(product_type_ids))
+            .options(load_only('id', 'name'))
+            .all()
+    )
+
+    product_type_map = {pt.id: pt for pt in product_types}
+
     for record in records:
+        record.product_type = product_type_map.get(record.product_type_id)
         record.change_state(RecordState.GENERATION_IN_PROGRESS, date=delivery_date)
 
     driver = request.get("driver", None)
-    delivery_args = {'records': request["records"], 'date': delivery_date,
+    delivery_args = {'records': records, 'date': delivery_date,
                      'driver': driver,
                      'comments': request.get("comments", "")}
     input_docs = [(DeliveryGenerator, delivery_args)]

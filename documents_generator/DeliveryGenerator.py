@@ -108,8 +108,8 @@ class DeliveryGenerator(SummaryRecords, DocumentGenerator):
             comments=self.comments
         )
 
-    def __init__(self, records: List[int], date, driver=None, comments=None):
-        self.records: List[RecordModel] = RecordModel.get_records(records)
+    def __init__(self, records: List[RecordModel], date, driver=None, comments=None):
+        self.records: List[RecordModel] = records
         super().__init__(self.records, add_weights=not driver)
         self.schools_delivery_rows = []
         self.delivery_date = date
@@ -127,8 +127,8 @@ class DeliveryRecordsGenerator(DocumentGenerator):
     def prepare_data(self):
         self.merge_pages([RecordGenerator.prepare_data_to_fill(record) for record in self.records])
 
-    def __init__(self, records: list[int], date, driver, **_):
-        self.records: list[RecordModel] = RecordModel.get_records(records)
+    def __init__(self, records: list[RecordModel], date, driver, **_):
+        self.records: List[RecordModel] = records
         output_directory = get_output_dir(self.records[0], date)
         DocumentGenerator.__init__(self,
                                    template_document=RecordGenerator.get_template(),
