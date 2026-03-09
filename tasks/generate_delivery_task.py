@@ -50,7 +50,16 @@ async def create_delivery_async(**request):
     db.session.commit()
     app_logger.info(f"create_delivery_async to database records_no: {len(records)}")
 
-    # 2. Keep session open during generation but expunge objects
+    # Ensure all relationships are loaded before expunge
+    for record in records:
+        _ = record.product_store.product.weight.name
+        _ = record.product_store.product.type.name
+        _ = record.contract.program.id
+        for annex in record.contract.annex:
+            _ = annex.id
+            if annex.timed_annex:
+                _ = annex.timed_annex[0].id
+
     db.session.expunge_all()
 
     setup_progress_meta(len(input_docs), notification=discovered_changed_records)
