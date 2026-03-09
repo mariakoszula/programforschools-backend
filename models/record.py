@@ -158,10 +158,14 @@ class RecordModel(db.Model, BaseDatabaseQuery):
 
     @classmethod
     def get_records(cls, ids):
+        from models.product import ProductStoreModel, ProductModel
+        from models.contract import AnnexModel
         return cls.query.options(
-                    joinedload(cls.product_store),
+                    joinedload(cls.product_store).joinedload(ProductStoreModel.product).joinedload(ProductModel.weight),
+                    joinedload(cls.product_store).joinedload(ProductStoreModel.product).joinedload(ProductModel.type),
                     joinedload(cls.contract).joinedload(ContractModel.program),
-                    joinedload(cls.contract).joinedload(ContractModel.school)
+                    joinedload(cls.contract).joinedload(ContractModel.school),
+                    joinedload(cls.contract).joinedload(ContractModel.annex).joinedload(AnnexModel.timed_annex)
                     ).filter(cls.id.in_(ids)).all()
 
     @classmethod
